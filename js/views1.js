@@ -12,16 +12,18 @@ function goalRow(s, g) {
   return `<div class="goal ${done ? 'done' : ''}"><span class="gchk">${done ? ic('check') : ''}</span><div class="grow"><div class="row"><span class="grow">${g.txt}</span><small class="muted">${f(Math.min(cur, g.goal))} / ${f(g.goal)}</small></div>${bar(cur / g.goal * 100, done ? 'ok' : '')}</div></div>`;
 }
 
+function tabsKeyOf(s) { return [s.requests.length, !!s.challenge, ui.coachTab, (s.unlocked || []).length, (s.newTabs || []).join()].join('|'); }
 function renderTabs() {
   const s = S;
-  $('#tabs').innerHTML = TABS.map(([id, lb]) => {
+  $('#tabs').innerHTML = TABS.filter(([id]) => tabUnlocked(id)).map(([id, lb]) => {
     let badge = '';
     if (id === 'loans' && s.requests.length) badge = `<span class="badge">${s.requests.length}</span>`;
     if (id === 'missions' && s.challenge) badge = '<span class="dot"></span>';
+    if ((s.newTabs || []).includes(id)) badge = '<span class="badge new">Nouveau</span>';
     const pulse = ui.coachTab === id ? 'pulse' : '';
     return `<button class="nav-btn ${ui.tab === id ? 'on' : ''} ${pulse}" data-act="tab" data-tab="${id}">${ic(TAB_ICON[id])}<span class="lbl">${lb}</span>${badge}</button>`;
   }).join('');
-  ui.tabsKey = s.requests.length + '|' + !!s.challenge + '|' + ui.coachTab;
+  ui.tabsKey = tabsKeyOf(s);
 }
 
 function renderTop() {
@@ -35,7 +37,9 @@ function renderTop() {
   $('#tbRep').textContent = Math.round(s.reputation) + '/100'; $('#tbRep').className = s.reputation < 30 ? 'neg' : s.reputation > 70 ? 'pos' : '';
   $('#tbRank').textContent = rankOf(s) + 'ᵉ / ' + (s.rivals.length + 1);
   $('#chapterPill').textContent = s.chapter < CHAPTERS.length ? `Chapitre ${s.chapter + 1} · ${CHAPTERS[s.chapter].name}` : 'Campagne terminée';
-  if (ui.tabsKey !== s.requests.length + '|' + !!s.challenge + '|' + ui.coachTab) renderTabs();
+  $('#tbRatio').parentNode.hidden = !(s.chapter >= 1 || s.surveillance);
+  $('#tbRank').parentNode.hidden = !tabUnlocked('ranking');
+  if (ui.tabsKey !== tabsKeyOf(s)) renderTabs();
 }
 
 function canRender() {
@@ -53,19 +57,19 @@ function renderPanel(force) {
   $('#panel').innerHTML = `<div class="page">${alert}${views[ui.tab]()}</div>`;
   $('#panel').scrollTop = st;
   drawCharts();
-  if (ui.tab === 'plan') floorStart();
+  if (ui.tab === 'plan') { renderPlanSide(); floorStart(); }
   ui.dirty = false;
 }
 
 // ---------- Accueil ----------
 function vDash() {
-  const s = S, eq = equity(s), r = capRatio(s), E = ECON[s.economy], pl = s.lastPL, lo = loansOut(s), pv = portfolioValue(s), ch = CHAPTERS[s.chapter];
+  const s = S, eq = equity(s), E = ECON[s.economy], pl = s.lastPL, lo = loansOut(s), pv = portfolioValue(s), ch = CHAPTERS[s.chapter];
   const nextE = s.upgrades.quantique && s.nextEcon ? `<p>⚛️ Prédiction quantique : <b>${ECON[s.nextEcon].label}</b> dans ${s.econTimer} mois.</p>` : '';
   const plRows = pl ? [
     ['Intérêts des prêts', pl.interest], ['Frais et distributeurs', pl.fees], ['Coupons obligataires', pl.coupons], ['Rémunération des réserves', pl.reserves || 0],
     ['Intérêts versés aux épargnants', -pl.depInt], ['Intérêts banque centrale', -pl.cbInt], ['Loyers & salaires', -pl.costs],
     ['Pertes sur défauts', -pl.losses], ['Impôt sur les sociétés', -pl.tax],
-  ].map(([l, v]) => `<tr><td>${l}</td><td class="r ${v ? cls(v) : 'muted'}">${money(v)}</td></tr>`).join('') + `<tr class="total"><td>Résultat net</td><td class="r ${cls(pl.net)}">${money(pl.net)}</td></tr>` : '<tr><td class="muted">Disponible à la fin du premier mois.</td></tr>';
+  ].filter(([, v]) => v).map(([l, v]) => `<tr><td>${l}</td><td class="r ${cls(v)}">${money(v)}</td></tr>`).join('') + `<tr class="total"><td>Résultat net</td><td class="r ${cls(pl.net)}">${money(pl.net)}</td></tr>` : '<tr><td class="muted">Disponible à la fin du premier mois.</td></tr>';
   const mission = ch ? `<section class="card mission-card">
       <div class="mc-head"><div><small class="eyebrow">Chapitre ${s.chapter + 1} sur ${CHAPTERS.length}</small><h2>${ch.name}</h2><p class="muted">${ch.desc}</p></div>
       ${ch.reward ? `<div class="mc-reward"><small>Récompense</small><b>${money(ch.reward)}</b></div>` : ''}</div>
@@ -73,35 +77,28 @@ function vDash() {
     : card('', '<h2>🏆 Campagne terminée</h2><p class="muted">Vous êtes une légende. Continuez à grandir, ou prenez votre retraite pour enregistrer votre score.</p>', 'mission-card');
   const c = s.challenge, chal = c ? `<div class="alert indigo">${ic('clock')}<div class="grow"><b>Défi : ${CHALLENGES[c.tpl].txt(c)}</b> · encore ${c.until - s.day} j · récompense ${money(c.reward)}${bar(CHALLENGES[c.tpl].cur(s, c) / c.goal * 100)}</div></div>` : '';
   return `${mission}${chal}
-  <div class="grid kpis">
+  <div class="grid kpis four">
     ${kpi('Fonds propres', money(eq), 'Ce que vaut votre banque', eq < 0 ? 'neg' : '')}
     ${kpi('Liquidités', money(s.cash), `${pct(s.deposits ? s.cash / s.deposits * 100 : 100)} des dépôts`)}
-    ${kpi('Dépôts clients', money(s.deposits), `Rémunérés à ${pct(s.depositRate, 2)}`)}
-    ${kpi('Encours de prêts', money(lo), `${s.loans.length} prêts actifs`)}
-    ${kpi('Agences', s.branches.length, `${staffTotal(s, 'gs') + staffTotal(s, 'bs') + staffTotal(s, 'vig')} employés`)}
-    ${kpi('Satisfaction clients', Math.round(avgSat(s)) + '/100', 'Moyenne des agences', avgSat(s) < 40 ? 'neg' : avgSat(s) > 65 ? 'pos' : '')}
-    ${kpi('Ratio de solvabilité', r === Infinity ? '∞' : pct(r), `Minimum ${minRatio(s)} %`, r < minRatio(s) ? 'neg' : 'pos')}
     ${kpi('Résultat du mois', pl ? money(pl.net) : '—', 'Après impôts', pl ? cls(pl.net) : '')}
+    ${kpi('Clients satisfaits', Math.round(avgSat(s)) + '/100', `${s.branches.length} agence${s.branches.length > 1 ? 's' : ''}`, avgSat(s) < 40 ? 'neg' : avgSat(s) > 65 ? 'pos' : '')}
   </div>
   <div class="grid two">
     ${card('Évolution des fonds propres', '<canvas class="chart" data-chart="equity"></canvas>')}
-    ${card(`Conjoncture : <span style="color:${E.color}">${E.label}</span>`, `<p>Taux directeur <b>${pct(s.policyRate, 2)}</b> · Défauts ×${E.pd} · Demande de crédit ×${E.demand}</p>${nextE}<canvas class="chart sm" data-chart="rate"></canvas>`)}
+    ${card('Journal', `<ul class="log">${s.log.slice(0, 30).map(l => `<li class="${l.type}"><small>${dateStr(l.d)}</small>${esc(l.msg)}</li>`).join('') || '<li class="muted">Rien pour l’instant.</li>'}</ul>`)}
   </div>
-  <div class="grid two">
-    ${card('Bilan', `<table>
-      <tr><th>Actif</th><th class="r"></th></tr>
-      <tr><td>Liquidités</td><td class="r">${money(s.cash)}</td></tr>
-      <tr><td>Prêts aux clients</td><td class="r">${money(lo)}</td></tr>
-      <tr><td>Titres financiers</td><td class="r">${money(pv)}</td></tr>
-      <tr class="total"><td>Total actif</td><td class="r">${money(s.cash + lo + pv)}</td></tr>
-      <tr><th>Passif</th><th></th></tr>
-      <tr><td>Dépôts des clients</td><td class="r">${money(s.deposits)}</td></tr>
-      <tr><td>Dette banque centrale</td><td class="r">${money(s.cbDebt)}</td></tr>
-      <tr><td>Fonds propres</td><td class="r ${cls(eq)}">${money(eq)}</td></tr>
-      <tr class="total"><td>Total passif</td><td class="r">${money(s.deposits + s.cbDebt + eq)}</td></tr></table>`)}
-    ${card('Compte de résultat — mois dernier', `<table>${plRows}</table>`)}
-  </div>
-  ${card('Journal', `<ul class="log">${s.log.slice(0, 40).map(l => `<li class="${l.type}"><small>${dateStr(l.d)}</small>${esc(l.msg)}</li>`).join('') || '<li class="muted">Rien pour l’instant.</li>'}</ul>`)}`;
+  <details class="card more"${ui.openMore ? ' open' : ''}><summary data-act="toggleMore">Comptes détaillés et conjoncture</summary>
+    <div class="grid kpis">
+      ${kpi('Dépôts clients', money(s.deposits), `Rémunérés à ${pct(s.depositRate, 2)}`)}
+      ${kpi('Encours de prêts', money(lo), `${s.loans.length} prêts actifs`)}
+      ${kpi('Titres financiers', money(pv))}
+      ${kpi('Ratio de solvabilité', capRatio(s) === Infinity ? '∞' : pct(capRatio(s)), `Minimum ${minRatio(s)} %`, capRatio(s) < minRatio(s) ? 'neg' : 'pos')}
+    </div>
+    <div class="grid two">
+      <div><h3 class="sec">Conjoncture : <span style="color:${E.color}">${E.label}</span></h3><p class="small muted">Taux directeur <b>${pct(s.policyRate, 2)}</b> · Défauts ×${E.pd} · Demande de crédit ×${E.demand}</p>${nextE}<canvas class="chart sm" data-chart="rate"></canvas></div>
+      <div><h3 class="sec">Compte de résultat du mois</h3><table>${plRows}</table></div>
+    </div>
+  </details>`;
 }
 
 // ---------- Ma banque (plan de l'agence) ----------
@@ -109,41 +106,39 @@ function vPlan() {
   const s = S;
   if (!getBranch(s, ui.branch)) ui.branch = HQ;
   const b = getBranch(s, ui.branch), c = cityOf(b);
-  const chips = s.branches.map(x => `<button class="chip ${x.id === ui.branch ? 'on' : ''}" data-act="selBranch" data-id="${x.id}"><span class="cc">${CITIES[x.id].cc}</span>${CITIES[x.id].name}${x.id === HQ ? ' <small>Siège</small>' : ''}</button>`).join('');
-  return `<div class="chips">${chips}<button class="chip add" data-act="tab" data-tab="world">${ic('plus')} Nouvelle agence</button></div>
-  <div class="plan-grid">
-    <section class="card floor-card">
-      <header class="card-h"><div><h3>${c.name} ${b.id === HQ ? '<span class="pill">Siège</span>' : ''}</h3><small class="muted">${SIZES[b.size].name} · ${TIERS[c.tier] ? TIERS[c.tier].label : 'Hors de la Terre'} · ${REGIONS[c.region].name}</small></div></header>
-      <div id="floorWrap"><canvas id="floor"></canvas></div>
-      <p class="hint">${ic('spark')} Cliquez sur un emplacement en pointillés pour construire ou embaucher. Les clients arrivent selon votre réputation.</p>
-    </section>
-    <aside id="planSide">${planSideHTML()}</aside>
-  </div>`;
+  const chips = s.branches.length > 1 ? `<div class="chips">${s.branches.map(x => `<button class="chip ${x.id === ui.branch ? 'on' : ''}" data-act="selBranch" data-id="${x.id}"><span class="cc">${CITIES[x.id].cc}</span>${CITIES[x.id].name}</button>`).join('')}</div>` : '';
+  return `${chips}
+  <section class="card floor-card">
+    <header class="floor-h"><div><h2>${c.name} ${b.id === HQ ? '<span class="pill">Siège</span>' : ''}</h2><small class="muted">${SIZES[b.size].name} · niveau ${b.size}/3</small></div><div id="planStats"></div></header>
+    <div id="floorWrap"><canvas id="floor"></canvas></div>
+    <div id="planSide"></div>
+  </section>`;
 }
-function renderPlanSide() { const el = $('#planSide'); if (el) el.innerHTML = planSideHTML(); }
-function planSideHTML() {
-  const s = S, b = getBranch(s, ui.branch); if (!b) return '';
-  const lim = SIZES[b.size], need = branchNeed(b), sat = Math.round(b.sat), tgt = Math.round(satTarget(s, b));
-  const row = (k, n, max, cost, dis, note = '') => `<div class="brow"><span class="bico">${ITEMS[k].icon}</span><div class="grow"><b>${ITEMS[k].name}</b><small>${note || ITEMS[k].desc}</small></div><span class="bcount">${n}/${max}</span><button class="btn sm primary" data-act="build" data-k="${k}" ${dis || s.cash < cost ? 'disabled' : ''}>${money(cost)}</button></div>`;
-  const w = wageMult(s, b);
-  const nextSize = SIZES[b.size + 1];
-  return `${card('Performance', `
-    <div class="row"><span class="grow">Satisfaction</span><b class="${sat < 40 ? 'neg' : sat > 65 ? 'pos' : ''}">${sat}/100</b></div>${bar(sat, sat < 40 ? 'bad' : sat > 65 ? 'ok' : '')}
-    <small class="muted">Tend vers ${tgt}/100. ${b.gs < need ? `Il faudrait <b>${need} guichetiers</b> pour éviter l’attente.` : 'Pas de file d’attente : bravo !'}</small>
-    <table class="mini"><tr><td>Dépôts potentiels</td><td class="r">${money(branchCap(b))}</td></tr>
-    <tr><td>Demandes de prêt</td><td class="r">×${nf1.format(branchLoanF(b))}</td></tr>
-    <tr><td>Commissions distributeurs</td><td class="r pos">${money(dabIncome(b))}/mois</td></tr>
-    <tr><td>Charges (loyer + salaires)</td><td class="r neg">${money(branchCosts(s, b))}/mois</td></tr></table>`)}
-  ${card('Aménager', `
-    ${row('g', b.g, lim.g, itemCost(b, 'g'), b.g >= lim.g)}
-    ${row('gs', b.gs, b.g, itemCost(b, 'gs'), b.gs >= b.g, `Salaire ${money(ITEMS.gs.wage * w)}/mois`)}
-    ${row('b', b.b, lim.b, itemCost(b, 'b'), b.b >= lim.b)}
-    ${row('bs', b.bs, b.b, itemCost(b, 'bs'), b.bs >= b.b, `Salaire ${money(ITEMS.bs.wage * w)}/mois`)}
-    ${row('dab', b.dab, lim.dab, itemCost(b, 'dab'), b.dab >= lim.dab)}
-    ${row('vig', b.vig, lim.vig, itemCost(b, 'vig'), b.vig >= lim.vig, `Anti-braquage · ${money(ITEMS.vig.wage * w)}/mois`)}
-    ${row('deco', b.deco, lim.deco, itemCost(b, 'deco'), b.deco >= lim.deco)}
-    ${nextSize ? `<div class="brow up"><span class="bico">🏗️</span><div class="grow"><b>Agrandir : ${nextSize.name}</b><small>Plus de place pour guichets, bureaux et distributeurs</small></div><button class="btn sm gold" data-act="build" data-k="size" ${s.cash < sizeUpCost(b) ? 'disabled' : ''}>${money(sizeUpCost(b))}</button></div>` : '<p class="muted small center">Agence au niveau maximum ✨</p>'}
-    ${b.id !== HQ ? `<button class="btn ghost sm full" data-act="closeBranch" data-id="${b.id}">Fermer cette agence</button>` : ''}`)}`;
+function renderPlanSide() {
+  const s = S, b = getBranch(s, ui.branch), el = $('#planSide'); if (!el || !b) return;
+  const sat = Math.round(b.sat), need = branchNeed(b);
+  $('#planStats').innerHTML = `<div class="stat"><small>Satisfaction</small><b class="${sat < 40 ? 'neg' : sat > 65 ? 'pos' : ''}">${sat}/100</b></div>
+    <div class="stat"><small>Épargne possible</small><b>${money(branchCap(b))}</b></div>
+    <div class="stat"><small>Charges</small><b class="neg">${money(branchCosts(s, b))}/mois</b></div>`;
+  const lim = SIZES[b.size], w = wageMult(s, b);
+  const tools = [
+    ['g', b.g, lim.g, b.g >= lim.g, 'Accueille l’épargne'],
+    ['gs', b.gs, b.g, b.gs >= b.g, `${money(ITEMS.gs.wage * w)}/mois`],
+    ['b', b.b, lim.b, b.b >= lim.b, 'Reçoit les emprunteurs'],
+    ['bs', b.bs, b.b, b.bs >= b.b, `${money(ITEMS.bs.wage * w)}/mois`],
+    ['dab', b.dab, lim.dab, b.dab >= lim.dab, `+${money(cityOf(b).traffic * 1500)}/mois`],
+    ['vig', b.vig, lim.vig, b.vig >= lim.vig, 'Anti-braquage'],
+    ['deco', b.deco, lim.deco, b.deco >= lim.deco, '+ satisfaction'],
+  ].filter(([k]) => itemUnlocked(k)).map(([k, n, max, full, sub]) => {
+    const cost = itemCost(b, k), dis = full || s.cash < cost;
+    const staffFull = (k === 'gs' || k === 'bs') && full && n >= SIZES[b.size][k[0]];
+    return `<button class="tool ${full ? 'full' : ''}" data-act="build" data-k="${k}" ${dis ? 'disabled' : ''} title="${esc(ITEMS[k].desc)}">
+      <span class="t-ico">${ITEMS[k].icon}</span><span class="t-name">${ITEMS[k].name}</span><span class="t-sub">${full ? ((k === 'gs' || k === 'bs') && !staffFull ? 'Construisez un poste' : 'Complet') : sub}</span>
+      <span class="t-foot"><span class="t-count">${n}/${max}</span><b>${full ? '—' : money(cost)}</b></span></button>`;
+  }).join('');
+  const up = itemUnlocked('size') && SIZES[b.size + 1] ? `<button class="tool gold" data-act="build" data-k="size" ${s.cash < sizeUpCost(b) ? 'disabled' : ''}><span class="t-ico">🏗️</span><span class="t-name">Agrandir</span><span class="t-sub">${SIZES[b.size + 1].name}</span><span class="t-foot"><span class="t-count">niv. ${b.size + 1}</span><b>${money(sizeUpCost(b))}</b></span></button>` : '';
+  const tip = b.gs < need ? `<p class="hint">${ic('alert')} Les clients attendent : il faudrait <b>${need} guichetiers</b> ici.</p>` : '';
+  el.innerHTML = `<div class="tools">${tools}${up}</div>${tip}${b.id !== HQ ? `<button class="btn ghost sm" data-act="closeBranch" data-id="${b.id}">Fermer cette agence</button>` : ''}`;
 }
 
 // ---------- Prêts ----------

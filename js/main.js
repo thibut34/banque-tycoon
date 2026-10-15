@@ -18,7 +18,7 @@ const confirmBox = (icon, title, text, act, label, id = '') => { ui.modal = true
 
 // ---------- Actions ----------
 const actions = {
-  tab: el => { ui.tab = el.dataset.tab; renderTabs(); renderPanel(true); $('#panel').scrollTop = 0; },
+  tab: el => { ui.tab = el.dataset.tab; if (S.newTabs) S.newTabs = S.newTabs.filter(t => t !== ui.tab); renderTabs(); renderPanel(true); $('#panel').scrollTop = 0; },
   offer: (el, ev) => {
     const r = S.requests.find(x => x.id == el.dataset.id); if (!r) return;
     if (S.surveillance) return toast('⚠️ Sous surveillance : prêts interdits', 'bad');
@@ -64,7 +64,7 @@ const actions = {
     if (getBranch(S, id) || !regionUnlocked(S, c.region)) return;
     if (S.cash < c.cost) return toast('Liquidités insuffisantes', 'bad');
     S.cash -= c.cost; S.branches.push(newBranch(id));
-    SFX.play('level');
+    SFX.play('level'); confetti();
     log(`🏢 Nouvelle agence ouverte : ${c.name} !`, 'good'); toast(`🏢 Agence de ${c.name} inaugurée ! Équipez-la dans « Ma banque ».`, 'good');
     renderPanel(true);
   },
@@ -122,6 +122,7 @@ const actions = {
     ui.dirty = true; renderPanel(true);
   },
   closeModal: () => closeModal(),
+  toggleMore: el => { ui.openMore = !el.parentNode.open; },
   menu: () => {
     ui.modal = true;
     showModal(`<div class="m-ico">☰</div><h2>Pause</h2><p class="center muted">Le temps est arrêté tant que ce menu est ouvert.</p><div class="choices">
@@ -158,6 +159,17 @@ const actions = {
 function randomBankName() {
   return pick(['Banque', 'Crédit', 'Caisse', 'Comptoir', 'Société Financière']) + ' ' +
     pick(['du Lapin d’Or', 'des Escargots Réunis', 'de la Baguette', 'Mutuel du Camembert', 'des Pigeons Voyageurs', 'Galactique', 'du Petit Cochon', 'de la Lune', 'des Licornes', 'du Croissant']);
+}
+
+// ---------- Confettis ----------
+function confetti(n = 90) {
+  const cols = ['#6366f1', '#818cf8', '#f4c25b', '#34d399', '#f472b6', '#60a5fa'];
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement('i');
+    el.className = 'confetti';
+    el.style.cssText = `left:${rnd(0, 100)}vw;background:${pick(cols)};--dx:${rnd(-120, 120)}px;--r:${rint(-720, 720)}deg;animation-duration:${rnd(1.6, 3)}s;animation-delay:${rnd(0, 0.4)}s;width:${rint(6, 10)}px;height:${rint(8, 14)}px`;
+    document.body.appendChild(el); setTimeout(() => el.remove(), 3600);
+  }
 }
 
 // ---------- Tutoriel ----------
@@ -214,6 +226,7 @@ function startGame(state) {
   floorReset(null);
   $('#start').hidden = true; $('#game').hidden = false;
   $('#muteBtn').innerHTML = ic(prefs.mute ? 'mute' : 'vol');
+  checkUnlocks(S, true);
   renderTabs(); renderTop(); renderPanel(true); nextNews(); updateCoach(true);
 }
 

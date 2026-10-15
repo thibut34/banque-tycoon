@@ -97,7 +97,7 @@ function tickDay() {
   if (s.day > 90 && !ui.modal && chance(1 / 50)) triggerEvent();
   updateChallenge(s);
   if (s.day % 30 === 0) monthEnd(s);
-  if (!s.over) { checkChapter(s); checkAchievements(s); }
+  if (!s.over) { checkChapter(s); checkAchievements(s); checkUnlocks(s); }
   ui.dirty = true;
 }
 
@@ -264,7 +264,7 @@ function checkChapter(s) {
   log(`🏁 Chapitre terminé : ${ch.name} (+${money(ch.reward)})`, 'good');
   const unl = Object.values(REGIONS).filter(r => r.unlock === s.chapter).map(r => r.name);
   const next = CHAPTERS[s.chapter];
-  SFX.play('level');
+  SFX.play('level'); confetti(140);
   eventModal('🏁', `Chapitre ${s.chapter} terminé !`, `<p class="center"><b>${ch.name}</b> : mission accomplie.</p>
     ${ch.reward ? `<div class="reward">Récompense <b>+${money(ch.reward)}</b></div>` : ''}
     ${unl.length ? `<p class="center">🌍 Nouvelle${unl.length > 1 ? 's' : ''} région${unl.length > 1 ? 's' : ''} ouverte${unl.length > 1 ? 's' : ''} : <b>${unl.join(', ')}</b></p>` : ''}

@@ -23,7 +23,7 @@ const EVENTS = [
     if (b.vig) return { icon: '💂', title: `Braquage raté à ${c.name}`, text: 'Trois malfrats déguisés en Daft Punk ont tenté leur chance. Votre vigile les a plaqués avant la porte.', choices: [{ label: 'Prime pour le vigile (5 k€)', sub: '+3 réputation', fn: s => { s.cash -= 5e3; s.reputation += 3; } }, { label: 'Un grand merci suffira', fn: () => { } }] };
     let loss = Math.min(s.cash * 0.3, Math.max(30e3, equity(s) * rnd(0.02, 0.05)));
     if (s.upgrades.coffre) loss /= 2;
-    return { icon: '🦹', title: `Braquage à ${c.name} !`, text: `Des braqueurs déguisés en Daft Punk sont repartis avec <b>${money(loss)}</b>${s.upgrades.coffre ? ' (vos coffres blindés ont limité la casse)' : ''}. Un vigile les aurait arrêtés…`, choices: [{ label: 'Embaucher un vigile la prochaine fois', fn: s => { s.cash -= loss; } }] };
+    return { icon: '🦹', title: `Braquage à ${c.name} !`, text: `Des braqueurs déguisés en Daft Punk sont repartis avec <b>${money(loss)}</b>${s.upgrades.coffre ? ' (vos coffres blindés ont limité la casse)' : ''}. Un vigile les aurait arrêtés…`, choices: [{ label: 'Embaucher un vigile la prochaine fois', fn: s => { s.cash -= loss; s.flags.robbed = true; } }] };
   } },
   { id: 'mafia', w: 1.2, cond: s => !s.flags.mafia && !s.flags.honest, make: s => {
     const amt = Math.round(Math.max(2e6, depositCap(s) * 0.3) / 1e5) * 1e5;

@@ -67,6 +67,25 @@ function avgSat(s) {
   return w ? t / w : 50;
 }
 
+// ---------- Déblocages ----------
+const itemUnlocked = k => !S || !ITEM_UNLOCK[k] || ITEM_UNLOCK[k](S);
+const tabUnlocked = id => !S || (S.unlocked || []).includes(id);
+function checkUnlocks(s, silent) {
+  if (!s.unlocked) { s.unlocked = []; silent = true; }
+  for (const [id, lb] of TABS) {
+    if (s.unlocked.includes(id) || !TAB_UNLOCK[id](s)) continue;
+    s.unlocked.push(id);
+    if (!silent) { s.newTabs = [...(s.newTabs || []), id]; toast(`🔓 Nouvel onglet : <b>${lb}</b><br><small>${TAB_HINT[id] || ''}</small>`, 'gold'); }
+    ui.tabsKey = null;
+  }
+  if (!s.unlockedItems) { s.unlockedItems = Object.keys(ITEM_UNLOCK).filter(k => ITEM_UNLOCK[k](s)); return; }
+  for (const k in ITEM_UNLOCK) {
+    if (s.unlockedItems.includes(k) || !ITEM_UNLOCK[k](s)) continue;
+    s.unlockedItems.push(k);
+    toast(`🔓 Nouveau dans « Ma banque » : <b>${k === 'size' ? 'agrandir vos agences' : ITEMS[k].name}</b>`, 'gold');
+  }
+}
+
 // ---------- Classement ----------
 function rankOf(s) { const eq = equity(s); return 1 + s.rivals.filter(r => r.eq > eq).length; }
 

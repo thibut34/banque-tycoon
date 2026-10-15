@@ -378,3 +378,40 @@ table.mini td { padding: 6px 0; }
   #coach { left: 16px; bottom: 44px; }
   .start-box h1 { font-size: 36px; }
 }
+
+/* ---------- Plan isométrique et barre d'outils ---------- */
+.floor-card { padding: 0; overflow: hidden; }
+.floor-h { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 16px 18px 6px; }
+.floor-h h2 { display: flex; align-items: center; gap: 8px; }
+#planStats { display: flex; gap: 22px; }
+.stat small { display: block; color: var(--muted); font-size: 11px; }
+.stat b { font-size: 15px; font-variant-numeric: tabular-nums; }
+#floorWrap { border-radius: 0; box-shadow: none; background: radial-gradient(ellipse at 50% 40%, #1b2335, #0e131d 75%); }
+#planSide { padding: 14px 16px 16px; border-top: 1px solid var(--line); background: var(--bg2); }
+#planSide .hint { margin: 10px 2px 8px; }
+.tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.tool { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line2); background: var(--surface); color: var(--text); cursor: pointer; font: inherit; transition: transform .12s, border-color .15s, background .15s; }
+.tool:hover:not(:disabled) { border-color: var(--accent2); background: var(--surface2); transform: translateY(-2px); }
+.tool:active:not(:disabled) { transform: translateY(0); }
+.tool:disabled { opacity: .45; cursor: not-allowed; }
+.tool.full { opacity: .4; }
+.tool.gold { border-color: rgba(244,194,91,.4); background: linear-gradient(180deg, rgba(244,194,91,.1), transparent), var(--surface); }
+.t-ico { font-size: 22px; line-height: 1; margin-bottom: 4px; }
+.t-name { font-weight: 600; font-size: 13px; }
+.t-sub { font-size: 11px; color: var(--muted); }
+.t-foot { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 6px; font-size: 12px; }
+.t-foot b { color: var(--gold); }
+.t-count { color: var(--muted); font-variant-numeric: tabular-nums; }
+.kpis.four { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+details.more summary { cursor: pointer; font-weight: 600; color: var(--muted); list-style: none; display: flex; align-items: center; gap: 8px; }
+details.more summary::before { content: "▸"; transition: transform .2s; }
+details.more[open] summary::before { transform: rotate(90deg); }
+details.more[open] summary { margin-bottom: 14px; color: var(--text); }
+.badge.new { background: var(--gold); color: #2a1d00; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; animation: glow 1.4s ease-in-out infinite; }
+.confetti { position: fixed; top: -20px; z-index: 80; pointer-events: none; border-radius: 2px; animation: fall linear forwards; }
+@keyframes fall { to { transform: translate(var(--dx), 105vh) rotate(var(--r)); opacity: .8; } }
+@media (max-width: 900px) {
+  #planStats { gap: 14px; }
+  .tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

@@ -250,3 +250,34 @@ const TABS = [
   ['dash', 'Accueil'], ['plan', 'Ma banque'], ['loans', 'Prêts'], ['deposits', 'Dépôts'], ['world', 'Monde'], ['markets', 'Marchés'],
   ['missions', 'Missions'], ['ranking', 'Classement'], ['cb', 'Banque centrale'], ['upgrades', 'Améliorations'], ['me', 'Patron'], ['achs', 'Succès'],
 ];
+
+// ---------- Déblocage progressif de l'interface ----------
+// Au début, seuls l'essentiel est visible ; le reste apparaît avec la progression.
+const TAB_UNLOCK = {
+  dash: () => true, plan: () => true, loans: () => true, missions: () => true,
+  deposits: s => s.stats.granted >= 1 || s.chapter >= 1,
+  world: s => s.chapter >= 1,
+  upgrades: s => s.chapter >= 1,
+  cb: s => s.chapter >= 1 || s.cbDebt > 0,
+  markets: s => s.chapter >= 2,
+  ranking: s => s.chapter >= 2,
+  me: s => s.chapter >= 2,
+  achs: s => Object.keys(s.achievements).length >= 3,
+};
+const TAB_HINT = {
+  deposits: 'Réglez la rémunération de l’épargne de vos clients.',
+  world: 'Ouvrez de nouvelles agences sur la carte.',
+  upgrades: 'Achetez des améliorations pour toute la banque.',
+  cb: 'Empruntez à la banque centrale si vous manquez de liquidités.',
+  markets: 'Placez votre argent en bourse.',
+  ranking: 'Comparez-vous aux géants de la finance.',
+  me: 'Versez-vous des bonus et achetez des objets de luxe.',
+  achs: 'Retrouvez vos succès et vos statistiques.',
+};
+const ITEM_UNLOCK = {
+  g: () => true, gs: () => true, b: () => true, bs: () => true,
+  deco: s => s.stats.granted >= 3 || s.chapter >= 1,
+  dab: s => s.chapter >= 1,
+  vig: s => s.chapter >= 1 || !!s.flags.robbed,
+  size: s => s.chapter >= 1,
+};
