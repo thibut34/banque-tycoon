@@ -4,73 +4,81 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Banque Tycoon</title>
-<meta name="description" content="Simulateur de banque : prêts, dépôts, marchés, agences, crises et scandales.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏦</text></svg>">
+<meta name="description" content="Simulateur de banque : de Montpellier à Mars. Agences, guichets, prêts, marchés, crises et concurrents.">
+<meta name="theme-color" content="#0b0e14">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%236366f1'/><path d='M20 78h60M28 78V46M42 78V46M58 78V46M72 78V46M16 46 50 22l34 24z' stroke='white' stroke-width='7' fill='none' stroke-linejoin='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <!-- Écran d'accueil -->
 <div id="start" class="screen">
+  <div class="start-bg"></div>
   <div class="start-box">
-    <div class="logo">🏦</div>
+    <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9.5 21V10M14.5 21V10M19 21V10M2.5 10 12 3.5 21.5 10z"/></svg></div>
     <h1>Banque <span>Tycoon</span></h1>
-    <p class="tagline">Prêtez, spéculez, survivez aux crises… et devenez la banque la plus puissante du monde (et de la Lune).</p>
+    <p class="tagline">Ouvrez une petite agence à Montpellier. Embauchez, prêtez, survivez aux crises… et devenez la première banque du monde. Puis de la Lune.</p>
 
-    <div id="continueBox" hidden>
-      <button class="btn big gold" data-act="continue">▶ Continuer la partie</button>
-      <p class="muted small" id="continueInfo"></p>
-      <div class="sep">ou nouvelle partie</div>
-    </div>
-
-    <label class="field">Nom de votre banque
-      <div class="row">
-        <input id="bankName" maxlength="32" autocomplete="off">
-        <button class="btn ghost" data-act="randName" title="Nom au hasard">🎲</button>
+    <div class="start-card">
+      <div id="continueBox" hidden>
+        <button class="btn big primary" data-act="continue">Continuer la partie</button>
+        <p class="muted small center" id="continueInfo"></p>
+        <div class="sep">ou</div>
       </div>
-    </label>
-
-    <div class="field">Difficulté</div>
-    <div class="diffs" id="diffs"></div>
-
-    <button class="btn big gold" data-act="newGame">🚀 Ouvrir ma banque</button>
-    <button class="btn ghost" data-act="help">❓ Comment jouer</button>
-
+      <label class="field">Nom de votre banque
+        <div class="row">
+          <input id="bankName" maxlength="32" autocomplete="off">
+          <button class="btn ghost" data-act="randName" title="Nom au hasard">🎲</button>
+        </div>
+      </label>
+      <button class="btn big gold" data-act="newGame">Ouvrir ma banque</button>
+      <button class="btn ghost full" data-act="help">Comment jouer</button>
+    </div>
     <div id="leaderboard"></div>
   </div>
 </div>
 
 <!-- Jeu -->
 <div id="game" hidden>
-  <header id="topbar">
-    <div class="tb-left">
-      <div class="bank-name" id="tbName"></div>
-      <div class="tb-date"><span id="tbDate"></span> <span id="tbEcon" class="econ-pill"></span></div>
-    </div>
-    <div class="speeds" id="speeds">
-      <button data-act="speed" data-v="0" title="Pause (Espace)">⏸</button>
-      <button data-act="speed" data-v="1" title="Normal">▶</button>
-      <button data-act="speed" data-v="2" title="Rapide">▶▶</button>
-      <button data-act="speed" data-v="3" title="Très rapide">▶▶▶</button>
-    </div>
-    <div class="tb-kpis">
-      <div><small>Liquidités</small><b id="tbCash"></b></div>
-      <div><small>Fonds propres</small><b id="tbEq"></b></div>
-      <div><small>Solvabilité</small><b id="tbRatio"></b></div>
-      <div><small>Réputation</small><b id="tbRep"></b></div>
-    </div>
-    <button class="btn ghost icon-btn" data-act="menu" title="Menu">☰</button>
-  </header>
-
-  <nav id="tabs"></nav>
-  <main id="panel"></main>
-
-  <div id="ticker"><div id="tickerText"></div></div>
+  <aside id="side">
+    <div class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9.5 21V10M14.5 21V10M19 21V10M2.5 10 12 3.5 21.5 10z"/></svg></span><div class="brand-txt"><b id="tbName"></b><small id="chapterPill"></small></div></div>
+    <nav id="tabs"></nav>
+  </aside>
+  <div id="main">
+    <header id="topbar">
+      <div class="tb-date"><b id="tbDate"></b><span id="tbEcon" class="econ-pill"></span></div>
+      <div class="tb-kpis">
+        <div><small>Liquidités</small><b id="tbCash"></b></div>
+        <div><small>Fonds propres</small><b id="tbEq"></b></div>
+        <div><small>Solvabilité</small><b id="tbRatio"></b></div>
+        <div><small>Réputation</small><b id="tbRep"></b></div>
+        <div><small>Classement</small><b id="tbRank"></b></div>
+      </div>
+      <div class="tb-actions">
+        <button class="btn icon ghost" id="muteBtn" data-act="mute" title="Son"></button>
+        <button class="btn icon ghost" data-act="menu" title="Menu et pause (Échap)"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 5v14M15 5v14"/></svg></button>
+      </div>
+    </header>
+    <main id="panel"></main>
+    <div id="ticker"><div id="tickerText"></div></div>
+  </div>
 </div>
 
+<div id="coach" hidden></div>
 <div id="modal" hidden></div>
 <div id="toasts"></div>
 
-<script src="game.js"></script>
+<script src="js/util.js"></script>
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/events.js"></script>
+<script src="js/floor.js"></script>
+<script src="js/views1.js"></script>
+<script src="js/views2.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
