@@ -51,7 +51,7 @@ function renderPanel(force) {
   if (!S) return;
   if (!force && !canRender()) return;
   if (ui.tab === 'plan' && !force && $('#floor')) { renderPlanSide(); ui.dirty = false; return; }
-  const views = { dash: vDash, plan: vPlan, loans: vLoans, deposits: vDeposits, world: vWorld, markets: vMarkets, missions: vMissions, ranking: vRanking, cb: vCB, upgrades: vUpgrades, me: vMe, achs: vAchs };
+  const views = { dash: vDash, plan: vPlan, loans: vLoans, deposits: vProducts, world: vWorld, markets: vMarkets, missions: vMissions, ranking: vRanking, cb: vCB, upgrades: vUpgrades, me: vMe, achs: vAchs };
   const st = $('#panel').scrollTop;
   const alert = S.surveillance ? `<div class="alert red">${ic('alert')}<div><b>Banque sous surveillance</b> : ratio de solvabilité sous ${minRatio(S)} % (${S.lowCap}/6 mois avant retrait de licence). Nouveaux prêts, achats d’actifs et bonus interdits.</div></div>` : '';
   $('#panel').innerHTML = `<div class="page">${alert}${views[ui.tab]()}</div>`;
@@ -66,7 +66,7 @@ function vDash() {
   const s = S, eq = equity(s), E = ECON[s.economy], pl = s.lastPL, lo = loansOut(s), pv = portfolioValue(s), ch = CHAPTERS[s.chapter];
   const nextE = s.upgrades.quantique && s.nextEcon ? `<p>⚛️ Prédiction quantique : <b>${ECON[s.nextEcon].label}</b> dans ${s.econTimer} mois.</p>` : '';
   const plRows = pl ? [
-    ['Intérêts des prêts', pl.interest], ['Frais et distributeurs', pl.fees], ['Coupons obligataires', pl.coupons], ['Rémunération des réserves', pl.reserves || 0],
+    ['Intérêts des prêts', pl.interest], ['Frais et commissions', pl.fees], ['Coupons obligataires', pl.coupons], ['Rémunération des réserves', pl.reserves || 0],
     ['Intérêts versés aux épargnants', -pl.depInt], ['Intérêts banque centrale', -pl.cbInt], ['Loyers & salaires', -pl.costs],
     ['Pertes sur défauts', -pl.losses], ['Impôt sur les sociétés', -pl.tax],
   ].filter(([, v]) => v).map(([l, v]) => `<tr><td>${l}</td><td class="r ${cls(v)}">${money(v)}</td></tr>`).join('') + `<tr class="total"><td>Résultat net</td><td class="r ${cls(pl.net)}">${money(pl.net)}</td></tr>` : '<tr><td class="muted">Disponible à la fin du premier mois.</td></tr>';
@@ -201,28 +201,6 @@ function vLoans() {
     ${kpi('Défauts historiques', s.stats.defaults, `sur ${s.stats.granted} prêts`)}
   </div>
   ${card('Portefeuille de prêts', `<div class="scroll"><table><tr><th>Client</th><th>Note</th><th class="r">Restant dû</th><th class="r">Taux</th><th class="r">Reste</th></tr>${list || '<tr><td class="muted" colspan="5">Aucun prêt actif.</td></tr>'}</table></div>`)}`;
-}
-
-// ---------- Dépôts ----------
-function vDeposits() {
-  const s = S, target = depositTarget(s), mr = marketDepRate(s);
-  return `<div class="alert blue">${ic('spark')}<div>Les dépôts sont l’argent que vos clients vous confient. Vous les rémunérez, puis vous les prêtez plus cher : c’est la <b>marge d’intérêt</b>. Plus vous avez de guichetiers, plus vos agences peuvent en attirer.</div></div>
-  <div class="grid kpis">
-    ${kpi('Dépôts actuels', money(s.deposits))}
-    ${kpi('Dépôts visés', money(target), 'Vers où vos dépôts évoluent', target > s.deposits ? 'pos' : 'neg')}
-    ${kpi('Capacité du réseau', money(depositCap(s)), `${s.branches.length} agence(s), ${staffTotal(s, 'gs')} guichetiers`)}
-    ${kpi('Coût mensuel', money(s.deposits * s.depositRate / 1200), 'Intérêts versés')}
-  </div>
-  <div class="grid two">
-    ${card('Taux de rémunération des dépôts', `
-      <div class="row"><span class="grow">Votre taux</span><b data-o="drate" class="big-num">${pct(s.depositRate, 2)}</b></div>
-      <input type="range" min="0" max="8" step="0.05" value="${s.depositRate}" data-input="drate">
-      <p class="muted small">Taux moyen des concurrents : <b>${pct(mr, 2)}</b>. Au-dessus, les épargnants affluent ; en dessous, ils partent.</p>
-      <h3 class="sec">Frais bancaires</h3>
-      <div class="seg">${Object.entries(FEES).map(([k, f]) => `<button data-act="fees" data-v="${k}" class="${s.fees === k ? 'on' : ''}">${f.label} (${pct(f.rate)}/an)</button>`).join('')}</div>
-      <p class="muted small">Des frais élevés rapportent plus mais font fuir les clients et baissent votre réputation chaque mois.</p>`)}
-    ${card('Dépôts, liquidités et prêts', '<canvas class="chart" data-chart="deposits"></canvas>')}
-  </div>`;
 }
 
 // ---------- Monde ----------

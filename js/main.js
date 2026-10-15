@@ -29,7 +29,11 @@ const actions = {
     renderPanel(true);
   },
   reject: el => { S.requests = S.requests.filter(x => x.id != el.dataset.id); S.stats.refused++; renderPanel(true); },
-  fees: el => { S.fees = el.dataset.v; renderPanel(true); },
+  launch: el => {
+    const k = el.dataset.p; migrateProducts(S); S.prod[k].on = true;
+    SFX.play('level'); confetti(40); toast(`${PRODUCTS[k].icon} <b>${PRODUCTS[k].name}</b> lancé !`, 'good'); log(`${PRODUCTS[k].icon} Lancement : ${PRODUCTS[k].name}.`, 'good');
+    renderPanel(true);
+  },
   auto: el => { S.auto.on = el.dataset.v === 'on'; renderPanel(true); },
   autoMin: el => { S.auto.min = el.dataset.v; renderPanel(true); },
   autoMargin: el => { S.auto.margin = +el.dataset.v; renderPanel(true); },
@@ -163,7 +167,6 @@ const actions = {
     closeModal(true);
     const name = $('#bankName').value.trim() || randomBankName();
     S = null; const s = newState(name); S = s;
-    s.requests.push(makeRequest(s, 'auto'));
     startGame(s);
     setTimeout(() => { ui.modal = true; showModal(WELCOME()); }, 200);
   },
@@ -207,18 +210,21 @@ function confetti(n = 90) {
 
 // ---------- Tutoriel ----------
 const TUTO = [
-  { tab: 'plan', txt: 'Bienvenue, PDG ! Votre siège est à <b>Montpellier</b>. Ouvrez <b>Ma banque</b> pour voir le plan de votre agence.', done: () => ui.tab === 'plan' },
-  { tab: 'plan', txt: 'Un guichet est <b>fermé</b> faute de personnel. Cliquez dessus pour <b>embaucher un guichetier</b>, puis choisissez parmi les candidats. Plus de guichetiers = plus de dépôts.', done: s => getBranch(s, HQ).gs >= 2 },
-  { tab: 'loans', txt: 'Parfait ! Les dépôts servent à prêter. Ouvrez l’onglet <b>Prêts</b> : un client vous attend.', done: () => ui.tab === 'loans' },
-  { tab: 'loans', txt: 'Réglez le <b>taux</b> avec le curseur puis cliquez sur <b>Proposer</b>. Taux élevé = plus de gains, mais le client peut refuser.', done: s => s.flags.offered },
-  { tab: 'missions', txt: 'Bravo ! Vos objectifs sont dans <b>Missions</b>. Terminez les chapitres pour ouvrir des agences en France, puis dans le monde entier.', done: () => ui.tab === 'missions' },
-  { tab: null, txt: 'Dernier conseil : gardez toujours des <b>liquidités</b> et surveillez votre <b>ratio de solvabilité</b> (8 % minimum). Bonne chance !', btn: 'C’est parti' },
+  { tab: 'plan', txt: 'Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est encore vide. Ouvrez <b>Ma banque</b> pour l’aménager.', done: () => ui.tab === 'plan' },
+  { tab: 'plan', txt: 'Commencez par un <b>bureau de conseil</b> : cliquez sur l’outil « Bureau de conseil » ou sur le <b>+</b> du plan.', done: s => getBranch(s, HQ).b >= 1 },
+  { tab: 'plan', txt: 'Recrutez maintenant un <b>conseiller</b>. Choisissez bien : chaque candidat a son caractère.', done: s => getBranch(s, HQ).bs >= 1 },
+  { tab: 'loans', txt: 'Votre conseiller est prêt. Les clients vont venir <b>demander des prêts</b> : ouvrez l’onglet <b>Prêts</b> dès qu’une demande arrive.', done: s => ui.tab === 'loans' && s.requests.length > 0 },
+  { tab: 'loans', txt: 'Prenez votre temps : réglez le <b>taux</b> avec le curseur puis cliquez sur <b>Proposer</b>. Trop cher, le client part ; trop bas, vous ne gagnez rien.', done: s => s.flags.offered },
+  { tab: 'plan', txt: 'Vous prêtez votre propre capital. Pour prêter plus, il faut l’argent des clients : construisez un <b>guichet</b> et recrutez un <b>guichetier</b>.', done: s => staffTotal(s, 'gs') >= 1 },
+  { tab: 'deposits', txt: 'Ouvrez l’onglet <b>Produits</b> et lancez le <b>compte courant</b>. Réglez les frais : 3 €/mois, c’est le prix du marché.', done: s => s.prod && s.prod.cc.on },
+  { tab: 'missions', txt: 'Bravo ! Livret, assurance-vie, cartes et distributeurs viendront ensuite. Suivez vos objectifs dans <b>Missions</b>.', done: () => ui.tab === 'missions' },
+  { tab: null, txt: 'Dernier conseil : gardez toujours des <b>liquidités</b> et surveillez votre <b>ratio de solvabilité</b>. Bonne chance !', btn: 'C’est parti' },
 ];
 function updateCoach(force) {
   const s = S, el = $('#coach');
   if (!s || s.tut < 0 || s.tut >= TUTO.length) { el.hidden = true; if (ui.coachTab) { ui.coachTab = null; renderTabs(); } return; }
   const st = TUTO[s.tut];
-  if (st.done && st.done(s)) { s.tut++; SFX.play('click'); if (s.tut === 3 && !s.requests.some(r => r.type !== 'souv')) s.requests.push(makeRequest(s, 'auto')); return updateCoach(true); }
+  if (st.done && st.done(s)) { s.tut++; SFX.play('click'); return updateCoach(true); }
   if (ui.coachTab !== st.tab) { ui.coachTab = st.tab; renderTabs(); }
   if (!force && el.dataset.step == s.tut && !el.hidden) return;
   el.dataset.step = s.tut; el.hidden = false;
@@ -259,7 +265,7 @@ function startGame(state) {
   floorReset(null);
   $('#start').hidden = true; $('#game').hidden = false;
   $('#muteBtn').innerHTML = ic(prefs.mute ? 'mute' : 'vol');
-  syncStaff(S); checkUnlocks(S, true);
+  migrateProducts(S); syncStaff(S); checkUnlocks(S, true);
   renderTabs(); renderTop(); renderPanel(true); nextNews(); updateCoach(true);
 }
 
@@ -280,7 +286,12 @@ document.addEventListener('input', e => {
     card.querySelector('[data-o=pmt]').textContent = money(payment(r.amount, r.offer, r.dur));
     card.querySelector('[data-o=bar]').style.width = p * 100 + '%';
   }
-  if (el.dataset.input === 'drate') { S.depositRate = +el.value; $('[data-o=drate]').textContent = pct(S.depositRate, 2); }
+  if (el.dataset.input === 'prod') {
+    const k = el.dataset.p, f = el.dataset.f, v = +el.value;
+    if (f === 'rate') S.depositRate = v; else S.prod[k][f] = v;
+    const o = $(`[data-o="${k}-${f}"]`);
+    if (o) o.textContent = f === 'rate' ? pct(v, 2) : k === 'av' ? pct(v) + '/an' : k === 'carte' ? nf0.format(v) + ' €/an' : nf1.format(v) + ' €/mois';
+  }
 });
 document.addEventListener('pointerdown', () => { ui.pointerDown = true; });
 document.addEventListener('pointerup', () => { ui.pointerDown = false; });
@@ -302,6 +313,7 @@ setInterval(() => {
     while (ui.acc >= 1 && !S.over && !ui.modal) { ui.acc--; tickDay(); }
   }
   if (S.over) return;
+  checkUnlocks(S);
   renderTop();
   updateCoach();
   const now = Date.now();

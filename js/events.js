@@ -175,9 +175,9 @@ const EVENTS = [
       { label: 'Demander aux clients de tout ressaisir', sub: '-8 réputation', fn: s => { s.reputation -= 8; } },
     ] };
   } },
-  { id: 'journaliste', w: 1, cond: s => s.fees !== 'bas', make: s => ({ icon: '📰', title: 'Enquête de presse', text: 'Un journaliste prépare un article sur « les frais bancaires abusifs ». Votre banque est citée.', choices: [
-    { label: 'Baisser les frais immédiatement', sub: 'Frais réglés sur « Bas », +5 réputation', fn: s => { s.fees = 'bas'; s.reputation += 5; return 'L’article vous présente en exemple.'; } },
-    { label: 'Assumer', sub: s.fees === 'eleve' ? '-10 réputation' : '-3 réputation', fn: s => { s.reputation -= s.fees === 'eleve' ? 10 : 3; } },
+  { id: 'journaliste', w: 1, cond: s => s.prod && s.prod.cc.on && s.prod.cc.fee > 4.5, make: s => ({ icon: '📰', title: 'Enquête de presse', text: `Un journaliste prépare un article sur « les frais bancaires abusifs ». Vos ${nf1.format(s.prod.cc.fee)} € par mois sont cités.`, choices: [
+    { label: 'Baisser les frais à 2 €/mois', sub: '+5 réputation', fn: s => { s.prod.cc.fee = 2; s.reputation += 5; return 'L’article vous présente en exemple.'; } },
+    { label: 'Assumer', sub: s.prod.cc.fee > 6 ? '-10 réputation' : '-3 réputation', fn: s => { s.reputation -= s.prod.cc.fee > 6 ? 10 : 3; } },
   ] }) },
   { id: 'reseau', w: 1.2, cond: s => s.rivals.some(r => r.eq > 1e6 && r.eq < equity(s) * 0.5) && freeCity(s), make: s => {
     const r = s.rivals.filter(r => r.eq > 1e6 && r.eq < equity(s) * 0.5).sort((a, b) => b.eq - a.eq)[0];

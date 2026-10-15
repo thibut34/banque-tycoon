@@ -128,7 +128,7 @@ function floorStep(dt, b, lay) {
   }
   // Clients
   const lam = (0.25 + 0.12 * cityOf(b).traffic) * (0.6 + S.reputation / 125);
-  floor.spawnAcc += dt * lam;
+  floor.spawnAcc += dt * lam * (b.gs || b.bs || b.dab ? 1 : 0);
   if (floor.spawnAcc >= 1) {
     floor.spawnAcc = 0;
     if (floor.agents.length < 18) {

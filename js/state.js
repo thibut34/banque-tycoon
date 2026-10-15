@@ -8,7 +8,7 @@ let S = null;
 const ui = { tab: 'dash', market: 'cac', tradeAmt: 100000, pointerDown: false, modal: false, dirty: true, event: null, acc: 0, toastKeys: {}, seen: new Set(), branch: HQ, region: 'france' };
 
 function newBranch(id, o = {}) {
-  return Object.assign({ id, size: 1, g: 1, gs: 1, b: 0, bs: 0, dab: 0, vig: 0, deco: 0, sat: 50, since: S ? S.day : 0 }, o);
+  return Object.assign({ id, size: 1, g: 0, gs: 0, b: 0, bs: 0, dab: 0, vig: 0, deco: 0, sat: 50, since: S ? S.day : 0 }, o);
 }
 
 function newState(name) {
@@ -21,13 +21,14 @@ function newState(name) {
   }
   return {
     v: 2, name, day: 0, nextEmp: 0,
-    cash: START.cash, deposits: START.deposits, depositRate: 1.5, fees: 'normal',
+    cash: START.cash, deposits: 0, depCC: 0, depLiv: 0, depositRate: 1.5,
+    prod: { cc: { on: false, fee: 3 }, liv: { on: false }, av: { on: false, fee: 1, aum: 0 }, carte: { on: false, fee: 45 } },
     loans: [], requests: [], nextId: 1,
     cbDebt: 0, policyRate: 3, rateHist: [3],
     economy: 'stable', econTimer: rint(8, 14), nextEcon: null,
     reputation: 50, surveillance: false, lowCap: 0,
     portfolio: {}, cost: {}, market,
-    branches: [newBranch(HQ, { g: 2, gs: 1, b: 1, bs: 1 })], upgrades: {},
+    branches: [newBranch(HQ)], upgrades: {},
     fortune: 0, owned: [],
     history: [], lastPL: null, log: [],
     achievements: {}, flags: {},
@@ -52,11 +53,11 @@ const itemCost = (b, k) => (ITEMS[k].cost || ITEMS[k].hire) * costMult(b);
 function sizeUpCost(b) { const n = SIZES[b.size + 1]; return n ? cityOf(b).build * n.cost : Infinity; }
 const branchNeed = b => cityOf(b).traffic - 1; // guichetiers recommandés
 function satTarget(s, b) {
-  if (!b.gs) return 5;
+  if (!b.gs) return clamp(50 + (b.bs ? 5 : 0) + 4 * b.deco + staffSat(b), 5, 100);
   return clamp(45 + 12 * (staffEff(b, 'gs') - branchNeed(b)) + 4 * b.deco + 5 * b.dab + (b.bs ? 5 : 0) + (s.upgrades.rh ? 10 : 0) + staffSat(b), 5, 100);
 }
-function branchCap(b) { return cityOf(b).cap * (0.25 + 0.3 * staffEff(b, 'gs') + 0.05 * b.dab) * (0.8 + b.sat / 250); }
-function branchLoanF(b) { return cityOf(b).loans * (0.25 + 0.3 * staffEff(b, 'bs')); }
+function branchCap(b) { return cityOf(b).cap * (b.gs ? 0.25 + 0.3 * staffEff(b, 'gs') + 0.05 * b.dab : 0) * (0.8 + b.sat / 250); }
+function branchLoanF(b) { return cityOf(b).loans * 0.45 * staffEff(b, 'bs'); }
 function branchCosts(s, b) {
   const w = wageMult(s, b);
   const wages = b.staff ? b.staff.reduce((a, e) => a + empWage(s, b, e), 0) : (b.gs * ITEMS.gs.wage + b.bs * ITEMS.bs.wage + b.vig * ITEMS.vig.wage) * w;
@@ -111,12 +112,6 @@ function depositCap(s) {
   if (s.upgrades.marketing) c *= 1.25;
   if (s.upgrades.app) c *= 1.2;
   return c;
-}
-const FEES = { bas: { label: 'Bas', rate: 0.2, att: 1.15, rep: 1 }, normal: { label: 'Normaux', rate: 0.6, att: 1, rep: 0 }, eleve: { label: 'Élevés', rate: 1.5, att: 0.8, rep: -2 } };
-function depositTarget(s) {
-  const att = clamp(Math.exp(0.6 * (s.depositRate - marketDepRate(s))), 0.2, 4);
-  const rep = 0.4 + s.reputation / 80;
-  return depositCap(s) * att * rep * FEES[s.fees].att;
 }
 function loanDemand(s) {
   let f = 0; for (const b of s.branches) f += branchLoanF(b);

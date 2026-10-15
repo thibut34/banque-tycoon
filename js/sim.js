@@ -19,7 +19,7 @@ function makeRequest(s, forcedType) {
   return {
     id: s.nextId++, type, name, reason: pick(T.reasons), amount,
     dur: rint(T.dur[0] / 6, T.dur[1] / 6) * 6, score, maxRate: s.policyRate + T.spread + el * 0.8 + rnd(-0.6, 1.6),
-    offer: Math.round(clamp(fair, 0.5, 25) * 10) / 10, expires: s.day + rint(12, 20),
+    offer: Math.round(clamp(fair, 0.5, 25) * 10) / 10, expires: s.day + rint(40, 70),
   };
 }
 function makeSovereign(s) {
@@ -68,9 +68,13 @@ function tickDay() {
   updateDeposits(s);
 
   const retail = s.requests.filter(r => r.type !== 'souv').length;
-  if (retail < 8 && chance(clamp(0.35 * loanDemand(s), 0, 0.9))) {
+  const maxReq = Math.min(10, 1 + 2 * staffTotal(s, 'bs'));
+  // Le tout premier client arrive vite après l'embauche du premier conseiller
+  const first = !s.flags.firstReq && staffTotal(s, 'bs') >= 1 && s.day - (s.flags.bsDay || (s.flags.bsDay = s.day)) >= 4;
+  if (retail < maxReq && (first || chance(clamp(0.2 * loanDemand(s), 0, 0.6)))) {
+    s.flags.firstReq = true;
     s.requests.push(makeRequest(s));
-    if (ui.tab !== 'loans' && !(s.auto && s.auto.on)) toast('🤝 Nouvelle demande de prêt', '', 'req');
+    if (ui.tab !== 'loans' && !(s.auto && s.auto.on)) toast('🤝 Un client vient demander un prêt', '', 'req');
   }
   if (s.chapter >= 4 && s.requests.filter(r => r.type === 'souv').length < 2 && chance(1 / 45)) {
     const r = makeSovereign(s); s.requests.push(r);
@@ -124,13 +128,6 @@ function updateMarket(s) {
   }
 }
 
-function updateDeposits(s) {
-  const target = depositTarget(s);
-  let delta = (target - s.deposits) * 0.015 + s.deposits * 0.003 * gauss();
-  if (s.deposits + delta < 0) delta = -s.deposits;
-  s.deposits += delta; s.cash += delta;
-}
-
 // ---------- Fin de mois ----------
 function monthEnd(s) {
   const econ = ECON[s.economy];
@@ -160,15 +157,16 @@ function monthEnd(s) {
   s.loans = s.loans.filter(l => !l.dead && !l.done);
   if (defaults) toast(`💥 ${defaults} défaut${defaults > 1 ? 's' : ''} de paiement ce mois-ci`, 'bad');
 
-  pl.depInt = s.deposits * s.depositRate / 1200; s.deposits += pl.depInt;
+  migrateProducts(s); reconcile(s);
+  pl.depInt = s.depLiv * s.depositRate / 1200; s.depLiv += pl.depInt; s.deposits = s.depCC + s.depLiv;
   const penalty = s.flags.penalty > s.day ? 3 : 0;
   pl.cbInt = s.cbDebt * (cbRate(s) + penalty) / 1200; s.cash -= pl.cbInt;
   pl.costs = monthlyCosts(s); s.cash -= pl.costs;
-  pl.fees = s.deposits * FEES[s.fees].rate / 1200;
+  const pr = prodRevenue(s); pl.fees = pr.cc + pr.av + pr.carte; pl.prod = pr;
   for (const b of s.branches) pl.fees += dabIncome(b);
   s.cash += pl.fees;
   pl.coupons = holdingValue(s, 'oat') * (s.policyRate + 0.4) / 1200; s.cash += pl.coupons;
-  pl.reserves = Math.max(0, s.cash) * Math.max(0, s.policyRate - 0.5) / 1200; s.cash += pl.reserves;
+  pl.reserves = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1.5) / 1200; s.cash += pl.reserves;
 
   const profit = pl.interest + pl.fees + pl.coupons + pl.reserves - pl.depInt - pl.cbInt - pl.costs - pl.losses;
   if (profit > 0) { pl.tax = profit * 0.15; s.cash -= pl.tax; }
@@ -180,7 +178,7 @@ function monthEnd(s) {
   // Satisfaction des agences et réputation
   staffMonth(s);
   for (const b of s.branches) b.sat += (satTarget(s, b) - b.sat) * 0.5;
-  let dr = (50 - s.reputation) * 0.03 + FEES[s.fees].rep + (s.upgrades.app ? 1 : 0) + (avgSat(s) - 50) / 40;
+  let dr = (50 - s.reputation) * 0.03 + feeRep(s) + (s.upgrades.app ? 1 : 0) + (avgSat(s) - 50) / 40;
   if (s.surveillance) dr -= 3;
   s.reputation = clamp(s.reputation + dr, 0, 100);
 

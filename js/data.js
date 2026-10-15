@@ -6,7 +6,7 @@
 const SAVE_KEY = 'banqueTycoon.save.v2';
 const BEST_KEY = 'banqueTycoon.best.v2';
 const HQ = 'montpellier';
-const START = { cash: 2.5e6, deposits: 1.5e6 }; // 1 M€ de fonds propres, pour tout le monde
+const START = { cash: 1e6, deposits: 0 }; // 1 M€ de capital et une agence vide, pour tout le monde
 
 const ECON = {
   croissance: { label: 'Croissance', color: '#34d399', pd: 0.7, drift: 0.0009, demand: 1.3, rival: 0.009, next: { stable: 5, recession: 3, crise: 1 } },
@@ -167,10 +167,10 @@ const RIVALS = [
 // ---------- Campagne : chapitres et objectifs ----------
 const G = (txt, cur, goal, fmt) => ({ txt, cur, goal, fmt });
 const CHAPTERS = [
-  { name: 'Le premier guichet', desc: 'Votre petite banque ouvre ses portes à Montpellier. Apprenez le métier.', reward: 250e3, goals: [
-    G('Accorder 3 prêts', s => s.stats.granted, 3), G('Avoir 2 guichetiers', s => staffTotal(s, 'gs'), 2), G('Fonds propres', s => equity(s), 1.1e6, money)] },
-  { name: 'Banque de quartier', desc: 'Les Montpelliérains vous font confiance. Il est temps de grandir.', reward: 600e3, goals: [
-    G('Accorder 15 prêts', s => s.stats.granted, 15), G('Posséder 3 agences', s => s.branches.length, 3), G('Installer un distributeur', s => staffTotal(s, 'dab'), 1), G('Fonds propres', s => equity(s), 2e6, money)] },
+  { name: 'Les premiers clients', desc: 'Votre agence de Montpellier est vide. Installez un conseiller, prêtez, puis ouvrez des comptes.', reward: 250e3, goals: [
+    G('Recruter un conseiller', s => staffTotal(s, 'bs'), 1), G('Accorder 3 prêts', s => s.stats.granted, 3), G('Recruter un guichetier', s => staffTotal(s, 'gs'), 1), G('Clients avec un compte', s => s.depCC / AVG_BALANCE, 200)] },
+  { name: 'Banque de quartier', desc: 'Les Montpelliérains vous font confiance. Lancez le livret, les cartes, et une deuxième agence.', reward: 600e3, goals: [
+    G('Accorder 15 prêts', s => s.stats.granted, 15), G('Épargne sur les livrets', s => s.depLiv || 0, 1e6, money), G('Installer un distributeur', s => staffTotal(s, 'dab'), 1), G('Posséder 2 agences', s => s.branches.length, 2), G('Fonds propres', s => equity(s), 1.4e6, money)] },
   { name: 'Le réseau régional', desc: 'Couvrez la France et devenez une banque qui compte. À la clé : la licence européenne.', reward: 1.5e6, goals: [
     G('Agences en France', s => regionCount(s, 'france'), 6), G('Conseillers embauchés', s => staffTotal(s, 'bs'), 8), G('Réputation', s => s.reputation, 60), G('Fonds propres', s => equity(s), 8e6, money)] },
   { name: 'Cap sur l’Europe', desc: 'Londres, Genève, Berlin… L’Europe vous ouvre ses portes.', reward: 5e6, goals: [
@@ -247,7 +247,7 @@ const NEWS = [
 ];
 
 const TABS = [
-  ['dash', 'Accueil'], ['plan', 'Ma banque'], ['loans', 'Prêts'], ['deposits', 'Dépôts'], ['world', 'Monde'], ['markets', 'Marchés'],
+  ['dash', 'Accueil'], ['plan', 'Ma banque'], ['loans', 'Prêts'], ['deposits', 'Produits'], ['world', 'Monde'], ['markets', 'Marchés'],
   ['missions', 'Missions'], ['ranking', 'Classement'], ['cb', 'Banque centrale'], ['upgrades', 'Améliorations'], ['me', 'Patron'], ['achs', 'Succès'],
 ];
 
@@ -255,7 +255,7 @@ const TABS = [
 // Au début, seuls l'essentiel est visible ; le reste apparaît avec la progression.
 const TAB_UNLOCK = {
   dash: () => true, plan: () => true, loans: () => true, missions: () => true,
-  deposits: s => s.stats.granted >= 1 || s.chapter >= 1,
+  deposits: s => staffTotal(s, 'gs') >= 1 || s.chapter >= 1,
   world: s => s.chapter >= 1,
   upgrades: s => s.chapter >= 1,
   cb: s => s.chapter >= 1 || s.cbDebt > 0,
@@ -265,7 +265,7 @@ const TAB_UNLOCK = {
   achs: s => Object.keys(s.achievements).length >= 3,
 };
 const TAB_HINT = {
-  deposits: 'Réglez la rémunération de l’épargne de vos clients.',
+  deposits: 'Comptes, livrets, assurance-vie, cartes : réglez vos produits et vos frais.',
   world: 'Ouvrez de nouvelles agences sur la carte.',
   upgrades: 'Achetez des améliorations pour toute la banque.',
   cb: 'Empruntez à la banque centrale si vous manquez de liquidités.',
@@ -275,7 +275,8 @@ const TAB_HINT = {
   achs: 'Retrouvez vos succès et vos statistiques.',
 };
 const ITEM_UNLOCK = {
-  g: () => true, gs: () => true, b: () => true, bs: () => true,
+  b: () => true, bs: () => true,
+  g: s => s.stats.granted >= 1 || !!s.flags.offered || s.chapter >= 1, gs: s => s.stats.granted >= 1 || !!s.flags.offered || s.chapter >= 1,
   deco: s => s.stats.granted >= 3 || s.chapter >= 1,
   dab: s => s.chapter >= 1,
   vig: s => s.chapter >= 1 || !!s.flags.robbed,
