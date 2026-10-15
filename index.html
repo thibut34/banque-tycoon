@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banque Tycoon</title>
+<meta name="description" content="Simulateur de banque : prêts, dépôts, marchés, agences, crises et scandales.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏦</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Écran d'accueil -->
+<div id="start" class="screen">
+  <div class="start-box">
+    <div class="logo">🏦</div>
+    <h1>Banque <span>Tycoon</span></h1>
+    <p class="tagline">Prêtez, spéculez, survivez aux crises… et devenez la banque la plus puissante du monde (et de la Lune).</p>
+
+    <div id="continueBox" hidden>
+      <button class="btn big gold" data-act="continue">▶ Continuer la partie</button>
+      <p class="muted small" id="continueInfo"></p>
+      <div class="sep">ou nouvelle partie</div>
+    </div>
+
+    <label class="field">Nom de votre banque
+      <div class="row">
+        <input id="bankName" maxlength="32" autocomplete="off">
+        <button class="btn ghost" data-act="randName" title="Nom au hasard">🎲</button>
+      </div>
+    </label>
+
+    <div class="field">Difficulté</div>
+    <div class="diffs" id="diffs"></div>
+
+    <button class="btn big gold" data-act="newGame">🚀 Ouvrir ma banque</button>
+    <button class="btn ghost" data-act="help">❓ Comment jouer</button>
+
+    <div id="leaderboard"></div>
+  </div>
+</div>
+
+<!-- Jeu -->
+<div id="game" hidden>
+  <header id="topbar">
+    <div class="tb-left">
+      <div class="bank-name" id="tbName"></div>
+      <div class="tb-date"><span id="tbDate"></span> <span id="tbEcon" class="econ-pill"></span></div>
+    </div>
+    <div class="speeds" id="speeds">
+      <button data-act="speed" data-v="0" title="Pause (Espace)">⏸</button>
+      <button data-act="speed" data-v="1" title="Normal">▶</button>
+      <button data-act="speed" data-v="2" title="Rapide">▶▶</button>
+      <button data-act="speed" data-v="3" title="Très rapide">▶▶▶</button>
+    </div>
+    <div class="tb-kpis">
+      <div><small>Liquidités</small><b id="tbCash"></b></div>
+      <div><small>Fonds propres</small><b id="tbEq"></b></div>
+      <div><small>Solvabilité</small><b id="tbRatio"></b></div>
+      <div><small>Réputation</small><b id="tbRep"></b></div>
+    </div>
+    <button class="btn ghost icon-btn" data-act="menu" title="Menu">☰</button>
+  </header>
+
+  <nav id="tabs"></nav>
+  <main id="panel"></main>
+
+  <div id="ticker"><div id="tickerText"></div></div>
+</div>
+
+<div id="modal" hidden></div>
+<div id="toasts"></div>
+
+<script src="game.js"></script>
+</body>
+</html>
