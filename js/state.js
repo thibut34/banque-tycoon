@@ -20,7 +20,7 @@ function newState(name) {
     market[id] = { price: p, hist };
   }
   return {
-    v: 2, name, day: 0,
+    v: 2, name, day: 0, nextEmp: 0,
     cash: START.cash, deposits: START.deposits, depositRate: 1.5, fees: 'normal',
     loans: [], requests: [], nextId: 1,
     cbDebt: 0, policyRate: 3, rateHist: [3],
@@ -34,7 +34,7 @@ function newState(name) {
     chapter: 0, challenge: null, nextChallenge: 150, tut: 0,
     auto: { on: false, min: 'B', margin: 0.5 },
     rivals: RIVALS.map(r => ({ id: r.id, eq: r.eq, hist: [r.eq] })),
-    stats: { granted: 0, defaults: 0, refused: 0, crises: 0, interest: 0, bonus: 0, events: 0, souv: 0, challenges: 0, profit: 0 },
+    stats: { granted: 0, defaults: 0, refused: 0, crises: 0, interest: 0, bonus: 0, events: 0, souv: 0, challenges: 0, profit: 0, promos: 0 },
     over: false,
   };
 }
@@ -53,13 +53,14 @@ function sizeUpCost(b) { const n = SIZES[b.size + 1]; return n ? cityOf(b).build
 const branchNeed = b => cityOf(b).traffic - 1; // guichetiers recommandés
 function satTarget(s, b) {
   if (!b.gs) return 5;
-  return clamp(45 + 12 * (b.gs - branchNeed(b)) + 4 * b.deco + 5 * b.dab + (b.bs ? 5 : 0) + (s.upgrades.rh ? 10 : 0), 5, 100);
+  return clamp(45 + 12 * (staffEff(b, 'gs') - branchNeed(b)) + 4 * b.deco + 5 * b.dab + (b.bs ? 5 : 0) + (s.upgrades.rh ? 10 : 0) + staffSat(b), 5, 100);
 }
-function branchCap(b) { return cityOf(b).cap * (0.25 + 0.3 * b.gs + 0.05 * b.dab) * (0.8 + b.sat / 250); }
-function branchLoanF(b) { return cityOf(b).loans * (0.25 + 0.3 * b.bs); }
+function branchCap(b) { return cityOf(b).cap * (0.25 + 0.3 * staffEff(b, 'gs') + 0.05 * b.dab) * (0.8 + b.sat / 250); }
+function branchLoanF(b) { return cityOf(b).loans * (0.25 + 0.3 * staffEff(b, 'bs')); }
 function branchCosts(s, b) {
   const w = wageMult(s, b);
-  return cityOf(b).rent + (b.gs * ITEMS.gs.wage + b.bs * ITEMS.bs.wage + b.vig * ITEMS.vig.wage) * w + b.dab * ITEMS.dab.maint;
+  const wages = b.staff ? b.staff.reduce((a, e) => a + empWage(s, b, e), 0) : (b.gs * ITEMS.gs.wage + b.bs * ITEMS.bs.wage + b.vig * ITEMS.vig.wage) * w;
+  return cityOf(b).rent + wages + b.dab * ITEMS.dab.maint;
 }
 const dabIncome = b => b.dab * cityOf(b).traffic * 1500;
 function avgSat(s) {

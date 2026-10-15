@@ -122,6 +122,16 @@ const actions = {
     ui.dirty = true; renderPanel(true);
   },
   closeModal: () => closeModal(),
+  pickCand: el => {
+    const c = ui.cands && ui.cands[+el.dataset.i]; if (!c) return;
+    closeModal();
+    if (doBuild(c.role, c)) { ui.emp = c.id; renderPlanSide(); }
+  },
+  promote: el => { promoteEmp(el.dataset.id); renderPlanSide(); },
+  train: el => { trainEmp(el.dataset.id); renderPlanSide(); },
+  selEmp: el => { ui.emp = ui.emp == el.dataset.id ? null : +el.dataset.id; renderPlanSide(); },
+  fire: el => { const [, e] = findEmp(el.dataset.id); if (e) confirmBox('📦', `Licencier ${esc(e.name)} ?`, 'Ses clients regretteront son départ (-1 réputation).', 'doFire', 'Licencier', e.id); },
+  doFire: el => { fireEmp(el.dataset.id); closeModal(); renderPlanSide(); },
   toggleMore: el => { ui.openMore = !el.parentNode.open; },
   menu: () => {
     ui.modal = true;
@@ -161,6 +171,22 @@ function randomBankName() {
     pick(['du Lapin d’Or', 'des Escargots Réunis', 'de la Baguette', 'Mutuel du Camembert', 'des Pigeons Voyageurs', 'Galactique', 'du Petit Cochon', 'de la Lune', 'des Licornes', 'du Croissant']);
 }
 
+// ---------- Recrutement ----------
+function showCandidates(role) {
+  const b = getBranch(S, ui.branch);
+  ui.cands = makeCandidates(role); ui.modal = true;
+  const cards = ui.cands.map((e, i) => {
+    const cost = hireCost(b, e), T = TRAITS[e.trait];
+    return `<button class="cand" data-act="pickCand" data-i="${i}" ${S.cash < cost ? 'disabled' : ''}>
+      ${avatar(e, 64)}<b>${esc(e.name)}</b><small>${empTitle(e)}</small><span class="stars">${stars(e.lvl)}</span>
+      <span class="trait" title="${esc(T.desc)}">${T.icon} ${T.name}</span><small class="muted">${T.desc}</small>
+      <span class="cand-foot"><small>Salaire ${money(empWage(S, b, e))}/mois</small><b>${money(cost)}</b></span></button>`;
+  }).join('');
+  showModal(`<h2>Recruter : ${STAFF_ROLES[role].toLowerCase()}</h2><p class="center muted">Trois candidats se présentent à ${CITIES[b.id].name}. Les plus expérimentés coûtent plus cher, mais travaillent mieux.</p>
+    <div class="cands">${cards}</div><div class="choices"><button class="btn ghost" data-act="closeModal">Annuler</button></div>`);
+  $('#modal .modal-box').classList.add('wide');
+}
+
 // ---------- Confettis ----------
 function confetti(n = 90) {
   const cols = ['#6366f1', '#818cf8', '#f4c25b', '#34d399', '#f472b6', '#60a5fa'];
@@ -175,7 +201,7 @@ function confetti(n = 90) {
 // ---------- Tutoriel ----------
 const TUTO = [
   { tab: 'plan', txt: 'Bienvenue, PDG ! Votre siège est à <b>Montpellier</b>. Ouvrez <b>Ma banque</b> pour voir le plan de votre agence.', done: () => ui.tab === 'plan' },
-  { tab: 'plan', txt: 'Un guichet est <b>fermé</b> faute de personnel. Cliquez dessus pour <b>embaucher un guichetier</b> : plus de guichetiers = plus de dépôts.', done: s => getBranch(s, HQ).gs >= 2 },
+  { tab: 'plan', txt: 'Un guichet est <b>fermé</b> faute de personnel. Cliquez dessus pour <b>embaucher un guichetier</b>, puis choisissez parmi les candidats. Plus de guichetiers = plus de dépôts.', done: s => getBranch(s, HQ).gs >= 2 },
   { tab: 'loans', txt: 'Parfait ! Les dépôts servent à prêter. Ouvrez l’onglet <b>Prêts</b> : un client vous attend.', done: () => ui.tab === 'loans' },
   { tab: 'loans', txt: 'Réglez le <b>taux</b> avec le curseur puis cliquez sur <b>Proposer</b>. Taux élevé = plus de gains, mais le client peut refuser.', done: s => s.flags.offered },
   { tab: 'missions', txt: 'Bravo ! Vos objectifs sont dans <b>Missions</b>. Terminez les chapitres pour ouvrir des agences en France, puis dans le monde entier.', done: () => ui.tab === 'missions' },
@@ -226,7 +252,7 @@ function startGame(state) {
   floorReset(null);
   $('#start').hidden = true; $('#game').hidden = false;
   $('#muteBtn').innerHTML = ic(prefs.mute ? 'mute' : 'vol');
-  checkUnlocks(S, true);
+  syncStaff(S); checkUnlocks(S, true);
   renderTabs(); renderTop(); renderPanel(true); nextNews(); updateCoach(true);
 }
 

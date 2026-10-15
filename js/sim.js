@@ -63,6 +63,7 @@ function autopilot(s) {
 function tickDay() {
   const s = S;
   s.day++;
+  syncStaff(s);
   updateMarket(s);
   updateDeposits(s);
 
@@ -177,6 +178,7 @@ function monthEnd(s) {
   s.lastPL = pl;
 
   // Satisfaction des agences et réputation
+  staffMonth(s);
   for (const b of s.branches) b.sat += (satTarget(s, b) - b.sat) * 0.5;
   let dr = (50 - s.reputation) * 0.03 + FEES[s.fees].rep + (s.upgrades.app ? 1 : 0) + (avgSat(s) - 50) / 40;
   if (s.surveillance) dr -= 3;

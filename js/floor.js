@@ -40,8 +40,13 @@ const floor = { id: null, size: 0, agents: [], walkers: [], busy: {}, pops: [], 
 function floorReset(id) { Object.assign(floor, { id, size: 0, agents: [], walkers: [], busy: {}, pops: [], spawnAcc: 0, walkAcc: 0, hover: null }); }
 
 // ---------- Construction / embauche ----------
-function doBuild(k) {
+function doBuild(k, cand) {
   const b = getBranch(S, ui.branch); if (!b) return false;
+  if (STAFF_KEYS.includes(k) && !cand) {
+    if (k !== 'vig' && b[k] >= b[k[0]]) return toast(`Construisez d’abord un ${k === 'gs' ? 'guichet' : 'bureau'}`, 'bad'), false;
+    if (k === 'vig' && b.vig >= SIZES[b.size].vig) return toast('Plus de place : agrandissez l’agence', 'bad'), false;
+    showCandidates(k); return false;
+  }
   const lim = SIZES[b.size], c = cityOf(b);
   let cost = 0, msg = '';
   if (k === 'size') { if (b.size >= 3) return false; cost = sizeUpCost(b); msg = `${c.name} passe au niveau ${b.size + 1} : ${SIZES[b.size + 1].name}`; }
@@ -51,9 +56,11 @@ function doBuild(k) {
     if (b[k] >= lim[k]) return toast('Plus de place : agrandissez l’agence', 'bad'), false;
     cost = itemCost(b, k); msg = `${ITEMS[k].name} ${k === 'vig' ? 'embauché' : 'installé'}`;
   }
+  if (cand) { cost = hireCost(b, cand); msg = `${cand.name} rejoint l’équipe`; }
   if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad'), false;
   S.cash -= cost;
   if (k === 'size') b.size++; else b[k]++;
+  if (cand) { syncStaff(S); const list = staffOf(b, k); const auto = list[list.length - 1]; delete cand.cand; Object.assign(auto, cand, { since: S.day }); }
   SFX.play(k === 'size' ? 'level' : 'build');
   log(`${k === 'size' ? '🏗️' : ITEMS[k].icon} ${c.name} : ${msg.toLowerCase()} (${money(cost)}).`);
   toast(`${k === 'size' ? '🏗️' : ITEMS[k].icon} ${msg}`, 'good');
@@ -69,10 +76,11 @@ function doBuild(k) {
 function slotAction(b, kind, i) {
   if (kind === 'g' || kind === 'b') {
     const built = b[kind], staffed = b[kind + 's'];
-    if (i < staffed) return { label: kind === 'g' ? 'Guichet ouvert' : 'Conseiller au travail' };
+    if (i < staffed) { const e = staffOf(b, kind + 's')[i]; return e ? { emp: e.id, label: `${e.name} — ${empTitle(e)} (voir la fiche)` } : { label: 'Au travail' }; }
     if (i < built) return { k: kind + 's', label: `Embaucher un ${kind === 'g' ? 'guichetier' : 'conseiller'} — ${money(itemCost(b, kind + 's'))}` };
     return { k: kind, label: `Construire un ${SLOT_LABEL[kind]} — ${money(itemCost(b, kind))}` };
   }
+  if (kind === 'vig' && i < b.vig) { const e = staffOf(b, 'vig')[i]; return e ? { emp: e.id, label: `${e.name} — ${empTitle(e)} (voir la fiche)` } : { label: 'Vigile' }; }
   if (i < b[kind]) return { label: ITEMS[kind].name };
   return { k: kind, label: `${kind === 'vig' ? 'Embaucher un vigile' : 'Installer : ' + SLOT_LABEL[kind]} — ${money(itemCost(b, kind))}` };
 }
@@ -184,13 +192,15 @@ function floorMount() {
   cv.addEventListener('pointermove', e => {
     const r = cv.getBoundingClientRect(), h = slotAt(e.clientX - r.left, e.clientY - r.top);
     floor.hover = h ? { ...h, px: e.clientX - r.left, py: e.clientY - r.top } : null;
-    cv.style.cursor = h && slotAction(getBranch(S, ui.branch), h.kind, h.i).k ? 'pointer' : 'default';
+    const sa = h && slotAction(getBranch(S, ui.branch), h.kind, h.i);
+    cv.style.cursor = sa && (sa.k || sa.emp) ? 'pointer' : 'default';
   });
   cv.addEventListener('pointerleave', () => { floor.hover = null; });
   cv.addEventListener('click', e => {
     const r = cv.getBoundingClientRect(), h = slotAt(e.clientX - r.left, e.clientY - r.top);
     if (!h) return;
     const act = slotAction(getBranch(S, ui.branch), h.kind, h.i);
+    if (act.emp) { ui.emp = act.emp; renderPlanSide(); const el = $(`[data-emp="${act.emp}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     if (act.k && doBuild(act.k)) { renderTop(); renderPlanSide(); }
   });
 }

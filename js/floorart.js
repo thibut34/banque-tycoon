@@ -53,6 +53,12 @@ function drawPerson(c, v, a, role) {
   c.fillStyle = a.skin || '#f1c9a5'; c.beginPath(); c.arc(fx, fy - s * 1.15, s * 0.19, 0, 7); c.fill();
   c.fillStyle = a.hair || '#2b1d14'; c.beginPath(); c.arc(fx, fy - s * 1.18, s * 0.19, Math.PI * 1.05, Math.PI * 1.95); c.fill();
   if (role === 'vig') { c.fillStyle = '#111827'; c.fillRect(fx - s * 0.22, fy - s * 1.36, s * 0.44, s * 0.1); c.fillRect(fx - s * 0.15, fy - s * 1.46, s * 0.3, s * 0.12); }
+  if (a.emp) { // badge de niveau, et étoile si une promotion est possible
+    const e = a.emp, bx = fx - s * 0.32, by = fy - s * 1.45, r = s * 0.16;
+    c.fillStyle = ui.emp == e.id ? '#6366f1' : '#0f172a'; c.beginPath(); c.arc(bx, by, r, 0, 7); c.fill();
+    c.fillStyle = '#fbbf24'; c.font = `800 ${Math.max(8, s * 0.2)}px Inter, system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(e.lvl, bx, by + 0.5);
+    if (e.lvl < MAX_LVL && e.xp >= xpNeed(e.lvl)) { c.font = `${s * 0.42}px Inter, system-ui`; c.fillText('⭐', fx + s * 0.3, fy - s * 1.62 + Math.sin(floor.t * 4) * s * 0.06); }
+  }
   if (a.angry) { c.strokeStyle = '#ef4444'; c.lineWidth = 2; c.beginPath(); c.ellipse(fx, fy0, s * 0.36, s * 0.18, 0, 0, 7); c.stroke(); }
   if (a.emote) {
     const ex = fx + s * 0.25, ey = fy - s * 1.7;
@@ -182,10 +188,10 @@ function drawFloor(cv, b, lay) {
   // Objets et personnages triés par profondeur
   const items = [];
   const add = (d, f) => items.push([d, f]);
-  lay.g.forEach((sl, i) => { if (i < b.g) { add(sl.x + sl.y, () => drawCounter(c, v, sl, i < b.gs)); if (i < b.gs) add(sl.staff[0] + sl.staff[1], () => drawPerson(c, v, { x: sl.staff[0], y: sl.staff[1], skin: SKINS[i % 6], hair: HAIRS[i % 7] }, 'g')); } });
-  lay.b.forEach((sl, i) => { if (i < b.b) { add(sl.x + sl.y, () => drawDesk(c, v, sl, i < b.bs)); if (i < b.bs) add(sl.staff[0] + sl.staff[1], () => drawPerson(c, v, { x: sl.staff[0], y: sl.staff[1], skin: SKINS[(i + 3) % 6], hair: HAIRS[(i + 2) % 7] }, 'b')); } });
+  lay.g.forEach((sl, i) => { if (i < b.g) { add(sl.x + sl.y, () => drawCounter(c, v, sl, i < b.gs)); if (i < b.gs) { const e = staffOf(b, 'gs')[i]; add(sl.staff[0] + sl.staff[1], () => drawPerson(c, v, { x: sl.staff[0], y: sl.staff[1], skin: e ? e.face.skin : SKINS[i % 6], hair: e ? e.face.hair : HAIRS[i % 7], emp: e }, 'g')); } } });
+  lay.b.forEach((sl, i) => { if (i < b.b) { add(sl.x + sl.y, () => drawDesk(c, v, sl, i < b.bs)); if (i < b.bs) { const e = staffOf(b, 'bs')[i]; add(sl.staff[0] + sl.staff[1], () => drawPerson(c, v, { x: sl.staff[0], y: sl.staff[1], skin: e ? e.face.skin : SKINS[(i + 3) % 6], hair: e ? e.face.hair : HAIRS[(i + 2) % 7], emp: e }, 'b')); } } });
   lay.dab.forEach((sl, i) => { if (i < b.dab) add(sl.x + sl.y, () => drawDab(c, v, sl)); });
-  lay.vig.forEach((sl, i) => { if (i < b.vig) add(sl.x + sl.y, () => drawPerson(c, v, { x: sl.x, y: sl.y, skin: SKINS[(i + 2) % 6], hair: '#111827' }, 'vig')); });
+  lay.vig.forEach((sl, i) => { if (i < b.vig) { const e = staffOf(b, 'vig')[i]; add(sl.x + sl.y, () => drawPerson(c, v, { x: sl.x, y: sl.y, skin: e ? e.face.skin : SKINS[(i + 2) % 6], hair: '#111827', emp: e }, 'vig')); } });
   lay.deco.forEach((sl, i) => { if (i < b.deco) add(sl.x + sl.y, () => sl.t === 'plant' ? drawPlant(c, v, sl) : drawSofa(c, v, sl)); });
   for (let y = 3.2; y < RD - 1.2; y += 1.3) for (const x of [mid - 0.85, mid + 0.85]) add(x + y, () => drawPost(c, v, x, y));
   for (const a of floor.agents) add(a.x + a.y + 0.05, () => drawPerson(c, v, a));

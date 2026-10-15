@@ -281,3 +281,25 @@ const ITEM_UNLOCK = {
   vig: s => s.chapter >= 1 || !!s.flags.robbed,
   size: s => s.chapter >= 1,
 };
+
+// ---------- Employés ----------
+const STAFF_ROLES = { gs: 'Guichetier', bs: 'Conseiller', vig: 'Vigile' };
+const STAFF_TITLES = {
+  gs: ['Guichetier stagiaire', 'Guichetier', 'Guichetier confirmé', 'Chef de guichet', 'Responsable d’accueil'],
+  bs: ['Conseiller junior', 'Conseiller', 'Conseiller senior', 'Expert crédit', 'Directeur commercial'],
+  vig: ['Vigile stagiaire', 'Vigile', 'Agent de sécurité', 'Chef de la sécurité', 'Garde du corps d’élite'],
+};
+const TRAITS = {
+  souriant: { name: 'Souriant', icon: '😊', desc: '+4 satisfaction dans l’agence' },
+  rapide: { name: 'Rapide', icon: '⚡', desc: '+15 % d’efficacité' },
+  ambitieux: { name: 'Ambitieux', icon: '🚀', desc: 'Apprend 50 % plus vite' },
+  fidele: { name: 'Fidèle', icon: '🤝', desc: 'Ne démissionne jamais' },
+  bavard: { name: 'Bavard', icon: '💬', desc: '-10 % d’efficacité, mais +2 satisfaction' },
+  raleur: { name: 'Râleur', icon: '😤', desc: '-4 satisfaction dans l’agence' },
+};
+const MAX_LVL = 5;
+const xpNeed = lvl => 80 * lvl;
+Object.assign(ACHS, {
+  promo: { name: 'Promotion !', icon: '⭐', desc: 'Promouvoir un employé.', t: s => s.stats.promos >= 1 },
+  lvl5: { name: 'La perle rare', icon: '💎', desc: 'Avoir un employé au niveau 5.', t: s => s.branches.some(b => (b.staff || []).some(e => e.lvl >= 5)) },
+});

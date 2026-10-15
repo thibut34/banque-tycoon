@@ -138,7 +138,22 @@ function renderPlanSide() {
   }).join('');
   const up = itemUnlocked('size') && SIZES[b.size + 1] ? `<button class="tool gold" data-act="build" data-k="size" ${s.cash < sizeUpCost(b) ? 'disabled' : ''}><span class="t-ico">🏗️</span><span class="t-name">Agrandir</span><span class="t-sub">${SIZES[b.size + 1].name}</span><span class="t-foot"><span class="t-count">niv. ${b.size + 1}</span><b>${money(sizeUpCost(b))}</b></span></button>` : '';
   const tip = b.gs < need ? `<p class="hint">${ic('alert')} Les clients attendent : il faudrait <b>${need} guichetiers</b> ici.</p>` : '';
-  el.innerHTML = `<div class="tools">${tools}${up}</div>${tip}${b.id !== HQ ? `<button class="btn ghost sm" data-act="closeBranch" data-id="${b.id}">Fermer cette agence</button>` : ''}`;
+  const team = (b.staff || []).slice().sort((x, y) => STAFF_KEYS.indexOf(x.role) - STAFF_KEYS.indexOf(y.role)).map(e => {
+    const T = TRAITS[e.trait], max = e.lvl >= MAX_LVL, ready = !max && e.xp >= xpNeed(e.lvl), sel = ui.emp == e.id;
+    const tc = trainCost(s, b, e), pc = promoCost(s, b, e);
+    return `<div class="emp ${sel ? 'sel' : ''} ${ready ? 'ready' : ''}" data-emp="${e.id}">
+      <div class="emp-h" data-act="selEmp" data-id="${e.id}">${avatar(e, 46)}<div class="grow"><b>${esc(e.name)}</b><small>${empTitle(e)}</small><span class="stars">${stars(e.lvl)}</span></div>${ready ? '<span class="pill gold">Promotion !</span>' : ''}</div>
+      <div class="row"><small class="muted grow">${max ? 'Niveau maximum' : `Expérience ${Math.floor(e.xp)}/${xpNeed(e.lvl)}`}</small><span class="trait" title="${esc(T.desc)}">${T.icon} ${T.name}</span></div>
+      ${max ? '' : bar(e.xp / xpNeed(e.lvl) * 100, ready ? 'ok' : '')}
+      ${sel ? `<p class="small muted">${T.desc} · efficacité ×${nf2.format(empEff(e))} · salaire ${money(empWage(s, b, e))}/mois · ${Math.max(0, Math.floor((s.day - e.since) / 30))} mois d’ancienneté</p>
+      <div class="row wrap">${ready ? `<button class="btn sm gold" data-act="promote" data-id="${e.id}" ${s.cash < pc ? 'disabled' : ''}>Promouvoir — ${money(pc)}</button>` : ''}
+      ${!max ? `<button class="btn sm" data-act="train" data-id="${e.id}" ${!canTrain(s, e) || s.cash < tc ? 'disabled' : ''}>${canTrain(s, e) ? `Former — ${money(tc)}` : 'Formé ce mois-ci'}</button>` : ''}
+      <button class="btn sm ghost" data-act="fire" data-id="${e.id}">Licencier</button></div>` : '<small class="muted tap">Cliquez pour former ou promouvoir</small>'}
+    </div>`;
+  }).join('');
+  const readyN = (b.staff || []).filter(e => e.lvl < MAX_LVL && e.xp >= xpNeed(e.lvl)).length;
+  el.innerHTML = `<div class="tools">${tools}${up}</div>${tip}
+    ${team ? `<h3 class="sec">Équipe (${b.staff.length})${readyN ? ` <span class="pill gold">${readyN} promotion${readyN > 1 ? 's' : ''} possible${readyN > 1 ? 's' : ''}</span>` : ''}</h3><div class="team">${team}</div>` : ''}${b.id !== HQ ? `<button class="btn ghost sm" data-act="closeBranch" data-id="${b.id}">Fermer cette agence</button>` : ''}`;
 }
 
 // ---------- Prêts ----------
