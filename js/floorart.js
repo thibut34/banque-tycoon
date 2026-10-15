@@ -100,11 +100,11 @@ function drawPlant(c, v, s) {
     c.fillStyle = col; c.beginPath(); c.arc(px + dx * r, py + dy * r, r * k, 0, 7); c.fill();
   });
 }
-function drawSofa(c, v, s) {
-  boxC(c, v, s.x, s.y, 0.8, 1.6, 0, 0.38, '#4338ca');
-  boxC(c, v, s.x + 0.32, s.y, 0.16, 1.6, 0.38, 0.45, '#4f46e5');
-  boxC(c, v, s.x - 0.05, s.y - 0.4, 0.55, 0.7, 0.38, 0.1, '#818cf8');
-  boxC(c, v, s.x - 0.05, s.y + 0.4, 0.55, 0.7, 0.38, 0.1, '#818cf8');
+function drawSofa(c, v, s, col = '#4f46e5') {
+  boxC(c, v, s.x, s.y, 0.8, 1.6, 0, 0.38, shade(col, -0.15));
+  boxC(c, v, s.x + 0.32, s.y, 0.16, 1.6, 0.38, 0.45, col);
+  boxC(c, v, s.x - 0.05, s.y - 0.4, 0.55, 0.7, 0.38, 0.1, shade(col, 0.3));
+  boxC(c, v, s.x - 0.05, s.y + 0.4, 0.55, 0.7, 0.38, 0.1, shade(col, 0.3));
 }
 function drawPost(c, v, x, y) { boxC(c, v, x, y, 0.08, 0.08, 0, 0.8, '#d4a017'); boxC(c, v, x, y, 0.16, 0.16, 0.8, 0.06, '#fde68a'); }
 
@@ -113,6 +113,7 @@ function drawFloor(cv, b, lay) {
   const dpr = window.devicePixelRatio || 1, W = cv.clientWidth;
   if (!W) return;
   const { W: RW, D: RD, mid } = lay;
+  const th = themeOf(b), FL = THEMES.floor[th.floor] || THEMES.floor.marbre, WALL = THEMES.wall[th.wall] || '#f1ebe0', CARPET = THEMES.carpet[th.carpet], ACC = THEMES.accent[th.accent] || '#4f46e5';
   // Mise à l'échelle pour que toute la scène tienne dans le cadre
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   for (const x of [-0.8, RW + 0.8]) for (const y of [-0.3, RD + 2.4]) for (const z of [0, WALL_H + 0.3]) {
@@ -139,15 +140,18 @@ function drawFloor(cv, b, lay) {
   // Sol : marbre en damier, parquet derrière les guichets, tapis rouge
   for (let x = 0; x < RW; x++) for (let y = 0; y < RD; y++) {
     const back = y < 1;
-    poly(c, v, [[x, y], [x + 1, y], [x + 1, y + 1], [x, y + 1]], back ? ((x % 2) ? '#a87d52' : '#b88b5e') : ((x + y) % 2 ? '#ebe5da' : '#ddd5c6'));
+    poly(c, v, [[x, y], [x + 1, y], [x + 1, y + 1], [x, y + 1]], back ? ((x % 2) ? '#a87d52' : '#b88b5e') : FL.stripes ? FL.c[x % 2] : FL.c[(x + y) % 2]);
+    if (FL.dots && !back) for (let k = 0; k < 3; k++) { const [dx, dy] = isoP(v, x + 0.25 + k * 0.25, y + 0.3 + ((k * 7) % 5) * 0.1); c.fillStyle = ['#94a3b8', '#f59e0b', '#64748b'][k]; c.fillRect(dx, dy, 2, 2); }
   }
-  poly(c, v, [[mid - 0.65, 1.9], [mid + 0.65, 1.9], [mid + 0.65, RD], [mid - 0.65, RD]], '#d4a017');
-  poly(c, v, [[mid - 0.55, 2.0], [mid + 0.55, 2.0], [mid + 0.55, RD], [mid - 0.55, RD]], '#9f1239');
+  if (CARPET) {
+    poly(c, v, [[mid - 0.65, 1.9], [mid + 0.65, 1.9], [mid + 0.65, RD], [mid - 0.65, RD]], '#d4a017');
+    poly(c, v, [[mid - 0.55, 2.0], [mid + 0.55, 2.0], [mid + 0.55, RD], [mid - 0.55, RD]], CARPET);
+  }
 
   // Murs du fond
-  poly(c, v, [[0, 0, 0], [RW, 0, 0], [RW, 0, WALL_H], [0, 0, WALL_H]], '#f1ebe0');
+  poly(c, v, [[0, 0, 0], [RW, 0, 0], [RW, 0, WALL_H], [0, 0, WALL_H]], WALL);
   poly(c, v, [[0, 0, 0], [RW, 0, 0], [RW, 0, 0.75], [0, 0, 0.75]], '#6b4226');
-  poly(c, v, [[0, 0, 0], [0, RD, 0], [0, RD, WALL_H], [0, 0, WALL_H]], '#e4dccd');
+  poly(c, v, [[0, 0, 0], [0, RD, 0], [0, RD, WALL_H], [0, 0, WALL_H]], shade(WALL.length === 7 ? WALL : '#f1ebe0', -0.07));
   poly(c, v, [[0, 0, 0], [0, RD, 0], [0, RD, 0.75], [0, 0, 0.75]], '#5c3820');
   poly(c, v, [[-0.2, -0.2, WALL_H], [RW, -0.2, WALL_H], [RW, 0, WALL_H], [0, 0, WALL_H], [0, RD, WALL_H], [-0.2, RD, WALL_H]], '#334155');
   // Fenêtres sur le mur de gauche
@@ -174,8 +178,14 @@ function drawFloor(cv, b, lay) {
   c.fillText(name, signW * s / 2, 0.35 * s); c.restore();
 
   // Emplacements libres (fantômes) et survol
-  const hv = floor.hover;
-  for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) lay[kind].forEach((sl, i) => {
+  const hv = ui.editPlan ? null : floor.hover;
+  const foot = (sl, x, y, fill, stroke) => poly(c, v, [[x - sl.w / 2 - 0.1, y - sl.d / 2 - 0.1], [x + sl.w / 2 + 0.1, y - sl.d / 2 - 0.1], [x + sl.w / 2 + 0.1, y + sl.d / 2 + 0.1], [x - sl.w / 2 - 0.1, y + sl.d / 2 + 0.1]], fill, stroke, 2);
+  if (ui.editPlan) { // mode aménagement : contours des meubles déplaçables
+    const d = floor.drag, eh = floor.editHover;
+    for (const k of MOVABLE) for (let i = 0; i < b[k]; i++) { const sl = lay[k][i]; const isD = d && d.kind === k && d.i === i, isH = eh && eh.kind === k && eh.i === i;
+      foot(sl, sl.x, sl.y, isD ? (d.ok ? 'rgba(52,211,153,.35)' : 'rgba(248,113,113,.4)') : isH ? 'rgba(99,102,241,.3)' : 'rgba(99,102,241,.08)', isD ? (d.ok ? '#10b981' : '#ef4444') : '#6366f1'); }
+  }
+  if (!ui.editPlan) for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) lay[kind].forEach((sl, i) => {
     if (!slotVisible(b, kind, i)) return;
     const built = i < b[kind], isH = hv && hv.kind === kind && hv.i === i;
     if (built && !isH) return;
@@ -192,7 +202,7 @@ function drawFloor(cv, b, lay) {
   lay.b.forEach((sl, i) => { if (i < b.b) { add(sl.x + sl.y, () => drawDesk(c, v, sl, i < b.bs)); if (i < b.bs) { const e = staffOf(b, 'bs')[i]; add(sl.staff[0] + sl.staff[1], () => drawPerson(c, v, { x: sl.staff[0], y: sl.staff[1], skin: e ? e.face.skin : SKINS[(i + 3) % 6], hair: e ? e.face.hair : HAIRS[(i + 2) % 7], emp: e }, 'b')); } } });
   lay.dab.forEach((sl, i) => { if (i < b.dab) add(sl.x + sl.y, () => drawDab(c, v, sl)); });
   lay.vig.forEach((sl, i) => { if (i < b.vig) { const e = staffOf(b, 'vig')[i]; add(sl.x + sl.y, () => drawPerson(c, v, { x: sl.x, y: sl.y, skin: e ? e.face.skin : SKINS[(i + 2) % 6], hair: '#111827', emp: e }, 'vig')); } });
-  lay.deco.forEach((sl, i) => { if (i < b.deco) add(sl.x + sl.y, () => sl.t === 'plant' ? drawPlant(c, v, sl) : drawSofa(c, v, sl)); });
+  lay.deco.forEach((sl, i) => { if (i < b.deco) add(sl.x + sl.y, () => sl.t === 'plant' ? drawPlant(c, v, sl) : drawSofa(c, v, sl, ACC)); });
   for (let y = 3.2; y < RD - 1.2; y += 1.3) for (const x of [mid - 0.85, mid + 0.85]) add(x + y, () => drawPost(c, v, x, y));
   for (const a of floor.agents) add(a.x + a.y + 0.05, () => drawPerson(c, v, a));
   for (const a of floor.walkers) add(a.x + a.y + 0.05, () => drawPerson(c, v, a));
@@ -210,7 +220,7 @@ function drawFloor(cv, b, lay) {
   for (const [x, y] of [[RW, RD], [mid - 0.9, RD], [mid + 0.9, RD], [0, RD]]) poly(c, v, [[x, y, 0], [x, y, 2.3]], null, frame, 2.5);
   for (let y = 2.5; y < RD; y += 2.5) poly(c, v, [[RW, y, 0], [RW, y, 2.3]], null, frame, 1.5);
   // Auvent au-dessus de la porte
-  box(c, v, mid - 1.15, RD, 2.3, 0.7, 2.3, 0.08, '#be123c');
+  box(c, v, mid - 1.15, RD, 2.3, 0.7, 2.3, 0.08, ACC);
   for (let k = 0; k < 5; k++) box(c, v, mid - 1.15 + k * 0.46, RD + 0.62, 0.23, 0.08, 2.18, 0.2, '#fff1f2');
 
   // Bulles d'argent et de satisfaction
@@ -224,7 +234,7 @@ function drawFloor(cv, b, lay) {
   }
   // Boutons « + » flottants sur les emplacements libres
   for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) lay[kind].forEach((sl, i) => {
-    if (!slotVisible(b, kind, i) || i < b[kind]) return;
+    if (ui.editPlan || !slotVisible(b, kind, i) || i < b[kind]) return;
     const [px, py] = isoP(v, sl.x, sl.y, 1.1 + Math.sin(floor.t * 3 + i) * 0.08);
     c.fillStyle = '#6366f1'; c.beginPath(); c.arc(px, py, s * 0.32, 0, 7); c.fill();
     c.strokeStyle = '#fff'; c.lineWidth = Math.max(2, s * 0.08); c.beginPath(); c.moveTo(px - s * 0.14, py); c.lineTo(px + s * 0.14, py); c.moveTo(px, py - s * 0.14); c.lineTo(px, py + s * 0.14); c.stroke();

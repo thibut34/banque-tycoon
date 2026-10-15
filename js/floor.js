@@ -61,11 +61,12 @@ function doBuild(k, cand) {
   S.cash -= cost;
   if (k === 'size') b.size++; else b[k]++;
   if (cand) { syncStaff(S); const list = staffOf(b, k); const auto = list[list.length - 1]; delete cand.cand; Object.assign(auto, cand, { since: S.day }); }
+  if (MOVABLE.includes(k)) autoPlace(b, k, b[k] - 1);
   SFX.play(k === 'size' ? 'level' : 'build');
   log(`${k === 'size' ? '🏗️' : ITEMS[k].icon} ${c.name} : ${msg.toLowerCase()} (${money(cost)}).`);
   toast(`${k === 'size' ? '🏗️' : ITEMS[k].icon} ${msg}`, 'good');
   // Petite animation de pose sur le plan
-  const lay = layout(b.size), key = k === 'gs' ? 'g' : k === 'bs' ? 'b' : k, arr = lay[key];
+  const lay = blay(b), key = k === 'gs' ? 'g' : k === 'bs' ? 'b' : k, arr = lay[key];
   const idx = k === 'gs' ? b.gs - 1 : k === 'bs' ? b.bs - 1 : b[k] - 1;
   if (arr && arr[idx]) floor.pops.push({ x: arr[idx].x, y: arr[idx].y, z: 1.6, t: 1.4, txt: '✨', big: true });
   ui.dirty = true;
@@ -174,8 +175,8 @@ function floorStep(dt, b, lay) {
 
 // ---------- Interaction ----------
 function slotAt(px, py) {
-  const v = floor.view, b = getBranch(S, ui.branch); if (!v || !b) return null;
-  const [x, y] = isoUnproject(v, px, py), lay = layout(b.size);
+  const v = floor.view, b = getBranch(S, ui.branch); if (!v || !b || ui.editPlan) return null;
+  const [x, y] = isoUnproject(v, px, py), lay = blay(b);
   let best = null, bd = 0.9;
   for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) {
     lay[kind].forEach((s, i) => {
@@ -189,6 +190,7 @@ function slotAt(px, py) {
 function floorMount() {
   const cv = $('#floor'); if (!cv || cv.dataset.on) return;
   cv.dataset.on = '1';
+  dragMount(cv);
   cv.addEventListener('pointermove', e => {
     const r = cv.getBoundingClientRect(), h = slotAt(e.clientX - r.left, e.clientY - r.top);
     floor.hover = h ? { ...h, px: e.clientX - r.left, py: e.clientY - r.top } : null;
@@ -197,6 +199,7 @@ function floorMount() {
   });
   cv.addEventListener('pointerleave', () => { floor.hover = null; });
   cv.addEventListener('click', e => {
+    if (ui.editPlan) return;
     const r = cv.getBoundingClientRect(), h = slotAt(e.clientX - r.left, e.clientY - r.top);
     if (!h) return;
     const act = slotAction(getBranch(S, ui.branch), h.kind, h.i);
@@ -211,7 +214,8 @@ function floorLoop(ts) {
   const b = getBranch(S, ui.branch); if (!b) return;
   if (floor.id !== b.id) floorReset(b.id);
   if (floor.size !== b.size) { floor.size = b.size; floor.agents = []; floor.busy = {}; }
-  const lay = layout(b.size);
+  const lay = blay(b, floor.drag);
+  cv.style.touchAction = ui.editPlan ? 'none' : 'manipulation';
   const dt = Math.min(0.25, (ts - (floor.last || ts)) / 1000); floor.last = ts;
   if (!ui.modal) floorStep(dt, b, lay);
   drawFloor(cv, b, lay);

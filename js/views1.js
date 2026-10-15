@@ -109,7 +109,7 @@ function vPlan() {
   const chips = s.branches.length > 1 ? `<div class="chips">${s.branches.map(x => `<button class="chip ${x.id === ui.branch ? 'on' : ''}" data-act="selBranch" data-id="${x.id}"><span class="cc">${CITIES[x.id].cc}</span>${CITIES[x.id].name}</button>`).join('')}</div>` : '';
   return `${chips}
   <section class="card floor-card">
-    <header class="floor-h"><div><h2>${c.name} ${b.id === HQ ? '<span class="pill">Siège</span>' : ''}</h2><small class="muted">${SIZES[b.size].name} · niveau ${b.size}/3</small></div><div id="planStats"></div></header>
+    <header class="floor-h"><div><h2>${c.name} ${b.id === HQ ? '<span class="pill">Siège</span>' : ''}</h2><small class="muted">${SIZES[b.size].name} · niveau ${b.size}/3</small></div><div id="planStats"></div><button class="btn ${ui.editPlan ? 'primary' : ''}" data-act="editPlan">🎨 ${ui.editPlan ? 'Terminer' : 'Personnaliser'}</button></header>
     <div id="floorWrap"><canvas id="floor"></canvas></div>
     <div id="planSide"></div>
   </section>`;
@@ -120,6 +120,8 @@ function renderPlanSide() {
   $('#planStats').innerHTML = `<div class="stat"><small>Satisfaction</small><b class="${sat < 40 ? 'neg' : sat > 65 ? 'pos' : ''}">${sat}/100</b></div>
     <div class="stat"><small>Épargne possible</small><b>${money(branchCap(b))}</b></div>
     <div class="stat"><small>Charges</small><b class="neg">${money(branchCosts(s, b))}/mois</b></div>`;
+  if (ui.editPlan) { if (el.dataset.mode !== 'edit' || el.dataset.key !== JSON.stringify(themeOf(b))) { el.innerHTML = customHTML(b); el.dataset.mode = 'edit'; el.dataset.key = JSON.stringify(themeOf(b)); } return; }
+  el.dataset.mode = '';
   const lim = SIZES[b.size], w = wageMult(s, b);
   const tools = [
     ['g', b.g, lim.g, b.g >= lim.g, 'Accueille l’épargne'],

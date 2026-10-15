@@ -439,3 +439,18 @@ details.more[open] summary { margin-bottom: 14px; color: var(--text); }
 .cand-foot { margin-top: auto; padding-top: 8px; width: 100%; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
 .cand-foot b { color: var(--gold); font-size: 15px; }
 @media (max-width: 640px) { .cands { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Personnalisation ---------- */
+.floor-h .btn { margin-left: auto; }
+.custom .cgroup { margin: 12px 0; }
+.custom h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; cursor: pointer; color: var(--muted); font: inherit; padding: 2px; }
+.swatch i { width: 42px; height: 42px; border-radius: 12px; border: 2px solid var(--line2); display: block; transition: transform .12s, border-color .15s; }
+.swatch:hover:not(:disabled) i { transform: translateY(-2px); border-color: var(--accent2); }
+.swatch.on i { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+.swatch.on small { color: var(--text); }
+.swatch:disabled { opacity: .4; cursor: not-allowed; }
+.swatch small { font-size: 11px; }
+.custom .row.wrap { margin-top: 14px; }
+.custom .hint { margin-top: 0; }

@@ -69,7 +69,7 @@ const actions = {
     renderPanel(true);
   },
   goBranch: el => { ui.branch = el.dataset.id; ui.tab = 'plan'; renderTabs(); renderPanel(true); },
-  selBranch: el => { ui.branch = el.dataset.id; renderPanel(true); },
+  selBranch: el => { ui.branch = el.dataset.id; floor.drag = null; renderPanel(true); },
   build: el => { if (doBuild(el.dataset.k)) renderPlanSide(); },
   closeBranch: el => confirmBox('🔒', `Fermer ${CITIES[el.dataset.id].name} ?`, 'Les clients partiront chez vos concurrents (-3 réputation) et l’aménagement sera perdu.', 'doCloseBranch', 'Fermer l’agence', el.dataset.id),
   doCloseBranch: el => {
@@ -122,6 +122,13 @@ const actions = {
     ui.dirty = true; renderPanel(true);
   },
   closeModal: () => closeModal(),
+  editPlan: () => { ui.editPlan = !ui.editPlan; floor.drag = null; floor.editHover = null; renderPanel(true); },
+  theme: el => {
+    const b = getBranch(S, ui.branch); b.theme = { ...themeOf(b), [el.dataset.g]: el.dataset.v };
+    SFX.play('click'); renderPlanSide();
+  },
+  themeAll: () => { const t = themeOf(getBranch(S, ui.branch)); for (const x of S.branches) x.theme = { ...t }; toast('🎨 Style appliqué à toutes vos agences', 'good'); },
+  resetLayout: () => { const b = getBranch(S, ui.branch); if (b.pos) delete b.pos[b.size]; floor.agents = []; floor.busy = {}; toast('Disposition d’origine rétablie', 'good'); },
   pickCand: el => {
     const c = ui.cands && ui.cands[+el.dataset.i]; if (!c) return;
     closeModal();
