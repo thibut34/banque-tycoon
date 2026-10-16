@@ -16,6 +16,9 @@ const GLOSSARY = {
   rate: ['Taux d’intérêt', 'Le prix de l’argent prêté, en pourcentage par an. Plus il est élevé, plus vous gagnez… mais moins le client accepte, et plus il risque de ne pas rembourser.'],
   policy: ['Taux directeur', 'Le taux fixé par la banque centrale. Il influence tous les autres : quand il monte, les crédits et l’épargne coûtent plus cher.'],
   margin: ['Marge d’intérêt', 'Le cœur du métier : vous empruntez l’argent des clients pas cher (comptes, livrets) et vous le prêtez plus cher. La différence, c’est votre bénéfice.'],
+  endet: ['Taux d’endettement', 'La part des revenus mensuels du client qui partira dans les mensualités. En France, la règle du HCSF interdit aux banques de prêter si elle dépasse 35 %. Plus elle est élevée, plus le client risque de ne pas pouvoir rembourser.'],
+  apport: ['Apport personnel', 'La part du prix du logement que le client paie avec ses propres économies. Plus l’apport est élevé, moins le prêt est risqué, et plus vous récupérez d’argent si le client fait défaut (la maison est revendue).'],
+  usure: ['Taux d’usure', 'Le taux maximal autorisé par la loi pour chaque type de crédit. Au-delà, prêter est illégal : vous ne pouvez pas le dépasser.'],
   fraud: ['Fraude', 'Certains emprunteurs sont des escrocs : ils disparaissent avec l’argent au bout de deux mois. Faites vérifier les dossiers douteux (🔎) avant de prêter, surtout s’ils acceptent n’importe quel taux.'],
 };
 const tip = k => GLOSSARY[k] ? `<button class="tip" data-act="tip" data-k="${k}" aria-label="Qu’est-ce que « ${GLOSSARY[k][0]} » ?">?</button>` : '';

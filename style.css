@@ -490,3 +490,8 @@ details.more[open] summary { margin-bottom: 14px; color: var(--text); }
 .spec small { color: var(--muted); font-size: 11.5px; }
 .spec.on { border-color: var(--accent2); box-shadow: 0 0 0 1px var(--accent2); background: rgba(99,102,241,.1); }
 .spec:disabled { opacity: .45; cursor: not-allowed; }
+
+.req-info.dossier { line-height: 1.7; }
+
+.req-foot { justify-content: space-between; }
+.req-foot .expire { justify-content: flex-end; }

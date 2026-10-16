@@ -13,14 +13,17 @@ function makeRequest(s, forcedType) {
   const amount = Math.round(Math.min(Math.exp(rnd(Math.log(T.amt[0]), Math.log(T.amt[1]))) * loanScale(s), Math.max(30e3, equity(s) * 0.2)) / 1000) * 1000;
   const name = T.who === 'p' ? personName() : T.who === 'c' ? pick(COMPANY).replace('{L}', pick(LAST)) : pick(STARTUP);
   const score = clamp(Math.round(640 + gauss() * 110), 300, 850);
-  const pd = annualPD(score, type);
-  const el = pd * (1 - T.rec) * 100;
+  const dur = rint(T.dur[0] / 6, T.dur[1] / 6) * 6;
+  const r = { id: s.nextId++, type, name, reason: pick(T.reasons), amount, dur, score, expires: s.day + rint(40, 70) };
+  const base = s.policyRate + T.spread + annualPD(score, type) * (1 - T.rec) * 100;
+  if (T.who === 'p') r.income = Math.round(payment(amount, base, dur) / clamp(0.26 + gauss() * 0.07, 0.12, 0.48) / 10) * 10;
+  if (type === 'immo') r.apport = rint(0, 30) / 100;
+  if (T.who !== 'p') r.guarantee = chance(0.5);
+  const el = reqPD(r, base) * (1 - T.rec) * 100;
   const fair = s.policyRate + T.spread + el;
-  return maybeFraud(s, {
-    id: s.nextId++, type, name, reason: pick(T.reasons), amount,
-    dur: rint(T.dur[0] / 6, T.dur[1] / 6) * 6, score, maxRate: s.policyRate + T.spread + el * 0.8 + rnd(-0.6, 1.6),
-    offer: Math.round(clamp(fair, 0.5, 25) * 10) / 10, expires: s.day + rint(40, 70),
-  });
+  r.maxRate = Math.min(usure(r), s.policyRate + T.spread + el * 0.8 + rnd(-0.4, 1.2));
+  r.offer = Math.round(clamp(fair, 0.5, usure(r)) * 10) / 10;
+  return maybeFraud(s, r);
 }
 function makeSovereign(s) {
   const [name, rating, reason] = pick(COUNTRIES), R = RATINGS[rating];
@@ -30,7 +33,7 @@ function makeSovereign(s) {
     maxRate: s.policyRate + R.spread + rnd(-0.2, 0.8), offer: Math.round((s.policyRate + R.spread + 0.2) * 10) / 10, expires: s.day + rint(20, 30),
   };
 }
-const fairRate = (s, r) => r.type === 'souv' ? s.policyRate + RATINGS[r.rating].spread : s.policyRate + LOAN_TYPES[r.type].spread + reqPD(r) * (1 - LOAN_TYPES[r.type].rec) * 100;
+const fairRate = (s, r) => r.type === 'souv' ? s.policyRate + RATINGS[r.rating].spread : Math.min(usure(r), s.policyRate + LOAN_TYPES[r.type].spread + reqPD(r) * (1 - LOAN_TYPES[r.type].rec) * 100);
 const reqGrade = r => r.type === 'souv' ? r.rating : grade(r.score);
 
 function grantLoan(s, r) {
@@ -42,6 +45,7 @@ function grantLoan(s, r) {
   const L = { id: r.id, type: r.type, name: r.name, out: r.amount, amount: r.amount, rate: r.offer, left: r.dur, dur: r.dur, pmt: payment(r.amount, r.offer, r.dur), pdA, grade: reqGrade(r), since: s.day };
   if (souv) { L.rw = RATINGS[r.rating].rw; s.stats.souv++; }
   if (r.fraud) L.fraud = true;
+  L.recB = (r.guarantee ? 0.25 : 0) + (r.apport || 0) * 0.5;
   s.loans.push(L);
   s.stats.granted++;
   log(`${T.icon} Prêt de ${money(r.amount)} accordé à ${r.name} à ${pct(r.offer)}.`, 'good');
@@ -57,7 +61,8 @@ function autopilot(s) {
     if (!r.checked && r.amount > equity(s) * 0.05) { verifyRequest(r.id); if (!s.requests.includes(r)) continue; } // les gros dossiers sont vérifiés
     if (s.cash - r.amount < s.deposits * 0.1) break;
     if (equity(s) / (rwa(s) + r.amount * LOAN_TYPES[r.type].rw) * 100 < minRatio(s) + 4) break; // garde une marge de solvabilité
-    r.offer = Math.round(clamp(fairRate(s, r) + A.margin, 0.5, 25) * 10) / 10;
+    r.offer = Math.round(clamp(fairRate(s, r) + A.margin, 0.5, usure(r)) * 10) / 10;
+    if (endet(r) > 0.35) { s.requests = s.requests.filter(x => x !== r); s.stats.refused++; continue; }
     s.requests = s.requests.filter(x => x !== r);
     if (chance(acceptProb(r))) grantLoan(s, r); else s.stats.refused++;
   }
@@ -74,10 +79,10 @@ function tickDay() {
   if (s.flags.bigCrisisPending && !ui.modal) startBigCrisis(s);
 
   const retail = s.requests.filter(r => r.type !== 'souv').length;
-  const maxReq = Math.min(10, 1 + 2 * staffTotal(s, 'bs'));
+  const maxReq = Math.min(10, 2 + 2 * staffTotal(s, 'bs'));
   // Le tout premier client arrive vite après l'embauche du premier conseiller
   const first = !s.flags.firstReq && staffTotal(s, 'bs') >= 1 && s.day - (s.flags.bsDay || (s.flags.bsDay = s.day)) >= 4;
-  if (retail < maxReq && (first || chance(clamp(0.35 * loanDemand(s), 0, 0.6)))) {
+  if (retail < maxReq && (first || chance(clamp(0.5 * loanDemand(s), 0, 0.8)))) {
     s.flags.firstReq = true;
     s.requests.push(makeRequest(s));
     if (ui.tab !== 'loans' && !(s.auto && s.auto.on)) toast('🤝 Un client vient demander un prêt', '', 'req');
@@ -151,7 +156,7 @@ function monthEnd(s) {
     const m = L.type === 'souv' ? Math.pow(econ.pd, 0.6) : econ.pd;
     const pdm = 1 - Math.pow(1 - clamp(L.pdA * m, 0, 0.95), 1 / 12);
     if (chance(pdm)) {
-      const got = L.out * Math.min(0.95, LOAN_TYPES[L.type].rec + rec0);
+      const got = L.out * Math.min(0.95, LOAN_TYPES[L.type].rec + rec0 + (L.recB || 0));
       s.cash += got; pl.losses += L.out - got;
       L.dead = true; defaults++; s.stats.defaults++;
       log(`💥 ${L.name} ne rembourse plus (${LOAN_TYPES[L.type].label}). Perte : ${money(L.out - got)}.`, 'bad');
@@ -181,7 +186,7 @@ function monthEnd(s) {
   pl.reserves = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1) / 1200; s.cash += pl.reserves;
 
   const profit = pl.interest + pl.fees + pl.coupons + pl.reserves - pl.depInt - pl.cbInt - pl.costs - pl.losses;
-  if (profit > 0) { pl.tax = profit * 0.15; s.cash -= pl.tax; }
+  if (profit > 0) { pl.tax = profit * 0.25; s.cash -= pl.tax; }
   pl.net = profit - pl.tax;
   s.stats.interest += pl.interest;
   if (pl.net > 0) s.stats.profit += pl.net;
@@ -325,7 +330,7 @@ function updateChallenge(s) {
   } else if (s.day >= s.nextChallenge) {
     const pool = Object.keys(CHALLENGES).filter(k => !CHALLENGES[k].cond || CHALLENGES[k].cond(s));
     const tpl = pick(pool), m = CHALLENGES[tpl].make(s);
-    s.challenge = { tpl, goal: m.goal, base: m.base, until: s.day + m.days, days: m.days, reward: Math.round(Math.max(50e3, equity(s) * 0.04) / 1e3) * 1e3 };
+    s.challenge = { tpl, goal: m.goal, base: m.base, until: s.day + m.days, days: m.days, reward: Math.round(Math.max(20e3, equity(s) * 0.015) / 1e3) * 1e3 };
     toast(`⏱️ Nouveau défi : <b>${CHALLENGES[tpl].txt(s.challenge)}</b> en ${m.days} jours`, 'gold');
   }
 }

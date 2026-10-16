@@ -163,6 +163,17 @@ function renderPlanSide() {
 }
 
 // ---------- Prêts ----------
+function endetHTML(r) {
+  const e = endet(r), c = e > 0.35 ? 'neg' : e > 0.3 ? 'warn' : 'pos';
+  return `Endettement ${tip('endet')} <b data-o="endet" class="${c}">${pct(e * 100, 0)}</b>${e > 0.35 ? ' <span class="neg small" data-o="hcsf">au-delà de 35 % : interdit</span>' : '<span data-o="hcsf"></span>'}`;
+}
+function dossier(r) {
+  const parts = [];
+  if (r.income) parts.push(`Revenus <b>${money(r.income)}/mois</b>`, endetHTML(r));
+  if (r.apport != null) parts.push(`Apport ${tip('apport')} <b>${Math.round(r.apport * 100)} %</b>`);
+  if (r.guarantee != null) parts.push(r.guarantee ? 'Garantie <b class="pos">oui</b>' : 'Garantie <b class="neg">aucune</b>');
+  return parts.length ? `<div class="req-info dossier">${parts.join(' · ')}</div>` : '';
+}
 function reqCard(s, r) {
   const T = LOAN_TYPES[r.type], souv = r.type === 'souv', g = reqGrade(r), p = acceptProb(r), left = r.expires - s.day;
   const pd = reqPD(r) * (s.upgrades.ia && !souv ? 0.75 : 1);
@@ -174,13 +185,16 @@ function reqCard(s, r) {
     : s.upgrades.analyste ? `Score <b>${r.score}</b> · Défaut <b>${pct(pd * 100)}/an</b> · Récupération ${Math.round(T.rec * 100)} %` : '🔍 Embauchez un analyste pour voir le score exact.';
   return `<div class="req ${isNew ? 'new' : ''} ${souv ? 'souv' : ''}">
     <div class="req-h"><span class="ico">${T.icon}</span><div><b>${esc(r.name)}</b><small>${souv ? 'Emprunt d’État pour ' : T.label + ' pour '}${esc(r.reason)}</small></div><span class="grade ${gcls}" title="Note de crédit">${g}</span></div>
-    <div class="req-info">Montant <b>${money(r.amount)}</b> · Durée <b>${r.dur} mois</b></div>
+    <div class="req-info">Montant <b>${money(r.amount)}</b> · Durée <b>${fmtDur(r.dur)}</b></div>
+    ${dossier(r)}
     <div class="req-info">${info}</div>${fraudTxt}
     <div class="row"><span class="grow">Taux proposé</span><b data-o="rate" class="big-num">${pct(r.offer)}</b></div>
-    <input type="range" min="0.5" max="25" step="0.1" value="${r.offer}" data-input="rate" data-id="${r.id}">
+    <input type="range" min="0.5" max="${usure(r)}" step="0.1" value="${r.offer}" data-input="rate" data-id="${r.id}">
+    <div class="req-info small">Taux d’usure (maximum légal) ${tip('usure')} : <b>${pct(usure(r))}</b></div>
     <div class="req-info">Chance d’acceptation <b data-o="p" class="${p > 0.6 ? 'pos' : p < 0.3 ? 'neg' : 'warn'}">${Math.round(p * 100)} %</b> · Mensualité <b data-o="pmt">${money(payment(r.amount, r.offer, r.dur))}</b></div>
     <div class="bar"><i data-o="bar" style="width:${p * 100}%"></i></div>
-    <div class="row"><button class="btn success grow" data-act="offer" data-id="${r.id}">Proposer</button>${!souv && !r.checked ? `<button class="btn ghost" data-act="verify" data-id="${r.id}" title="Faire vérifier le dossier pour repérer les escrocs">🔎 ${money(verifyCost(r))}</button>` : ''}<button class="btn ghost" data-act="reject" data-id="${r.id}">Refuser</button><span class="expire ${left < 5 ? 'neg' : 'muted'}">${ic('clock')} ${left} j</span></div>
+    <div class="row"><button class="btn success grow" data-act="offer" data-id="${r.id}">Proposer</button><button class="btn ghost" data-act="reject" data-id="${r.id}">Refuser</button></div>
+    <div class="row req-foot">${!souv && !r.checked ? `<button class="btn sm ghost" data-act="verify" data-id="${r.id}" title="Faire vérifier le dossier pour repérer les escrocs">🔎 Vérifier · ${money(verifyCost(r))}</button>` : '<span></span>'}<span class="expire grow ${left < 5 ? 'neg' : 'muted'}">${ic('clock')} encore ${left} j</span></div>
   </div>`;
 }
 function vLoans() {

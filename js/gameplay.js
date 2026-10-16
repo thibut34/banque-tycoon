@@ -39,7 +39,7 @@ function maybeFraud(s, r) {
   if (r.fraud) { r.maxRate += 4; r.clue = pick(FRAUD_CLUES); if (s.upgrades.analyste && chance(0.7)) r.flagged = true; }
   return r;
 }
-const verifyCost = r => Math.round(clamp(r.amount * 0.003, 150, 50e3) / 10) * 10;
+const verifyCost = r => Math.round(clamp(r.amount * 0.0015, 100, 30e3) / 10) * 10;
 function verifyRequest(id) {
   const r = S.requests.find(x => x.id == id); if (!r || r.checked) return;
   const cost = verifyCost(r); if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad');

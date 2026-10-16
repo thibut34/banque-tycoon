@@ -124,7 +124,17 @@ function loanDemand(s) {
   return f;
 }
 function annualPD(score, type) { return clamp(0.35 * Math.exp(-(score - 300) / 105) * LOAN_TYPES[type].pd, 0.001, 0.85); }
-const reqPD = r => r.type === 'souv' ? RATINGS[r.rating].pd : annualPD(r.score, r.type);
+// Taux d'endettement : mensualité / revenus. Au-delà de 35 %, la règle du HCSF interdit de prêter.
+const endet = (r, rate = r.offer) => r.income ? payment(r.amount, rate, r.dur) / r.income : 0;
+const usure = r => Math.round((S ? S.policyRate : 3) * 10 + LOAN_TYPES[r.type].usure * 10) / 10;
+function reqPD(r, rate = r.offer) {
+  if (r.type === 'souv') return RATINGS[r.rating].pd;
+  let pd = annualPD(r.score, r.type);
+  if (r.income) pd *= 1 + Math.max(0, endet(r, rate) - 0.3) * 5;
+  if (r.apport != null) pd *= clamp(1.3 - r.apport * 2, 0.7, 1.3);
+  return clamp(pd, 0.001, 0.9);
+}
+const fmtDur = m => m >= 24 && m % 12 === 0 ? `${m / 12} ans` : `${m} mois`;
 function grade(score) { return score >= 750 ? 'A' : score >= 670 ? 'B' : score >= 580 ? 'C' : score >= 500 ? 'D' : 'E'; }
 function payment(P, rateAnnual, n) { const i = rateAnnual / 1200; return i === 0 ? P / n : P * i / (1 - Math.pow(1 + i, -n)); }
 function acceptProb(r) { return 1 / (1 + Math.exp((r.offer - r.maxRate) * (r.type === 'souv' ? 3 : 1.8))); }

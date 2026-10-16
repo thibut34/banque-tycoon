@@ -23,6 +23,7 @@ const actions = {
     const r = S.requests.find(x => x.id == el.dataset.id); if (!r) return;
     if (S.surveillance) return toast('⚠️ Sous surveillance : prêts interdits', 'bad');
     if (S.cash < r.amount) return toast('Liquidités insuffisantes ! Empruntez à la banque centrale ou attirez des dépôts.', 'bad');
+    if (endet(r) > 0.35) return toast('🚫 Endettement au-delà de 35 % : la règle du HCSF vous interdit ce prêt. Baissez le taux ou refusez le dossier.', 'bad');
     S.requests = S.requests.filter(x => x !== r); S.flags.offered = true;
     if (chance(acceptProb(r))) { grantLoan(S, r); toast(`✅ ${esc(r.name)} accepte votre offre à ${pct(r.offer)} !`, 'good'); floatMoney(-r.amount, ev.clientX, ev.clientY); }
     else { S.stats.refused++; toast(`❌ ${esc(r.name)} trouve votre taux trop élevé et part chez le concurrent.`, 'bad'); log(`❌ ${r.name} refuse votre offre à ${pct(r.offer)}.`); }
@@ -301,6 +302,8 @@ document.addEventListener('input', e => {
     const pe = card.querySelector('[data-o=p]'); pe.textContent = Math.round(p * 100) + ' %'; pe.className = p > 0.6 ? 'pos' : p < 0.3 ? 'neg' : 'warn';
     card.querySelector('[data-o=pmt]').textContent = money(payment(r.amount, r.offer, r.dur));
     card.querySelector('[data-o=bar]').style.width = p * 100 + '%';
+    const en = card.querySelector('[data-o=endet]');
+    if (en) { const e = endet(r); en.textContent = pct(e * 100, 0); en.className = e > 0.35 ? 'neg' : e > 0.3 ? 'warn' : 'pos'; card.querySelector('[data-o=hcsf]').textContent = e > 0.35 ? ' au-delà de 35 % : interdit' : ''; card.querySelector('[data-o=hcsf]').className = 'neg small'; }
   }
   if (el.dataset.input === 'prod') {
     const k = el.dataset.p, f = el.dataset.f, v = +el.value;

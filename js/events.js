@@ -73,14 +73,14 @@ const EVENTS = [
     ] };
   } },
   { id: 'licorne', w: 1.5, make: s => {
-    const amt = Math.round(Math.max(200e3, equity(s) * 0.1) / 1e4) * 1e4;
+    const amt = Math.round(Math.max(50e3, equity(s) * 0.05) / 1e4) * 1e4;
     const idea = pick(['une appli qui traduit les miaulements', 'des baskets qui se lacent toutes seules', 'un réseau social pour plantes vertes', 'une IA qui choisit votre fromage du jour']);
-    return { icon: '🦄', title: 'Deux étudiants en sweat à capuche', text: `Ils veulent <b>${money(amt)}</b> pour lancer <b>${idea}</b>, contre 20 % de leur entreprise. 6 chances sur 10 de tout perdre… mais qui sait ?`, choices: [
+    return { icon: '🦄', title: 'Deux étudiants en sweat à capuche', text: `Ils veulent <b>${money(amt)}</b> pour lancer <b>${idea}</b>, contre 20 % de leur entreprise. Deux chances sur trois de tout perdre… mais qui sait ?`, choices: [
       { label: `Investir ${money(amt)}`, disabled: s => s.cash < amt, fn: s => {
         s.cash -= amt; const r = Math.random();
-        if (r < 0.6) return 'Faillite au bout de 8 mois. Ils ont tout dépensé en baby-foot.';
-        if (r < 0.9) { s.cash += amt * 2.5; return `Rachetés par un géant ! Vous touchez ${money(amt * 2.5)}.`; }
-        s.cash += amt * 12; s.flags.unicorn = true; return `🦄 C’EST UNE LICORNE ! Vous touchez ${money(amt * 12)} !`;
+        if (r < 0.65) return 'Faillite au bout de 8 mois. Ils ont tout dépensé en baby-foot.';
+        if (r < 0.93) { s.cash += amt * 2; return `Rachetés par un géant ! Vous touchez ${money(amt * 2)}.`; }
+        s.cash += amt * 8; s.flags.unicorn = true; return `🦄 C’EST UNE LICORNE ! Vous touchez ${money(amt * 8)} !`;
       } },
       { label: 'Non merci', fn: () => 'Ils partent pitcher chez votre concurrent.' },
     ] };

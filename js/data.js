@@ -16,19 +16,19 @@ const ECON = {
 };
 
 const LOAN_TYPES = {
-  conso: { label: 'Crédit conso', icon: '🛒', amt: [3e3, 30e3], dur: [6, 24], spread: 5, pd: 1.2, rec: 0.15, w: 3, rw: 0.75, who: 'p',
+  conso: { label: 'Crédit conso', icon: '🛒', amt: [3e3, 40e3], dur: [12, 60], spread: 4.5, usure: 17, pd: 1.2, rec: 0.15, w: 3, rw: 0.75, who: 'p',
     reasons: ['une télé 8K', 'un canapé en cuir', 'des vacances à Bali', 'une cuisine équipée', 'son mariage', 'un home cinéma', 'une PS7'] },
-  auto: { label: 'Prêt auto', icon: '🚗', amt: [8e3, 70e3], dur: [12, 48], spread: 3.5, pd: 1, rec: 0.4, w: 3, rw: 0.75, who: 'p',
+  auto: { label: 'Prêt auto', icon: '🚗', amt: [8e3, 70e3], dur: [24, 72], spread: 2.8, usure: 8, pd: 1, rec: 0.4, w: 3, rw: 0.75, who: 'p',
     reasons: ['une citadine électrique', 'un SUV', 'un camping-car', 'une moto', 'une Twingo de 1996 « de collection »'] },
-  immo: { label: 'Prêt immobilier', icon: '🏠', amt: [120e3, 900e3], dur: [36, 96], spread: 2, pd: 0.5, rec: 0.65, w: 3, rw: 0.35, who: 'p',
+  immo: { label: 'Prêt immobilier', icon: '🏠', amt: [80e3, 600e3], dur: [120, 300], spread: 1.6, usure: 3.2, pd: 0.5, rec: 0.65, w: 3, rw: 0.35, who: 'p',
     reasons: ['un appartement en centre-ville', 'une maison avec jardin', 'un studio à louer', 'une longère en Bretagne', 'un loft', 'un chalet à la montagne'] },
-  pro: { label: 'Prêt professionnel', icon: '🏭', amt: [50e3, 1.5e6], dur: [24, 72], spread: 3.8, pd: 1.3, rec: 0.3, w: 2, rw: 1, who: 'c',
+  pro: { label: 'Prêt professionnel', icon: '🏭', amt: [50e3, 1.5e6], dur: [36, 120], spread: 3, usure: 9, pd: 1.3, rec: 0.3, w: 2, rw: 1, who: 'c',
     reasons: ['de nouvelles machines', 'un entrepôt', 'une flotte de camions', 'son expansion à l’export', 'une usine de croissants'] },
-  startup: { label: 'Start-up', icon: '🦄', amt: [200e3, 3e6], dur: [24, 60], spread: 7, pd: 3, rec: 0.05, w: 1, rw: 1.5, who: 's',
+  startup: { label: 'Start-up', icon: '🦄', amt: [200e3, 3e6], dur: [36, 84], spread: 6, usure: 14, pd: 3, rec: 0.05, w: 1, rw: 1.5, who: 's',
     reasons: ['une IA qui écrit des poèmes pour chats', 'un Uber pour tondeuses', 'la blockchain du fromage', 'des chaussettes connectées', 'un métavers pour retraités', 'des drones livreurs de croissants'] },
-  farfelu: { label: 'Projet farfelu', icon: '🤪', amt: [20e3, 400e3], dur: [12, 36], spread: 8, pd: 2.5, rec: 0.1, w: 1, rw: 1, who: 'p',
+  farfelu: { label: 'Projet farfelu', icon: '🤪', amt: [20e3, 400e3], dur: [12, 48], spread: 7, usure: 15, pd: 2.5, rec: 0.1, w: 1, rw: 1, who: 'p',
     reasons: ['un élevage d’escargots de course', 'un restaurant 100 % raclette à Dubaï', 'un parc d’attractions pour pigeons', 'un sous-marin en kit', 'une école de mimes', 'un musée de la chaussette perdue'] },
-  souv: { label: 'Dette souveraine', icon: '🏛️', spread: 0, pd: 1, rec: 0.45, w: 0, rw: 1, who: 'g', reasons: [] },
+  souv: { label: 'Dette souveraine', icon: '🏛️', spread: 0, usure: 30, pd: 1, rec: 0.45, w: 0, rw: 1, who: 'g', reasons: [] },
 };
 
 // Notes des pays : probabilité de défaut annuelle, prime de risque, pondération réglementaire
@@ -111,11 +111,11 @@ CITIES.mars = { id: 'mars', name: 'Colonie martienne', cc: '♂', region: 'espac
 // ---------- Plan de l'agence ----------
 const ITEMS = {
   g: { name: 'Guichet', icon: '🧾', cost: 25e3, desc: 'Accueille les épargnants. Sans guichetier, il reste fermé.' },
-  gs: { name: 'Guichetier', icon: '🧑‍💼', hire: 4e3, wage: 1800, desc: '+ dépôts potentiels de l’agence.' },
+  gs: { name: 'Guichetier', icon: '🧑‍💼', hire: 4e3, wage: 2300, desc: '+ dépôts potentiels de l’agence.' },
   b: { name: 'Bureau de conseil', icon: '🪑', cost: 35e3, desc: 'Un bureau pour recevoir les emprunteurs.' },
-  bs: { name: 'Conseiller', icon: '👩‍💼', hire: 6e3, wage: 2500, desc: '+ demandes de prêt.' },
+  bs: { name: 'Conseiller', icon: '👩‍💼', hire: 6e3, wage: 3200, desc: '+ demandes de prêt.' },
   dab: { name: 'Distributeur', icon: '🏧', cost: 45e3, maint: 600, desc: 'Commissions mensuelles et clients plus satisfaits.' },
-  vig: { name: 'Vigile', icon: '💂', hire: 2e3, wage: 1600, desc: 'Empêche les braquages dans cette agence.' },
+  vig: { name: 'Vigile', icon: '💂', hire: 2e3, wage: 2000, desc: 'Empêche les braquages dans cette agence.' },
   deco: { name: 'Décoration', icon: '🪴', cost: 10e3, desc: 'Plantes et canapés : + satisfaction des clients.' },
 };
 const SIZES = [null,
@@ -167,22 +167,22 @@ const RIVALS = [
 // ---------- Campagne : chapitres et objectifs ----------
 const G = (txt, cur, goal, fmt) => ({ txt, cur, goal, fmt });
 const CHAPTERS = [
-  { name: 'Les premiers clients', desc: 'Votre agence de Montpellier est vide. Installez un conseiller, prêtez, puis ouvrez des comptes.', reward: 400e3, goals: [
+  { name: 'Les premiers clients', desc: 'Votre agence de Montpellier est vide. Installez un conseiller, prêtez, puis ouvrez des comptes.', reward: 100e3, goals: [
     G('Recruter un conseiller', s => staffTotal(s, 'bs'), 1), G('Accorder 3 prêts', s => s.stats.granted, 3), G('Recruter un guichetier', s => staffTotal(s, 'gs'), 1), G('Clients avec un compte', s => s.depCC / AVG_BALANCE, 200)] },
-  { name: 'Banque de quartier', desc: 'Les Montpelliérains vous font confiance. Lancez le livret, les cartes, et une deuxième agence.', reward: 1e6, goals: [
+  { name: 'Banque de quartier', desc: 'Les Montpelliérains vous font confiance. Lancez le livret, les cartes, et une deuxième agence.', reward: 250e3, goals: [
     G('Accorder 15 prêts', s => s.stats.granted, 15), G('Épargne sur les livrets', s => s.depLiv || 0, 1e6, money), G('Installer un distributeur', s => staffTotal(s, 'dab'), 1), G('Posséder 2 agences', s => s.branches.length, 2), G('Fonds propres', s => equity(s), 1.4e6, money)] },
-  { name: 'Le réseau régional', desc: 'Couvrez la France et devenez une banque qui compte. À la clé : la licence européenne.', reward: 1.5e6, goals: [
-    G('Agences en France', s => regionCount(s, 'france'), 6), G('Conseillers embauchés', s => staffTotal(s, 'bs'), 8), G('Réputation', s => s.reputation, 60), G('Fonds propres', s => equity(s), 8e6, money)] },
-  { name: 'Cap sur l’Europe', desc: 'Londres, Genève, Berlin… L’Europe vous ouvre ses portes.', reward: 5e6, goals: [
-    G('Agences en Europe', s => regionCount(s, 'europe'), 3), G('Agences en France', s => regionCount(s, 'france'), 10), G('Grande agence (niveau 3)', s => s.branches.filter(b => b.size >= 3).length, 1), G('Fonds propres', s => equity(s), 25e6, money)] },
-  { name: 'Le Nouveau Monde', desc: 'Traversez l’Atlantique. Les États vous demandent maintenant de l’argent.', reward: 15e6, goals: [
-    G('Agences aux Amériques', s => regionCount(s, 'ameriques'), 3), G('Prêter à un pays', s => s.stats.souv, 1), G('Classement (top 5)', s => rankOf(s) <= 5 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 80e6, money)] },
-  { name: 'Le dragon asiatique', desc: 'Tokyo, Shanghai, Singapour : le centre du monde se déplace.', reward: 40e6, goals: [
-    G('Agences en Asie', s => regionCount(s, 'asie'), 3), G('Prêts accordés', s => s.stats.granted, 300), G('Défis réussis', s => s.stats.challenges, 5), G('Fonds propres', s => equity(s), 250e6, money)] },
-  { name: 'Partout sur Terre', desc: 'Une agence sur chaque continent. Plus aucun pays ne vous échappe.', reward: 150e6, goals: [
-    G('Régions couvertes', s => Object.keys(REGIONS).filter(r => r !== 'espace' && regionCount(s, r) > 0).length, 7), G('Agences', s => s.branches.length, 35), G('Classement (top 3)', s => rankOf(s) <= 3 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 1e9, money)] },
+  { name: 'Le réseau régional', desc: 'Couvrez la France et devenez une banque qui compte. À la clé : la licence européenne.', reward: 600e3, goals: [
+    G('Agences en France', s => regionCount(s, 'france'), 6), G('Conseillers embauchés', s => staffTotal(s, 'bs'), 8), G('Réputation', s => s.reputation, 60), G('Fonds propres', s => equity(s), 5e6, money)] },
+  { name: 'Cap sur l’Europe', desc: 'Londres, Genève, Berlin… L’Europe vous ouvre ses portes.', reward: 2e6, goals: [
+    G('Agences en Europe', s => regionCount(s, 'europe'), 3), G('Agences en France', s => regionCount(s, 'france'), 10), G('Grande agence (niveau 3)', s => s.branches.filter(b => b.size >= 3).length, 1), G('Fonds propres', s => equity(s), 15e6, money)] },
+  { name: 'Le Nouveau Monde', desc: 'Traversez l’Atlantique. Les États vous demandent maintenant de l’argent.', reward: 6e6, goals: [
+    G('Agences aux Amériques', s => regionCount(s, 'ameriques'), 3), G('Prêter à un pays', s => s.stats.souv, 1), G('Classement (top 5)', s => rankOf(s) <= 5 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 50e6, money)] },
+  { name: 'Le dragon asiatique', desc: 'Tokyo, Shanghai, Singapour : le centre du monde se déplace.', reward: 15e6, goals: [
+    G('Agences en Asie', s => regionCount(s, 'asie'), 3), G('Prêts accordés', s => s.stats.granted, 300), G('Défis réussis', s => s.stats.challenges, 5), G('Fonds propres', s => equity(s), 150e6, money)] },
+  { name: 'Partout sur Terre', desc: 'Une agence sur chaque continent. Plus aucun pays ne vous échappe.', reward: 60e6, goals: [
+    G('Régions couvertes', s => Object.keys(REGIONS).filter(r => r !== 'espace' && regionCount(s, r) > 0).length, 7), G('Agences', s => s.branches.length, 35), G('Classement (top 3)', s => rankOf(s) <= 3 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 600e6, money)] },
   { name: 'Au-delà du ciel', desc: 'La Terre est trop petite. Devenez la première banque interplanétaire.', reward: 0, goals: [
-    G('Traverser la Grande Crise', s => s.flags.bigCrisisDone ? 1 : 0, 1), G('Base lunaire', s => s.branches.some(b => b.id === 'lune') ? 1 : 0, 1), G('Colonie martienne', s => s.branches.some(b => b.id === 'mars') ? 1 : 0, 1), G('Numéro 1 mondial', s => rankOf(s) === 1 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 20e9, money)] },
+    G('Traverser la Grande Crise', s => s.flags.bigCrisisDone ? 1 : 0, 1), G('Base lunaire', s => s.branches.some(b => b.id === 'lune') ? 1 : 0, 1), G('Colonie martienne', s => s.branches.some(b => b.id === 'mars') ? 1 : 0, 1), G('Numéro 1 mondial', s => rankOf(s) === 1 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 8e9, money)] },
 ];
 
 // ---------- Défis chronométrés ----------
