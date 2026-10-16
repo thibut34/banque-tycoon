@@ -18,6 +18,7 @@ function dayArrivals(s, b) {
   if (!b.gs && !b.bs) return 0;
   let n = rnd(6, 10) * cityOf(b).traffic / 3 * (0.6 + s.reputation / 125);
   if (s.upgrades.marketing) n *= 1.15;
+  n += perk(s, 'aimant');
   if (b.rivalUntil > s.day) n *= 0.8;
   if (s.flags.sponsorUntil > s.day) n *= 1.15;
   n *= specOf(b).traffic || 1;
@@ -149,7 +150,7 @@ function makeObjective(s, t) {
   const pool = Object.keys(OBJECTIVES).filter(k => OBJECTIVES[k].ok(t, s));
   if (!pool.length) return null;
   const k = pick(pool);
-  return { k, n: OBJECTIVES[k].n(t), reward: Math.round(Math.max(500, equity(s) * 0.0015) / 100) * 100, done: false };
+  return { k, n: OBJECTIVES[k].n(t), reward: Math.round(Math.max(500, equity(s) * 0.0015) * (1 + 0.5 * perk(s, 'chasseur')) / 100) * 100, done: false };
 }
 function checkObjective(s) {
   const t = s.today, o = t && t.obj; if (!o || o.done) return;
@@ -160,7 +161,7 @@ function checkObjective(s) {
 }
 
 // ---------- Traitement d'une carte ----------
-function upsellChance(s, manual) { return 0.35 * (focusOn(s, 'ventes') ? 1.35 : 1) * (manual ? 1 : 0.5) * (0.7 + s.reputation / 170); }
+function upsellChance(s, manual) { return 0.35 * (1 + 0.12 * perk(s, 'vendeur')) * (focusOn(s, 'ventes') ? 1.35 : 1) * (manual ? 1 : 0.5) * (0.7 + s.reputation / 170); }
 function livChance(s) { return clamp(0.5 + (s.depositRate - marketDepRate(s)) * 0.45, 0.1, 0.95); }
 const sale = s => { s.today.tally.ventes++; };
 // Découvert au-delà de l'autorisation : ce que fait l'équipe par défaut
@@ -309,6 +310,7 @@ function offerLoanCard(s, c) {
 function nextDay() {
   const s = S; if (!s || s.over || ui.modal) return;
   const t = s.today;
+  funEndDay(s, t);
   const auto = delegateRest(s);
   if (t) {
     s.yesterday = { day: t.day, ...t.tally, arrived: t.arrived, lost: t.lost, auto, obj: t.obj ? { txt: OBJECTIVES[t.obj.k].txt(t.obj.n), done: t.obj.done } : null };
@@ -317,6 +319,8 @@ function nextDay() {
   tickDay();
   if (!s.over) startDay(s);
   SFX.play('click');
+  const d = $('#tbDate'); if (d) { d.classList.remove('flip'); void d.offsetWidth; d.classList.add('flip'); }
+  if (s.day % 30 === 27) { toast('💶 Jour de paie : les salaires tombent sur les comptes de vos clients !', 'good'); const r = d && d.getBoundingClientRect(); if (r) coinBurst(r.left + 40, r.bottom + 10, 10, '#tbCash'); }
   renderTop(); renderPanel(true);
 }
 

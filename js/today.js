@@ -78,6 +78,11 @@ function clientCard(s, c) {
     <div class="cc-body">${body}</div><div class="cc-actions">${actions}</div></article>`;
 }
 
+function starsLine(s, t) {
+  if (!(t.total || t.cards.length)) return '';
+  const r = starRules(s, t), nx = r.find(x => !x[1]);
+  return `<div class="dstars"><span class="st-lbl">Étoiles du jour</span>${r.map(([txt, ok]) => `<span class="st ${ok ? 'on' : ''}" title="${txt}">★</span>`).join('')}<small class="muted">${nx ? 'Prochaine : ' + nx[0].toLowerCase() : 'Les 3 étoiles sont à vous !'} · touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre vite</small></div>`;
+}
 function vToday() {
   const s = S;
   if (!s.today) startDay(s);
@@ -90,8 +95,8 @@ function vToday() {
   const head = `<section class="card day-head">
     <div class="dh-top"><div><small class="eyebrow">${dateStr(s.day)}</small><h2>${noStaff ? 'Votre agence est encore fermée' : left.length ? `${left.length} situation${left.length > 1 ? 's' : ''} à traiter` : 'Journée terminée !'}</h2>
       <p class="muted small">${noStaff ? 'Construisez un guichet et recrutez un guichetier dans « Ma banque » pour ouvrir vos portes.' : `${t.arrived} visiteurs aujourd’hui${t.lost ? ` · <span class="neg">${t.lost} repartis faute de personnel</span>` : ''}`}</p></div>
-      <div class="dh-btns">${left.length ? '<button class="btn" data-act="delegate">Laisser l’équipe gérer</button>' : ''}<button class="btn primary big-next" data-act="nextDay">Jour suivant ▶</button></div></div>
-    ${cal ? `<div class="cal">${cal}</div>` : ''}${flows}${ob}${yest}</section>`;
+      <div class="dh-btns">${left.length ? '<button class="btn" data-act="delegate">Laisser l’équipe gérer</button>' : ''}<button class="btn primary big-next ${left.length ? '' : 'pulse'}" data-act="nextDay">Jour suivant ▶</button></div></div>
+    ${cal ? `<div class="cal">${cal}</div>` : ''}${flows}${ob}${starsLine(s, t)}${yest}</section>`;
   const cards = left.length ? `<div class="ccards">${left.map(c => clientCard(s, c)).join('')}</div>` : (noStaff ? '' : '<div class="card muted center">Tout est traité. Profitez-en pour aménager vos agences ou consulter vos clients… puis passez au jour suivant.</div>');
   return head + cards + `<h3 class="sec">Votre banque</h3>` + vDash();
 }

@@ -138,7 +138,7 @@ function reqPD(r, rate = r.offer) {
 const fmtDur = m => m >= 24 && m % 12 === 0 ? `${m / 12} ans` : `${m} mois`;
 function grade(score) { return score >= 750 ? 'A' : score >= 670 ? 'B' : score >= 580 ? 'C' : score >= 500 ? 'D' : 'E'; }
 function payment(P, rateAnnual, n) { const i = rateAnnual / 1200; return i === 0 ? P / n : P * i / (1 - Math.pow(1 + i, -n)); }
-function acceptProb(r) { return 1 / (1 + Math.exp((r.offer - r.maxRate) * (r.type === 'souv' ? 3 : 1.8))); }
+function acceptProb(r) { return 1 / (1 + Math.exp((r.offer - r.maxRate - 0.2 * perk(S, 'negociateur')) * (r.type === 'souv' ? 3 : 1.8))); }
 function cbLimit(s) { return 1e6 + 0.5 * loansOut(s) + 0.9 * holdingValue(s, 'oat'); }
 function monthlyCosts(s) {
   let c = 0; for (const b of s.branches) c += branchCosts(s, b);

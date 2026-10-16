@@ -136,11 +136,16 @@ const actions = {
   delegate: () => { const n = delegateRest(S); if (n) toast(`👥 Votre équipe a reçu ${n} client${n > 1 ? 's' : ''}`, 'good'); renderTop(); renderPanel(true); },
   card: el => {
     const c = S.today && S.today.cards.find(x => x.id == el.dataset.id); if (!c || c.done) return;
+    const before = { ...S.today.tally }, art = el.closest('.ccard');
     const res = resolveCard(S, c, el.dataset.c, true);
-    if (res) { toast(res, res.startsWith('😱') || res.startsWith('😬') ? 'bad' : 'gold'); }
-    SFX.play('coin'); renderTop(); renderPanel(true);
+    const bad = res && (res.startsWith('😱') || res.startsWith('😬'));
+    if (res) toast(res, bad ? 'bad' : 'gold');
+    if (bad) shake();
+    funCard(S, c, before, el);
+    SFX.play('click'); renderTop();
+    if (art && !reduceMotion()) { art.classList.add('gone'); setTimeout(() => renderPanel(true), 230); } else renderPanel(true);
   },
-  cardLoan: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (c && offerLoanCard(S, c)) { renderTop(); renderPanel(true); } },
+  cardLoan: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); const before = c && { ...S.today.tally }; if (c && offerLoanCard(S, c)) { funCard(S, c, before, el); renderTop(); renderPanel(true); } },
   cardVerify: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; verifyRequest(c.req.id, c.req); if (c.req.fraud && c.req.checked) { c.done = true; S.today.done++; } renderPanel(true); },
   cardDefer: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; c.req.expires = S.day + 20; S.requests.push(c.req); c.done = true; S.today.done++; toast('📁 Dossier rangé dans l’onglet Prêts (20 jours pour décider)', 'gold'); renderPanel(true); },
   spec: el => {

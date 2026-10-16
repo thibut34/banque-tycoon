@@ -141,7 +141,7 @@ function peopleMonth(s) {
     // satisfaction personnelle : revient doucement vers celle de l'agence
     const b = getBranch(s, p.br); p.q += ((b ? b.sat : 50) - p.q) * 0.1;
     // départ ?
-    const leave = 0.003 + Math.max(0, fee - 6) * 0.006 + (p.q < 30 ? 0.06 : p.q < 45 ? 0.015 : 0) + rival;
+    const leave = (0.003 + Math.max(0, fee - 6) * 0.006 + (p.q < 30 ? 0.06 : p.q < 45 ? 0.015 : 0) + rival) * (1 - 0.15 * perk(s, 'fidelite'));
     if (p.b >= 0 && !personLoans(s, p).length && chance(leave)) { s.cash -= (p.b + (p.l || 0)) * w; r.gone += w; continue; }
     keep.push(p);
   }

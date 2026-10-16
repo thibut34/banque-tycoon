@@ -31,8 +31,8 @@ function renderTop() {
   $('#tbName').textContent = s.name;
   $('#tbDate').textContent = dateStr(s.day);
   const ep = $('#tbEcon'); ep.textContent = E.label; ep.style.setProperty('--c', E.color);
-  $('#tbCash').textContent = money(s.cash); $('#tbCash').className = s.cash < s.deposits * 0.08 ? 'neg' : '';
-  $('#tbEq').textContent = money(eq); $('#tbEq').className = eq < 0 ? 'neg' : '';
+  setNum($('#tbCash'), s.cash); $('#tbCash').classList.toggle('neg', s.cash < s.deposits * 0.08);
+  setNum($('#tbEq'), eq); $('#tbEq').classList.toggle('neg', eq < 0);
   $('#tbRatio').textContent = r === Infinity ? '∞' : pct(r); $('#tbRatio').className = r < minRatio(s) ? 'neg' : r < minRatio(s) + 3 ? 'warn' : 'pos';
   $('#tbRep').textContent = Math.round(s.reputation) + '/100'; $('#tbRep').className = s.reputation < 30 ? 'neg' : s.reputation > 70 ? 'pos' : '';
   $('#tbRank').textContent = rankOf(s) + 'ᵉ / ' + (s.rivals.length + 1);

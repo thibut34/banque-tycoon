@@ -67,9 +67,12 @@ const SFX = (() => {
     bad: () => { tone(330, 0, 0.18, 'sawtooth', 0.06, 220); tone(220, 0.15, 0.3, 'sawtooth', 0.06, 140); },
     notify: () => { tone(880, 0, 0.09, 'sine', 0.08); tone(1175, 0.08, 0.14, 'sine', 0.07); },
     build: () => { tone(180, 0, 0.12, 'square', 0.06, 90); tone(420, 0.08, 0.1, 'triangle', 0.06); },
+    combo: n => { const f = 440 * Math.pow(2, Math.min(n, 12) / 12); tone(f, 0, 0.07, 'square', 0.04); tone(f * 1.5, 0.06, 0.12, 'triangle', 0.06); },
+    star: i => { const f = [784, 988, 1175, 1568][i || 0]; tone(f, 0, 0.18, 'triangle', 0.1); tone(f * 2, 0.04, 0.25, 'sine', 0.04); },
+    chest: () => { [0, 0.12, 0.24, 0.36, 0.48].forEach((t, i) => tone(200 + i * 40, t, 0.08, 'square', 0.05)); tone(523, 0.75, 0.15, 'triangle', 0.1); tone(1047, 0.85, 0.5, 'sine', 0.1); },
     level: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.11, 0.3, 'triangle', 0.1)); tone(1319, 0.5, 0.6, 'sine', 0.08); },
   };
-  return { play(n) { if (prefs.mute || !sounds[n]) return; try { sounds[n](); } catch (e) { } } };
+  return { play(n, a) { if (prefs.mute || !sounds[n]) return; try { sounds[n](a); } catch (e) { } } };
 })();
 
 // ---------- Icônes (SVG au trait) ----------
