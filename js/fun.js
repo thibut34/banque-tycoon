@@ -294,6 +294,7 @@ setInterval(() => {
   if (ui.modal || S.over || ui.bannerUntil > Date.now()) return;
   const m = M(S);
   if (ui.loginPending && m.login && !m.login.claimed && S.day > 0) { ui.loginPending = false; return showLogin(); }
+  if (S.flags.bilan && !S.flags.bilan.seen) return showBilan();
   if (m.pendingPerk > 0) return showPerkModal();
   if (m.chests > 0) return showChest();
 }, 400);

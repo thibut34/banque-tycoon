@@ -125,6 +125,12 @@ function vToday() {
     <button class="btn sm scene-go" data-act="tab" data-tab="plan">Aménager l’agence</button>
     <canvas id="floor" data-mini="1" data-maxh="${innerWidth < 700 ? 200 : 280}" role="img" aria-label="Votre agence, vue en 3D"></canvas>
     ${t.arrived ? `<div class="scene-stats"><span>🚶 ${t.arrived} visiteur${t.arrived > 1 ? 's' : ''} aujourd’hui</span>${t.lost ? `<span class="neg">😤 ${t.lost} reparti${t.lost > 1 ? 's' : ''}</span>` : ''}</div>` : ''}</div>` : '';
-  return scene + `<div class="desk"><div class="desk-main">${main}</div><aside class="desk-side">${goal}${queue}${figures}${chap}</aside></div>
+  const tq = avgTeamQ(s), stars = Math.round(tq / 0.9 * 4) + 1;
+  const gerant = gerantOpen(s) ? `<section class="side-box gerant ${s.flags.gerant ? 'on' : ''}"><div class="gr-h"><h3>🧑‍💼 Mode gérant</h3><button class="toggle ${s.flags.gerant ? 'on' : ''}" data-act="gerant" role="switch" aria-checked="${!!s.flags.gerant}" aria-label="Mode gérant"><i></i></button></div>
+      <p class="small muted">${s.flags.gerant ? 'Votre équipe traite les affaires courantes. Vous ne voyez que les prêts, les histoires et les cas délicats.' : 'Laissez votre équipe traiter les affaires courantes et ne gardez que les décisions importantes.'}</p>
+      <div class="gr-q"><span>Compétence de l’équipe</span><b><span class="gold-t">${'★'.repeat(stars)}</span><span class="st-off">${'★'.repeat(5 - stars)}</span></b></div><small class="muted">Formez et promouvez vos employés dans « Ma banque » : ils décideront mieux à votre place.</small></section>` : '';
+  const autoSum = t.auto && t.auto.n ? `<div class="auto-sum"><span class="as-ico">🧑‍💼</span><div><b>Votre équipe a traité ${t.auto.n} affaire${t.auto.n > 1 ? 's' : ''} courante${t.auto.n > 1 ? 's' : ''}</b><small>${[t.auto.comptes ? `${t.auto.comptes} compte${t.auto.comptes > 1 ? 's' : ''} ouvert${t.auto.comptes > 1 ? 's' : ''}` : '', t.auto.ventes ? `${t.auto.ventes} vente${t.auto.ventes > 1 ? 's' : ''}` : '', t.auto.recl ? `${t.auto.recl} réclamation${t.auto.recl > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'Rien de notable'}</small></div></div>` : '';
+  const bil = s.flags.bilan ? `<button class="side-box chap bil" data-act="bilan"><small>Dernier bilan mensuel</small><b class="${s.flags.bilan.pl.net >= 0 ? 'pos' : 'neg'}">${s.flags.bilan.pl.net >= 0 ? '+' : '−'}${money(Math.abs(s.flags.bilan.pl.net))}</b><span class="muted">Voir d’où vient l’argent</span></button>` : '';
+  return scene + `<div class="desk"><div class="desk-main">${autoSum}${main}</div><aside class="desk-side">${goal}${gerant}${queue}${figures}${bil}${chap}</aside></div>
     <details class="more dash-more"><summary>Votre banque en détail</summary>${vDash()}</details>`;
 }

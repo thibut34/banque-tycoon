@@ -140,6 +140,7 @@ function monthEnd(s) {
   const econ = ECON[s.economy];
   const pl = { interest: 0, fees: 0, coupons: 0, reserves: 0, depInt: 0, cbInt: 0, costs: 0, losses: 0, tax: 0 };
   let defaults = 0;
+  const eq0 = s.flags.eqM != null ? s.flags.eqM : null;
   const rec0 = s.upgrades.recouvrement ? 0.2 : 0;
   reconcile(s); // intègre les dépôts modifiés depuis le début de la journée
 
@@ -209,6 +210,7 @@ function monthEnd(s) {
   s.stats.interest += pl.interest;
   if (pl.net > 0) s.stats.profit += pl.net;
   s.lastPL = pl;
+  makeBilan(s, eq0);
   // Conseil de Gisèle si la banque perd de l'argent plusieurs mois de suite
   s.flags.lossStreak = pl.net < 0 ? (s.flags.lossStreak || 0) + 1 : 0;
   if (s.flags.lossStreak === 3 || (s.flags.lossStreak > 3 && s.flags.lossStreak % 6 === 0)) {
