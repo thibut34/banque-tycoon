@@ -127,6 +127,17 @@ const actions = {
     ui.dirty = true; renderPanel(true);
   },
   closeModal: () => closeModal(),
+  nextDay: () => nextDay(),
+  delegate: () => { const n = delegateRest(S); if (n) toast(`👥 Votre équipe a reçu ${n} client${n > 1 ? 's' : ''}`, 'good'); renderTop(); renderPanel(true); },
+  card: el => {
+    const c = S.today && S.today.cards.find(x => x.id == el.dataset.id); if (!c || c.done) return;
+    const res = resolveCard(S, c, el.dataset.c, true);
+    if (res) { toast(res, res.startsWith('😱') || res.startsWith('😬') ? 'bad' : 'gold'); }
+    SFX.play('coin'); renderTop(); renderPanel(true);
+  },
+  cardLoan: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (c && offerLoanCard(S, c)) { renderTop(); renderPanel(true); } },
+  cardVerify: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; verifyRequest(c.req.id, c.req); if (c.req.fraud && c.req.checked) { c.done = true; S.today.done++; } renderPanel(true); },
+  cardDefer: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; c.req.expires = S.day + 20; S.requests.push(c.req); c.done = true; S.today.done++; toast('📁 Dossier rangé dans l’onglet Prêts (20 jours pour décider)', 'gold'); renderPanel(true); },
   spec: el => {
     const b = getBranch(S, ui.branch), v = el.dataset.v; if ((b.spec || 'aucune') === v) return;
     const cost = Math.round(cityOf(b).build * 0.2 / 1e3) * 1e3;
@@ -183,6 +194,7 @@ const actions = {
     closeModal(true);
     const name = $('#bankName').value.trim() || randomBankName();
     S = null; const s = newState(name); S = s;
+    startDay(s);
     startGame(s);
     setTimeout(() => { ui.modal = true; showModal(WELCOME()); }, 200);
   },
@@ -227,15 +239,12 @@ function confetti(n = 90) {
 
 // ---------- Tutoriel ----------
 const TUTO = [
-  { tab: 'plan', txt: 'Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est encore vide. Ouvrez <b>Ma banque</b> pour l’aménager.', done: () => ui.tab === 'plan' },
-  { tab: 'plan', txt: 'Commencez par un <b>bureau de conseil</b> : cliquez sur l’outil « Bureau de conseil » ou sur le <b>+</b> du plan.', done: s => getBranch(s, HQ).b >= 1 },
-  { tab: 'plan', txt: 'Recrutez maintenant un <b>conseiller</b>. Choisissez bien : chaque candidat a son caractère.', done: s => getBranch(s, HQ).bs >= 1 },
-  { tab: 'loans', txt: 'Votre conseiller est prêt. Les clients vont venir <b>demander des prêts</b> : ouvrez l’onglet <b>Prêts</b> dès qu’une demande arrive.', done: s => ui.tab === 'loans' && s.requests.length > 0 },
-  { tab: 'loans', txt: 'Prenez votre temps : réglez le <b>taux</b> avec le curseur puis cliquez sur <b>Proposer</b>. Trop cher, le client part ; trop bas, vous ne gagnez rien.', done: s => s.flags.offered },
-  { tab: 'plan', txt: 'Vous prêtez votre propre capital. Pour prêter plus, il faut l’argent des clients : construisez un <b>guichet</b> et recrutez un <b>guichetier</b>.', done: s => staffTotal(s, 'gs') >= 1 },
-  { tab: 'deposits', txt: 'Ouvrez l’onglet <b>Produits</b> et lancez le <b>compte courant</b>. Réglez les frais : 3 €/mois, c’est le prix du marché.', done: s => s.prod && s.prod.cc.on },
-  { tab: 'missions', txt: 'Bravo ! Livret, assurance-vie, cartes et distributeurs viendront ensuite. Suivez vos objectifs dans <b>Missions</b>.', done: () => ui.tab === 'missions' },
-  { tab: null, txt: 'Dernier conseil : gardez toujours des <b>liquidités</b> et surveillez votre <b>ratio de solvabilité</b>. Bonne chance !', btn: 'C’est parti' },
+  { tab: 'plan', txt: 'Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est vide. Ouvrez <b>Ma banque</b> et construisez un <b>guichet</b>.', done: s => getBranch(s, HQ).g >= 1 },
+  { tab: 'plan', txt: 'Recrutez maintenant un <b>guichetier</b> : c’est lui qui accueillera vos clients. Choisissez bien parmi les candidats.', done: s => getBranch(s, HQ).gs >= 1 },
+  { tab: 'dash', txt: 'Tout est prêt ! Ouvrez <b>Aujourd’hui</b> et cliquez sur <b>Jour suivant</b> pour ouvrir vos portes.', done: s => s.today && s.today.cards.length > 0 },
+  { tab: 'dash', txt: 'Vos premiers clients sont là ! Ouvrez-leur un <b>compte</b> : leur argent rejoint vos caisses. Attention aux clients louches…', done: s => s.clients >= 3 },
+  { tab: 'dash', txt: 'Quand tout le monde est reçu, cliquez sur <b>Jour suivant</b>. Les clients que vous ne recevez pas seront traités par votre équipe, moins bien que vous.', done: s => s.day >= 3 },
+  { tab: 'missions', txt: 'Objectif : <b>50 comptes</b> et <b>200 000 €</b> déposés. Ensuite, vous pourrez prêter cet argent : c’est là que la banque gagne vraiment sa vie.', btn: 'C’est parti' },
 ];
 function updateCoach(force) {
   const s = S, el = $('#coach');
@@ -263,7 +272,7 @@ const HELP = `<div class="m-ico">📘</div><h2>Comment jouer</h2>
 <li>⏸️ <b>Échap</b> ouvre le menu et met le jeu en pause. Sauvegarde automatique chaque mois.</li>
 </ul><div class="choices"><button class="btn primary" data-act="closeModal">Compris</button></div>`;
 const WELCOME = () => `<div class="m-ico">🎉</div><h2>Bienvenue, PDG !</h2>
-<p class="center"><b>${esc(S.name)}</b> ouvre ses portes à <b>Montpellier</b> avec <b>${money(equity(S))}</b> de capital et <b>${money(S.deposits)}</b> de dépôts.</p>
+<p class="center"><b>${esc(S.name)}</b> s’installe à <b>Montpellier</b> avec <b>${money(equity(S))}</b> de capital. Le temps avance quand vous le décidez : <b>un clic = une journée</b>.</p>
 <p class="center muted">Votre directrice adjointe va vous montrer les bases. Votre objectif : ouvrir des agences partout dans le monde… et au-delà.</p>
 <div class="choices"><button class="btn primary" data-act="closeModal">Ouvrir les portes</button></div>`;
 
@@ -282,7 +291,7 @@ function startGame(state) {
   floorReset(null);
   $('#start').hidden = true; $('#game').hidden = false;
   $('#muteBtn').innerHTML = ic(prefs.mute ? 'mute' : 'vol');
-  migrateProducts(S); syncStaff(S); checkUnlocks(S, true);
+  migrateProducts(S); syncStaff(S); checkUnlocks(S, true); if (!S.today) startDay(S);
   renderTabs(); renderTop(); renderPanel(true); nextNews(); updateCoach(true);
 }
 
@@ -317,20 +326,17 @@ document.addEventListener('pointerup', () => { ui.pointerDown = false; });
 document.addEventListener('pointercancel', () => { ui.pointerDown = false; });
 document.addEventListener('keydown', e => {
   if (!S || e.target.matches('input')) return;
+  if ((e.key === 'Enter' || e.code === 'Space') && !ui.modal && !e.target.closest('button')) { e.preventDefault(); nextDay(); return; }
   if (e.key === 'Escape') { if (ui.modal && !$('#modal').dataset.noclose) closeModal(); else if (!ui.modal) actions.menu(); }
 });
 $('#tickerText').addEventListener('animationiteration', nextNews);
 window.addEventListener('beforeunload', save);
 window.addEventListener('resize', () => S && drawCharts());
 
-// Boucle principale : 10 fois par seconde, 1 jour par seconde (vitesse unique)
+// Boucle d'affichage : le temps n'avance que lorsque le joueur passe au jour suivant
 let lastRender = 0;
 setInterval(() => {
   if (!S || S.over) return;
-  if (!ui.modal && !document.hidden) {
-    ui.acc += 0.1;
-    while (ui.acc >= 1 && !S.over && !ui.modal) { ui.acc--; tickDay(); }
-  }
   if (S.over) return;
   checkUnlocks(S);
   renderTop();

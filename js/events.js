@@ -88,7 +88,7 @@ const EVENTS = [
   { id: 'snail', w: 1, make: () => ({ icon: '🐌', title: 'Folie sur les forums', text: 'Des milliers d’internautes appellent à acheter des actions <b>Escargots & Co</b> « pour aller sur la Lune ». Le cours risque de s’envoler… pendant quelques jours.', choices: [{ label: 'Intéressant… (voir les marchés)', fn: s => { s.flags.snailMania = s.day + rint(5, 10); ui.market = 'snail'; } }] }) },
   { id: 'krach', w: 1, make: () => ({ icon: '📉', title: 'Krach éclair', text: 'Un algorithme de trading a confondu « vendre » et « vendre TOUT ». Les marchés actions plongent de 15 % en une matinée.', choices: [{ label: 'Respirer profondément', fn: s => { for (const id of ['cac', 'tech', 'oil', 'snail', 'crypto']) s.market[id].price *= 0.85; s.market.gold.price *= 1.05; } }] }) },
   { id: 'heritage', w: 1, make: () => {
-    const amt = rint(2, 10) * 1e5;
+    const amt = rint(2, 10) * 1e4;
     return { icon: '👵', title: 'Un héritage inattendu', text: `Mme Jeanne, cliente de 104 ans, vous lègue <b>${money(amt)}</b>… à condition de prendre soin de ses 14 chats.`, choices: [
       { label: 'Accepter les chats 🐈', sub: 'Les chats coûtent 2 000 €/mois… pour toujours', fn: s => { s.cash += amt; s.flags.cats = true; return 'Les 14 chats s’installent dans votre bureau.'; } },
       { label: 'Donner l’héritage à la SPA', sub: '+10 réputation', fn: s => { s.reputation += 10; return 'Les chats sont heureux. La France aussi.'; } },
@@ -175,9 +175,9 @@ const EVENTS = [
       { label: 'Demander aux clients de tout ressaisir', sub: '-8 réputation', fn: s => { s.reputation -= 8; } },
     ] };
   } },
-  { id: 'journaliste', w: 1, cond: s => s.prod && s.prod.cc.on && s.prod.cc.fee > 4.5, make: s => ({ icon: '📰', title: 'Enquête de presse', text: `Un journaliste prépare un article sur « les frais bancaires abusifs ». Vos ${nf1.format(s.prod.cc.fee)} € par mois sont cités.`, choices: [
-    { label: 'Baisser les frais à 2 €/mois', sub: '+5 réputation', fn: s => { s.prod.cc.fee = 2; s.reputation += 5; return 'L’article vous présente en exemple.'; } },
-    { label: 'Assumer', sub: s.prod.cc.fee > 6 ? '-10 réputation' : '-3 réputation', fn: s => { s.reputation -= s.prod.cc.fee > 6 ? 10 : 3; } },
+  { id: 'journaliste', w: 1, cond: s => s.prod && s.prod.cc.on && s.prod.cc.fee > 6.5, make: s => ({ icon: '📰', title: 'Enquête de presse', text: `Un journaliste prépare un article sur « les frais bancaires abusifs ». Vos ${nf1.format(s.prod.cc.fee)} € par mois sont cités.`, choices: [
+    { label: 'Baisser les frais à 4 €/mois', sub: '+5 réputation', fn: s => { s.prod.cc.fee = 4; s.reputation += 5; return 'L’article vous présente en exemple.'; } },
+    { label: 'Assumer', sub: s.prod.cc.fee > 8 ? '-10 réputation' : '-3 réputation', fn: s => { s.reputation -= s.prod.cc.fee > 8 ? 10 : 3; } },
   ] }) },
   { id: 'reseau', w: 1.2, cond: s => s.rivals.some(r => !r.gone && r.eq > 1e6 && r.eq < equity(s) * 0.5) && freeCity(s), make: s => {
     const r = s.rivals.filter(r => !r.gone && r.eq > 1e6 && r.eq < equity(s) * 0.5).sort((a, b) => b.eq - a.eq)[0];

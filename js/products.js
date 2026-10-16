@@ -21,6 +21,7 @@ const PROD_UNLOCK = {
 const AVG_BALANCE = 2000; // solde moyen d'un compte courant
 
 function migrateProducts(s) {
+  if (s.clients == null) { s.clients = Math.round((s.depCC || 0) / 2500); s.cards = 0; s.cardsGold = 0; }
   if (!s.prod) {
     const old = s.deposits || 0;
     s.prod = { cc: { on: old > 0, fee: 3 }, liv: { on: old > 0 }, av: { on: false, fee: 1, aum: 0 }, carte: { on: false, fee: 45 } };
@@ -36,25 +37,21 @@ function reconcile(s) {
   else if (s.prod.liv.on) s.depLiv += diff; else s.depCC += diff;
   s.depCC = Math.max(0, s.depCC); s.depLiv = Math.max(0, s.depLiv); s.deposits = s.depCC + s.depLiv;
 }
-const ccAtt = fee => clamp(Math.exp(-0.18 * (fee - 3)), 0.3, 1.8);
+const ccAtt = fee => clamp(Math.exp(-0.18 * (fee - 5)), 0.3, 1.8);
 const repAtt = s => 0.4 + s.reputation / 80;
 function ccTarget(s) { return s.prod.cc.on ? depositCap(s) * 0.4 * ccAtt(s.prod.cc.fee) * repAtt(s) : 0; }
 function livTarget(s) { return s.prod.liv.on ? depositCap(s) * 0.6 * clamp(Math.exp(0.6 * (s.depositRate - marketDepRate(s))), 0.15, 4) * repAtt(s) * (s.flags.priceWar > s.day ? 0.7 : 1) * (s.flags.greenUntil > s.day ? 1.15 : 1) : 0; }
-const clientsOf = s => Math.round(s.depCC / AVG_BALANCE);
+const clientsOf = s => s.clients || 0;
 function avTarget(s) {
   if (!s.prod.av.on) return 0;
   let t = 0; for (const b of s.branches) t += cityOf(b).cap * 0.25 * staffEff(b, 'bs') * (specOf(b).av || 1);
   return t * clamp(Math.exp(-0.8 * (s.prod.av.fee - 1.2)), 0.2, 2) * repAtt(s);
 }
-function cardHolders(s) {
-  if (!s.prod.carte.on) return 0;
-  const dabs = staffTotal(s, 'dab'), cover = clamp(0.25 + 0.6 * dabs / Math.max(1, s.branches.length * 2), 0.25, 0.85);
-  return Math.round(clientsOf(s) * cover * clamp(Math.exp(-0.015 * (s.prod.carte.fee - 45)), 0.2, 1.4));
-}
+function cardHolders(s) { return (s.cards || 0) + (s.cardsGold || 0); }
 function prodRevenue(s) {
-  return { cc: s.prod.cc.on ? clientsOf(s) * s.prod.cc.fee : 0, av: s.prod.av.aum * s.prod.av.fee / 1200, carte: cardHolders(s) * s.prod.carte.fee / 12 };
+  return { cc: s.prod.cc.on ? clientsOf(s) * s.prod.cc.fee : 0, av: s.prod.av.aum * s.prod.av.fee / 1200, carte: ((s.cards || 0) + (s.cardsGold || 0) * 2.5) * s.prod.carte.fee / 12 };
 }
-function feeRep(s) { if (!s.prod.cc.on) return 0; const f = s.prod.cc.fee; return f > 6 ? -2 : f > 4.5 ? -0.5 : f < 2 ? 0.7 : 0; }
+function feeRep(s) { if (!s.prod.cc.on) return 0; const f = s.prod.cc.fee; return f > 8 ? -2 : f > 6.5 ? -0.5 : f < 3 ? 0.7 : 0; }
 
 function updateDeposits(s) {
   migrateProducts(s); reconcile(s);
@@ -82,17 +79,17 @@ function vProducts() {
   ${s.prod.liv.on && s.deposits > 0 && s.cash > s.deposits * 0.35 ? `<div class="alert indigo">${ic('alert')}<div>${pct(s.cash / s.deposits * 100, 0)} de l’argent des clients dort dans vos caisses. Il vous coûte des intérêts sans rien rapporter : <b>baissez le taux du livret</b> ou <b>prêtez davantage</b>.</div></div>` : ''}
   <div class="grid two">
     ${card('cc', `${slider('cc', 'fee', 0, 10, 0.5, s.prod.cc.fee, v => nf1.format(v) + ' €/mois')}
-      <p class="small muted">Prix moyen chez les concurrents : 3 €/mois.</p>
+      <p class="small muted">Prix moyen chez les concurrents : 5 €/mois. Au-dessus, plus de clients ferment leur compte chaque mois.</p>
       <div class="stats">${stat('Clients', nf0.format(clientsOf(s)))}${stat('Argent sur les comptes', money(s.depCC))}${stat('Frais encaissés', money(rev.cc) + '/mois', 'pos')}</div>`)}
     ${card('liv', `${slider('liv', 'rate', 0, 8, 0.05, s.depositRate, v => pct(v, 2))}
-      <p class="small muted">Taux des concurrents : ${pct(marketDepRate(s), 2)}. Au-dessus, l’épargne afflue.</p>
-      <div class="stats">${stat('Épargne', money(s.depLiv))}${stat('Visée', money(livTarget(s)))}${stat('Intérêts versés', money(s.depLiv * s.depositRate / 1200) + '/mois', 'neg')}</div>`)}
+      <p class="small muted">Au-dessus des concurrents, l’épargne afflue et vos clients acceptent plus souvent le livret ; en dessous, elle s’en va.</p>
+      <div class="stats">${stat('Épargne', money(s.depLiv))}${stat('Taux des concurrents', pct(marketDepRate(s), 2))}${stat('Intérêts versés', money(s.depLiv * s.depositRate / 1200) + '/mois', 'neg')}</div>`)}
     ${card('av', `${slider('av', 'fee', 0.5, 3, 0.1, s.prod.av.fee, v => pct(v) + '/an')}
-      <p class="small muted">Plus vous avez de conseillers (et plus ils sont expérimentés), plus l’encours grandit.</p>
-      <div class="stats">${stat('Encours géré', money(s.prod.av.aum))}${stat('Visé', money(avTarget(s)))}${stat('Frais encaissés', money(rev.av) + '/mois', 'pos')}</div>`)}
+      <p class="small muted">Vos conseillers reçoivent des clients qui veulent placer leur argent pour la retraite.</p>
+      <div class="stats">${stat('Encours géré', money(s.prod.av.aum))}${stat('Conseillers', staffTotal(s, 'bs'))}${stat('Frais encaissés', money(rev.av) + '/mois', 'pos')}</div>`)}
     ${card('carte', `${slider('carte', 'fee', 0, 150, 5, s.prod.carte.fee, v => nf0.format(v) + ' €/an')}
-      <p class="small muted">Prix moyen : 45 €/an. Chaque distributeur donne envie d’avoir une carte.</p>
-      <div class="stats">${stat('Cartes', nf0.format(cardHolders(s)))}${stat('Distributeurs', staffTotal(s, 'dab'))}${stat('Cotisations', money(rev.carte) + '/mois', 'pos')}</div>`)}
+      <p class="small muted">Prix moyen : 45 €/an. La carte Gold rapporte 2,5 fois plus.</p>
+      <div class="stats">${stat('Cartes', nf0.format(cardHolders(s)))}${stat('Dont Gold', nf0.format(s.cardsGold || 0))}${stat('Cotisations', money(rev.carte) + '/mois', 'pos')}</div>`)}
   </div>
   <section class="card"><header class="card-h"><h3>Argent des clients, liquidités et prêts</h3></header><canvas class="chart" data-chart="deposits"></canvas></section>`;
 }

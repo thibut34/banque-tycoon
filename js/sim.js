@@ -74,20 +74,10 @@ function tickDay() {
   s.day++;
   syncStaff(s);
   updateMarket(s);
-  serveDay(s);
-  updateDeposits(s);
+  migrateProducts(s); reconcile(s);
   if (s.flags.bigCrisisPending && !ui.modal) startBigCrisis(s);
 
-  const retail = s.requests.filter(r => r.type !== 'souv').length;
-  const maxReq = Math.min(10, 2 + 2 * staffTotal(s, 'bs'));
-  // Le tout premier client arrive vite après l'embauche du premier conseiller
-  const first = !s.flags.firstReq && staffTotal(s, 'bs') >= 1 && s.day - (s.flags.bsDay || (s.flags.bsDay = s.day)) >= 4;
-  if (retail < maxReq && (first || chance(clamp(0.5 * loanDemand(s), 0, 0.8)))) {
-    s.flags.firstReq = true;
-    s.requests.push(makeRequest(s));
-    if (ui.tab !== 'loans' && !(s.auto && s.auto.on)) toast('🤝 Un client vient demander un prêt', '', 'req');
-  }
-  if (s.chapter >= 4 && s.requests.filter(r => r.type === 'souv').length < 2 && chance(1 / 45)) {
+  if (s.chapter >= 5 && s.requests.filter(r => r.type === 'souv').length < 2 && chance(1 / 45)) {
     const r = makeSovereign(s); s.requests.push(r);
     toast(`🏛️ ${esc(r.name)} demande un prêt de <b>${money(r.amount)}</b>`, 'gold');
   }
@@ -110,7 +100,7 @@ function tickDay() {
     if (s.reputation < 25 && chance(0.02)) bankRun(s, 0.25);
   }
 
-  if (s.day > 90 && !ui.modal && chance(s.day < 720 ? 1 / 90 : 1 / 60)) triggerEvent();
+  if (s.day > 20 && !ui.modal && chance(1 / 12)) triggerEvent();
   updateChallenge(s);
   if (s.day % 30 === 0) monthEnd(s);
   if (!s.over) { checkChapter(s); checkAchievements(s); checkUnlocks(s); }
@@ -174,7 +164,7 @@ function monthEnd(s) {
   s.loans = s.loans.filter(l => !l.dead && !l.done);
   if (defaults) toast(`💥 ${defaults} défaut${defaults > 1 ? 's' : ''} de paiement ce mois-ci`, 'bad');
 
-  migrateProducts(s); reconcile(s);
+  migrateProducts(s); reconcile(s); clientMonth(s);
   pl.depInt = s.depLiv * s.depositRate / 1200; s.depLiv += pl.depInt; s.deposits = s.depCC + s.depLiv;
   const penalty = s.flags.penalty > s.day ? 3 : 0;
   pl.cbInt = s.cbDebt * (cbRate(s) + penalty) / 1200; s.cash -= pl.cbInt;
@@ -300,7 +290,7 @@ function checkChapter(s) {
   const ch = CHAPTERS[s.chapter];
   if (!ch || !chapterDone(s, ch)) return;
   s.chapter++;
-  if (s.chapter === 7 && !s.flags.bigCrisis) s.flags.bigCrisisPending = true;
+  if (s.chapter === 8 && !s.flags.bigCrisis) s.flags.bigCrisisPending = true;
   s.cash += ch.reward;
   log(`🏁 Chapitre terminé : ${ch.name} (+${money(ch.reward)})`, 'good');
   const unl = Object.values(REGIONS).filter(r => r.unlock === s.chapter).map(r => r.name);
@@ -309,7 +299,7 @@ function checkChapter(s) {
   eventModal('🏁', `Chapitre ${s.chapter} terminé !`, `<p class="center"><b>${ch.name}</b> : mission accomplie.</p>
     ${ch.reward ? `<div class="reward">Récompense <b>+${money(ch.reward)}</b></div>` : ''}
     ${unl.length ? `<p class="center">🌍 Nouvelle${unl.length > 1 ? 's' : ''} région${unl.length > 1 ? 's' : ''} ouverte${unl.length > 1 ? 's' : ''} : <b>${unl.join(', ')}</b></p>` : ''}
-    ${s.chapter === 4 ? '<p class="center">🏛️ Les <b>États</b> peuvent maintenant vous demander des prêts.</p>' : ''}
+    ${s.chapter === 5 ? '<p class="center">🏛️ Les <b>États</b> peuvent maintenant vous demander des prêts.</p>' : ''}
     ${next ? `<p class="center muted">Prochain chapitre : <b>${next.name}</b></p>` : '<p class="center">🏆 Vous avez terminé la campagne. Vous êtes une légende de la finance !</p>'}`, [{ label: 'Continuer' }]);
 }
 

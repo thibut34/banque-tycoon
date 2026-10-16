@@ -45,8 +45,9 @@ function vMissions() {
       <div class="grow"><div class="row"><h3 class="grow">${cur || done ? ch.name : 'Chapitre ' + (i + 1)}</h3>${ch.reward ? `<span class="pill ${done ? '' : 'gold'}">${money(ch.reward)}</span>` : ''}</div>
       ${cur || done ? `<p class="muted small">${ch.desc}</p>` : '<p class="muted small">Terminez le chapitre précédent pour le découvrir.</p>'}
       ${cur ? `<div class="goals">${ch.goals.map(g => goalRow(s, g)).join('')}</div>` : ''}
-      ${unl.length && !done ? `<small class="muted">${ic('world')} Débloque : ${unl.join(', ')}${i === 3 ? ' + prêts aux États' : ''}</small>` : ''}
-      ${i === 1 && !done ? `<small class="muted">${ic('spark')} Débloque : pilote automatique des prêts</small>` : ''}</div></section>`;
+      ${unl.length && !done ? `<small class="muted">${ic('world')} Débloque : ${unl.join(', ')}${i === 4 ? ' + prêts aux États' : ''}</small>` : ''}
+      ${i === 0 && !done ? `<small class="muted">${ic('spark')} Débloque : les prêts, le bureau de conseil et le livret</small>` : ''}
+      ${i === 1 && !done ? `<small class="muted">${ic('spark')} Débloque : pilote automatique des prêts, carte et assurance-vie bientôt</small>` : ''}</div></section>`;
   }).join('');
   return `${chal}<h3 class="sec">Campagne — ${Math.min(s.chapter, CHAPTERS.length)}/${CHAPTERS.length} chapitres</h3>${chs}`;
 }
@@ -65,7 +66,7 @@ function vRanking() {
       ${r.r && canBuyout(s, r.r) ? `<button class="btn sm gold" data-act="buyout" data-id="${r.id}" ${s.cash < buyoutPrice(r.r) ? 'disabled' : ''}>🦈 Racheter ${money(buyoutPrice(r.r))}</button>` : ''}</div>`;
   }).join('');
   return `<div class="alert blue">${ic('ranking')}<div>Les fonds propres des grandes banques. Elles grandissent en période de croissance et souffrent pendant les crises. Objectif ultime : <b>devenir numéro 1 mondial</b>.</div></div>
-  ${s.chapter >= 3 ? '' : `<div class="alert indigo">${ic('lock')}<div>À partir du chapitre 4, vous pourrez <b>racheter</b> les concurrents deux fois plus petits que vous.</div></div>`}
+  ${s.chapter >= 4 ? '' : `<div class="alert indigo">${ic('lock')}<div>À partir du chapitre 5, vous pourrez <b>racheter</b> les concurrents deux fois plus petits que vous.</div></div>`}
   ${card(`Classement mondial · vous êtes <span class="gold-t">${rankOf(s)}ᵉ</span>`, rows)}
   ${s.rivals.some(r => r.gone) ? `<p class="muted small">Absorbées par vous : ${s.rivals.filter(r => r.gone).map(r => RIVALS.find(x => x.id === r.id).name).join(', ')}</p>` : ''}`;
 }

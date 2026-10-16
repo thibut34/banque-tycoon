@@ -3,7 +3,7 @@
    BANQUE TYCOON — données du jeu
    ===================================================================== */
 
-const SAVE_KEY = 'banqueTycoon.save.v2';
+const SAVE_KEY = 'banqueTycoon.save.v3';
 const BEST_KEY = 'banqueTycoon.best.v2';
 const HQ = 'montpellier';
 const START = { cash: 1e6, deposits: 0 }; // 1 M€ de capital et une agence vide, pour tout le monde
@@ -65,13 +65,13 @@ const ASSETS = {
 // unlock = index du chapitre à partir duquel la région est ouverte
 const REGIONS = {
   france: { name: 'France', unlock: 0, cost: 1, wage: 1, box: [-5.5, 9.5, 41.5, 51.5] },
-  europe: { name: 'Europe', unlock: 3, cost: 1.4, wage: 1.2, box: [-11, 26, 36, 61] },
-  ameriques: { name: 'Amériques', unlock: 4, cost: 2, wage: 1.5, box: [-125, -35, -40, 50] },
-  asie: { name: 'Asie', unlock: 5, cost: 2, wage: 1.3, box: [65, 145, -5, 42] },
-  afrique: { name: 'Afrique', unlock: 6, cost: 0.9, wage: 0.6, box: [-20, 42, -36, 36] },
-  moyenorient: { name: 'Moyen-Orient', unlock: 6, cost: 2.2, wage: 1.5, box: [25, 60, 20, 44] },
-  oceanie: { name: 'Océanie', unlock: 6, cost: 1.8, wage: 1.4, box: [140, 180, -48, -25] },
-  espace: { name: 'Espace', unlock: 7, cost: 1, wage: 8, box: null },
+  europe: { name: 'Europe', unlock: 4, cost: 1.4, wage: 1.2, box: [-11, 26, 36, 61] },
+  ameriques: { name: 'Amériques', unlock: 5, cost: 2, wage: 1.5, box: [-125, -35, -40, 50] },
+  asie: { name: 'Asie', unlock: 6, cost: 2, wage: 1.3, box: [65, 145, -5, 42] },
+  afrique: { name: 'Afrique', unlock: 7, cost: 0.9, wage: 0.6, box: [-20, 42, -36, 36] },
+  moyenorient: { name: 'Moyen-Orient', unlock: 7, cost: 2.2, wage: 1.5, box: [25, 60, 20, 44] },
+  oceanie: { name: 'Océanie', unlock: 7, cost: 1.8, wage: 1.4, box: [140, 180, -48, -25] },
+  espace: { name: 'Espace', unlock: 8, cost: 1, wage: 8, box: null },
 };
 const TIERS = {
   s: { label: 'Petite ville', cost: 150e3, rent: 1500, cap: 4e6, loans: 0.5, traffic: 2 },
@@ -167,22 +167,24 @@ const RIVALS = [
 // ---------- Campagne : chapitres et objectifs ----------
 const G = (txt, cur, goal, fmt) => ({ txt, cur, goal, fmt });
 const CHAPTERS = [
-  { name: 'Les premiers clients', desc: 'Votre agence de Montpellier est vide. Installez un conseiller, prêtez, puis ouvrez des comptes.', reward: 100e3, goals: [
-    G('Recruter un conseiller', s => staffTotal(s, 'bs'), 1), G('Accorder 3 prêts', s => s.stats.granted, 3), G('Recruter un guichetier', s => staffTotal(s, 'gs'), 1), G('Clients avec un compte', s => s.depCC / AVG_BALANCE, 200)] },
-  { name: 'Banque de quartier', desc: 'Les Montpelliérains vous font confiance. Lancez le livret, les cartes, et une deuxième agence.', reward: 250e3, goals: [
-    G('Accorder 15 prêts', s => s.stats.granted, 15), G('Épargne sur les livrets', s => s.depLiv || 0, 1e6, money), G('Installer un distributeur', s => staffTotal(s, 'dab'), 1), G('Posséder 2 agences', s => s.branches.length, 2), G('Fonds propres', s => equity(s), 1.4e6, money)] },
+  { name: 'L’ouverture', desc: 'Votre agence de Montpellier est vide. Installez un guichet, recrutez, et ouvrez vos premiers comptes.', reward: 20e3, goals: [
+    G('Recruter un guichetier', s => staffTotal(s, 'gs'), 1), G('Clients avec un compte', s => s.clients, 50), G('Argent déposé par les clients', s => s.deposits, 200e3, money)] },
+  { name: 'Les premiers crédits', desc: 'Vous avez l’argent des clients : il est temps de prêter. Installez un bureau et recrutez un conseiller.', reward: 60e3, goals: [
+    G('Recruter un conseiller', s => staffTotal(s, 'bs'), 1), G('Prêts accordés', s => s.stats.granted, 10), G('Clients avec un compte', s => s.clients, 300), G('Épargne sur les livrets', s => s.depLiv, 100e3, money)] },
+  { name: 'Banque de quartier', desc: 'Montpellier vous fait confiance. Distributeurs, cartes, et une deuxième agence.', reward: 200e3, goals: [
+    G('Clients avec un compte', s => s.clients, 1200), G('Prêts accordés', s => s.stats.granted, 40), G('Installer un distributeur', s => staffTotal(s, 'dab'), 1), G('Posséder 2 agences', s => s.branches.length, 2), G('Fonds propres', s => equity(s), 1.2e6, money)] },
   { name: 'Le réseau régional', desc: 'Couvrez la France et devenez une banque qui compte. À la clé : la licence européenne.', reward: 600e3, goals: [
-    G('Agences en France', s => regionCount(s, 'france'), 6), G('Conseillers embauchés', s => staffTotal(s, 'bs'), 8), G('Réputation', s => s.reputation, 60), G('Fonds propres', s => equity(s), 5e6, money)] },
+    G('Agences en France', s => regionCount(s, 'france'), 5), G('Conseillers embauchés', s => staffTotal(s, 'bs'), 6), G('Réputation', s => s.reputation, 60), G('Fonds propres', s => equity(s), 3e6, money)] },
   { name: 'Cap sur l’Europe', desc: 'Londres, Genève, Berlin… L’Europe vous ouvre ses portes.', reward: 2e6, goals: [
-    G('Agences en Europe', s => regionCount(s, 'europe'), 3), G('Agences en France', s => regionCount(s, 'france'), 10), G('Grande agence (niveau 3)', s => s.branches.filter(b => b.size >= 3).length, 1), G('Fonds propres', s => equity(s), 15e6, money)] },
+    G('Agences en Europe', s => regionCount(s, 'europe'), 3), G('Agences en France', s => regionCount(s, 'france'), 8), G('Grande agence (niveau 3)', s => s.branches.filter(b => b.size >= 3).length, 1), G('Fonds propres', s => equity(s), 8e6, money)] },
   { name: 'Le Nouveau Monde', desc: 'Traversez l’Atlantique. Les États vous demandent maintenant de l’argent.', reward: 6e6, goals: [
-    G('Agences aux Amériques', s => regionCount(s, 'ameriques'), 3), G('Prêter à un pays', s => s.stats.souv, 1), G('Classement (top 5)', s => rankOf(s) <= 5 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 50e6, money)] },
+    G('Agences aux Amériques', s => regionCount(s, 'ameriques'), 3), G('Prêter à un pays', s => s.stats.souv, 1), G('Classement (top 5)', s => rankOf(s) <= 5 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 25e6, money)] },
   { name: 'Le dragon asiatique', desc: 'Tokyo, Shanghai, Singapour : le centre du monde se déplace.', reward: 15e6, goals: [
-    G('Agences en Asie', s => regionCount(s, 'asie'), 3), G('Prêts accordés', s => s.stats.granted, 300), G('Défis réussis', s => s.stats.challenges, 5), G('Fonds propres', s => equity(s), 150e6, money)] },
+    G('Agences en Asie', s => regionCount(s, 'asie'), 3), G('Prêts accordés', s => s.stats.granted, 600), G('Défis réussis', s => s.stats.challenges, 5), G('Fonds propres', s => equity(s), 80e6, money)] },
   { name: 'Partout sur Terre', desc: 'Une agence sur chaque continent. Plus aucun pays ne vous échappe.', reward: 60e6, goals: [
-    G('Régions couvertes', s => Object.keys(REGIONS).filter(r => r !== 'espace' && regionCount(s, r) > 0).length, 7), G('Agences', s => s.branches.length, 35), G('Classement (top 3)', s => rankOf(s) <= 3 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 600e6, money)] },
+    G('Régions couvertes', s => Object.keys(REGIONS).filter(r => r !== 'espace' && regionCount(s, r) > 0).length, 7), G('Agences', s => s.branches.length, 30), G('Classement (top 3)', s => rankOf(s) <= 3 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 300e6, money)] },
   { name: 'Au-delà du ciel', desc: 'La Terre est trop petite. Devenez la première banque interplanétaire.', reward: 0, goals: [
-    G('Traverser la Grande Crise', s => s.flags.bigCrisisDone ? 1 : 0, 1), G('Base lunaire', s => s.branches.some(b => b.id === 'lune') ? 1 : 0, 1), G('Colonie martienne', s => s.branches.some(b => b.id === 'mars') ? 1 : 0, 1), G('Numéro 1 mondial', s => rankOf(s) === 1 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 8e9, money)] },
+    G('Traverser la Grande Crise', s => s.flags.bigCrisisDone ? 1 : 0, 1), G('Base lunaire', s => s.branches.some(b => b.id === 'lune') ? 1 : 0, 1), G('Colonie martienne', s => s.branches.some(b => b.id === 'mars') ? 1 : 0, 1), G('Numéro 1 mondial', s => rankOf(s) === 1 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 2e9, money)] },
 ];
 
 // ---------- Défis chronométrés ----------
@@ -193,7 +195,7 @@ const CHALLENGES = {
   staff: { make: s => ({ goal: 3, base: staffTotal(s, 'gs') + staffTotal(s, 'bs'), days: 60 }), txt: c => `Embaucher ${c.goal} agents`, cur: (s, c) => staffTotal(s, 'gs') + staffTotal(s, 'bs') - c.base },
   rep: { cond: s => s.reputation < 82, make: s => ({ goal: Math.round(Math.min(95, s.reputation + 10)), base: 0, days: 90 }), txt: c => `Atteindre ${c.goal} de réputation`, cur: s => Math.round(s.reputation) },
   profit: { make: s => ({ goal: Math.max(50e3, Math.round(equity(s) * 0.03 / 1e3) * 1e3), base: s.stats.profit, days: 90 }), txt: c => `Réaliser ${money(c.goal)} de bénéfices`, cur: (s, c) => s.stats.profit - c.base, fmt: money },
-  souv: { cond: s => chapterIdx(s) >= 4, make: s => ({ goal: 1, base: s.stats.souv, days: 120 }), txt: () => 'Prêter à un pays', cur: (s, c) => s.stats.souv - c.base },
+  souv: { cond: s => chapterIdx(s) >= 5, make: s => ({ goal: 1, base: s.stats.souv, days: 120 }), txt: () => 'Prêter à un pays', cur: (s, c) => s.stats.souv - c.base },
 };
 
 // ---------- Succès ----------
@@ -247,21 +249,22 @@ const NEWS = [
 ];
 
 const TABS = [
-  ['dash', 'Accueil'], ['plan', 'Ma banque'], ['loans', 'Prêts'], ['deposits', 'Produits'], ['world', 'Monde'], ['markets', 'Marchés'],
+  ['dash', 'Aujourd’hui'], ['plan', 'Ma banque'], ['loans', 'Prêts'], ['deposits', 'Produits'], ['world', 'Monde'], ['markets', 'Marchés'],
   ['missions', 'Missions'], ['ranking', 'Classement'], ['cb', 'Banque centrale'], ['upgrades', 'Améliorations'], ['me', 'Patron'], ['achs', 'Succès'],
 ];
 
 // ---------- Déblocage progressif de l'interface ----------
 // Au début, seuls l'essentiel est visible ; le reste apparaît avec la progression.
 const TAB_UNLOCK = {
-  dash: () => true, plan: () => true, loans: () => true, missions: () => true,
+  dash: () => true, plan: () => true, missions: () => true,
+  loans: s => s.chapter >= 1,
   deposits: s => staffTotal(s, 'gs') >= 1 || s.chapter >= 1,
-  world: s => s.chapter >= 1,
+  world: s => s.chapter >= 2,
   upgrades: s => s.chapter >= 1,
   cb: s => s.chapter >= 1 || s.cbDebt > 0,
-  markets: s => s.chapter >= 2,
-  ranking: s => s.chapter >= 2,
-  me: s => s.chapter >= 2,
+  markets: s => s.chapter >= 3,
+  ranking: s => s.chapter >= 3,
+  me: s => s.chapter >= 3,
   achs: s => Object.keys(s.achievements).length >= 3,
 };
 const TAB_HINT = {
@@ -275,12 +278,12 @@ const TAB_HINT = {
   achs: 'Retrouvez vos succès et vos statistiques.',
 };
 const ITEM_UNLOCK = {
-  b: () => true, bs: () => true,
-  g: s => s.stats.granted >= 1 || !!s.flags.offered || s.chapter >= 1, gs: s => s.stats.granted >= 1 || !!s.flags.offered || s.chapter >= 1,
-  deco: s => s.stats.granted >= 3 || s.chapter >= 1,
+  g: () => true, gs: () => true,
+  b: s => s.chapter >= 1, bs: s => s.chapter >= 1,
+  deco: s => s.clients >= 30 || s.chapter >= 1,
   dab: s => s.chapter >= 1,
   vig: s => s.chapter >= 1 || !!s.flags.robbed,
-  size: s => s.chapter >= 1,
+  size: s => s.chapter >= 2,
 };
 
 // ---------- Employés ----------

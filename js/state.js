@@ -5,7 +5,7 @@
    ===================================================================== */
 
 let S = null;
-const ui = { tab: 'dash', market: 'cac', tradeAmt: 100000, pointerDown: false, modal: false, dirty: true, event: null, acc: 0, toastKeys: {}, seen: new Set(), branch: HQ, region: 'france' };
+const ui = { tab: 'dash', market: 'cac', tradeAmt: 100000, pointerDown: false, modal: false, dirty: true, event: null, acc: 0, toastKeys: {}, seen: new Set(), branch: HQ, region: 'france', cardSeq: 0 };
 
 function newBranch(id, o = {}) {
   return Object.assign({ id, size: 1, g: 0, gs: 0, b: 0, bs: 0, dab: 0, vig: 0, deco: 0, sat: 50, since: S ? S.day : 0 }, o);
@@ -21,8 +21,8 @@ function newState(name) {
   }
   return {
     v: 2, name, day: 0, nextEmp: 0,
-    cash: START.cash, deposits: 0, depCC: 0, depLiv: 0, depositRate: 1.5,
-    prod: { cc: { on: false, fee: 3 }, liv: { on: false }, av: { on: false, fee: 1, aum: 0 }, carte: { on: false, fee: 45 } },
+    cash: START.cash, deposits: 0, depCC: 0, depLiv: 0, depositRate: 1.5, clients: 0, cards: 0, cardsGold: 0,
+    prod: { cc: { on: true, fee: 5 }, liv: { on: false }, av: { on: false, fee: 1, aum: 0 }, carte: { on: false, fee: 45 } },
     loans: [], requests: [], nextId: 1,
     cbDebt: 0, policyRate: 3, rateHist: [3],
     economy: 'stable', econTimer: rint(8, 14), nextEcon: null,
@@ -62,7 +62,7 @@ function branchLoanF(b) { return cityOf(b).loans * 0.45 * staffEff(b, 'bs') * (s
 function branchCosts(s, b) {
   const w = wageMult(s, b);
   const wages = b.staff ? b.staff.reduce((a, e) => a + empWage(s, b, e), 0) : (b.gs * ITEMS.gs.wage + b.bs * ITEMS.bs.wage + b.vig * ITEMS.vig.wage) * w;
-  return cityOf(b).rent + wages + b.dab * ITEMS.dab.maint;
+  return (b.id === HQ ? 0 : cityOf(b).rent) + wages + b.dab * ITEMS.dab.maint; // le siège vous appartient : pas de loyer
 }
 const dabIncome = b => b.dab * cityOf(b).traffic * 1500;
 function avgSat(s) {

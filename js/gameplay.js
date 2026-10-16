@@ -35,13 +35,13 @@ const lostShare = b => { const t = (b.lastServed || 0) + (b.lastLost || 0); retu
 // ---------- Fraudes ----------
 const FRAUD_CLUES = ['Adresse introuvable sur la carte', 'Fiches de paie floues', 'Société créée il y a 3 jours', 'Le téléphone ne répond jamais', 'Signature différente sur chaque page', 'Pressé de recevoir l’argent… aujourd’hui'];
 function maybeFraud(s, r) {
-  r.fraud = chance(r.score < 560 ? 0.12 : 0.05);
-  if (r.fraud) { r.maxRate += 4; r.clue = pick(FRAUD_CLUES); if (s.upgrades.analyste && chance(0.7)) r.flagged = true; }
+  r.fraud = chance(r.score < 560 ? 0.06 : 0.025);
+  if (r.fraud) { r.maxRate += 4; r.clue = pick(FRAUD_CLUES); if ((s.upgrades.analyste && chance(0.7)) || (s.flags.focus === 'prudence' && s.flags.focusUntil > s.day)) r.flagged = true; }
   return r;
 }
 const verifyCost = r => Math.round(clamp(r.amount * 0.0015, 100, 30e3) / 10) * 10;
-function verifyRequest(id) {
-  const r = S.requests.find(x => x.id == id); if (!r || r.checked) return;
+function verifyRequest(id, given) {
+  const r = given || S.requests.find(x => x.id == id); if (!r || r.checked) return;
   const cost = verifyCost(r); if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad');
   S.cash -= cost; r.checked = true;
   if (r.fraud) {
@@ -55,7 +55,7 @@ function verifyRequest(id) {
 const aliveRivals = s => s.rivals.filter(r => !r.gone);
 function randomRival(s) { const r = pick(aliveRivals(s)); return RIVALS.find(x => x.id === r.id); }
 const buyoutPrice = r => Math.round(r.eq * 1.4 / 1e4) * 1e4;
-const canBuyout = (s, r) => s.chapter >= 3 && !r.gone && r.eq < equity(s) * 0.6;
+const canBuyout = (s, r) => s.chapter >= 4 && !r.gone && r.eq < equity(s) * 0.6;
 function buyoutRival(id) {
   const s = S, r = s.rivals.find(x => x.id === id); if (!r || !canBuyout(s, r)) return;
   const price = buyoutPrice(r), R = RIVALS.find(x => x.id === id);

@@ -51,7 +51,7 @@ function renderPanel(force) {
   if (!S) return;
   if (!force && !canRender()) return;
   if (ui.tab === 'plan' && !force && $('#floor')) { renderPlanSide(); ui.dirty = false; return; }
-  const views = { dash: vDash, plan: vPlan, loans: vLoans, deposits: vProducts, world: vWorld, markets: vMarkets, missions: vMissions, ranking: vRanking, cb: vCB, upgrades: vUpgrades, me: vMe, achs: vAchs };
+  const views = { dash: vToday, plan: vPlan, loans: vLoans, deposits: vProducts, world: vWorld, markets: vMarkets, missions: vMissions, ranking: vRanking, cb: vCB, upgrades: vUpgrades, me: vMe, achs: vAchs };
   const st = $('#panel').scrollTop;
   const alert = S.surveillance ? `<div class="alert red">${ic('alert')}<div><b>Banque sous surveillance</b> : ratio de solvabilité sous ${minRatio(S)} % (${S.lowCap}/6 mois avant retrait de licence). Nouveaux prêts, achats d’actifs et bonus interdits.</div></div>` : '';
   $('#panel').innerHTML = `<div class="page">${alert}${views[ui.tab]()}</div>`;
@@ -175,15 +175,22 @@ function dossier(r) {
   return parts.length ? `<div class="req-info dossier">${parts.join(' · ')}</div>` : '';
 }
 function reqCard(s, r) {
-  const T = LOAN_TYPES[r.type], souv = r.type === 'souv', g = reqGrade(r), p = acceptProb(r), left = r.expires - s.day;
-  const pd = reqPD(r) * (s.upgrades.ia && !souv ? 0.75 : 1);
+  const souv = r.type === 'souv', left = r.expires - s.day;
   const isNew = !ui.seen.has(r.id); ui.seen.add(r.id);
+  return `<div class="req ${isNew ? 'new' : ''} ${souv ? 'souv' : ''}">${reqInner(s, r)}
+    <div class="row"><button class="btn success grow" data-act="offer" data-id="${r.id}">Proposer</button><button class="btn ghost" data-act="reject" data-id="${r.id}">Refuser</button></div>
+    <div class="row req-foot">${!souv && !r.checked ? `<button class="btn sm ghost" data-act="verify" data-id="${r.id}" title="Faire vérifier le dossier pour repérer les escrocs">🔎 Vérifier · ${money(verifyCost(r))}</button>` : '<span></span>'}<span class="expire grow ${left < 5 ? 'neg' : 'muted'}">${ic('clock')} encore ${left} j</span></div>
+  </div>`;
+}
+function reqInner(s, r) {
+  const T = LOAN_TYPES[r.type], souv = r.type === 'souv', g = reqGrade(r), p = acceptProb(r);
+  const pd = reqPD(r) * (s.upgrades.ia && !souv ? 0.75 : 1);
   const gcls = souv ? 'g-' + (g.startsWith('A') ? 'A' : g === 'BBB' ? 'C' : g === 'BB' ? 'D' : 'E') : 'g-' + g;
   const big = !souv && r.amount > equity(s) * 0.15 ? `<div class="fraud">${ic('alert')} Gros risque : ${Math.round(r.amount / Math.max(1, equity(s)) * 100)} % de vos fonds propres sur un seul client</div>` : '';
   const fraudTxt = big + (r.flagged && !r.checked ? `<div class="fraud">${ic('alert')} Dossier suspect : ${esc(r.clue)}</div>` : r.verified ? '<div class="verified">✅ Dossier vérifié</div>' : '');
   const info = souv ? `Note <b>${g}</b> · Défaut <b>${pct(pd * 100)}/an</b> · Récupération 45 %`
     : s.upgrades.analyste ? `Score <b>${r.score}</b> · Défaut <b>${pct(pd * 100)}/an</b> · Récupération ${Math.round(T.rec * 100)} %` : '🔍 Embauchez un analyste pour voir le score exact.';
-  return `<div class="req ${isNew ? 'new' : ''} ${souv ? 'souv' : ''}">
+  return `
     <div class="req-h"><span class="ico">${T.icon}</span><div><b>${esc(r.name)}</b><small>${souv ? 'Emprunt d’État pour ' : T.label + ' pour '}${esc(r.reason)}</small></div><span class="grade ${gcls}" title="Note de crédit">${g}</span></div>
     <div class="req-info">Montant <b>${money(r.amount)}</b> · Durée <b>${fmtDur(r.dur)}</b></div>
     ${dossier(r)}
@@ -192,10 +199,7 @@ function reqCard(s, r) {
     <input type="range" min="0.5" max="${usure(r)}" step="0.1" value="${r.offer}" data-input="rate" data-id="${r.id}">
     <div class="req-info small">Taux d’usure (maximum légal) ${tip('usure')} : <b>${pct(usure(r))}</b></div>
     <div class="req-info">Chance d’acceptation <b data-o="p" class="${p > 0.6 ? 'pos' : p < 0.3 ? 'neg' : 'warn'}">${Math.round(p * 100)} %</b> · Mensualité <b data-o="pmt">${money(payment(r.amount, r.offer, r.dur))}</b></div>
-    <div class="bar"><i data-o="bar" style="width:${p * 100}%"></i></div>
-    <div class="row"><button class="btn success grow" data-act="offer" data-id="${r.id}">Proposer</button><button class="btn ghost" data-act="reject" data-id="${r.id}">Refuser</button></div>
-    <div class="row req-foot">${!souv && !r.checked ? `<button class="btn sm ghost" data-act="verify" data-id="${r.id}" title="Faire vérifier le dossier pour repérer les escrocs">🔎 Vérifier · ${money(verifyCost(r))}</button>` : '<span></span>'}<span class="expire grow ${left < 5 ? 'neg' : 'muted'}">${ic('clock')} encore ${left} j</span></div>
-  </div>`;
+    <div class="bar"><i data-o="bar" style="width:${p * 100}%"></i></div>`;
 }
 function vLoans() {
   const s = S, A = s.auto;

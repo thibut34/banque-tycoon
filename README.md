@@ -6,17 +6,17 @@ Un simulateur de banque jouable dans le navigateur (ordinateur et mobile).
 
 ## Le principe
 
-Tout le monde commence au même endroit : une petite agence à **Montpellier** avec 1 M€ de fonds propres. Une campagne en **8 chapitres** vous emmène de la banque de quartier jusqu'à la première banque interplanétaire (comptez plusieurs heures de jeu).
+Tout le monde commence au même endroit : une agence **vide** à Montpellier avec 1 M€ de capital. Le jeu se joue **jour par jour** : tu cliques sur « Jour suivant » quand ta journée est finie.
 
-- **Ma banque** : le plan animé de chaque agence, vu de dessus. Construisez des guichets, embauchez des guichetiers et des conseillers, installez des distributeurs, des vigiles et de la décoration. Les clients entrent, font la queue et repartent contents… ou fâchés.
-- **Monde** : 50 villes sur une carte, de Nîmes à Tokyo, puis la Lune et Mars. Chaque chapitre terminé ouvre une nouvelle région.
-- **Missions** : objectifs de campagne et défis chronométrés avec récompenses.
-- **Classement** : dépassez Goldman Sachets, Deutsche Bankrott et JP Morgane.
-- **Prêts** : particuliers, entreprises, start-up… et des États notés de AAA à CCC. Un pilote automatique se débloque au chapitre 3.
-- **Dépôts**, **marchés**, **banque centrale**, **régulateur** (ratio de solvabilité), **cycles économiques**, **événements** à choix, **améliorations**, boutique de luxe et succès.
-- Tutoriel guidé, sons synthétisés (coupables avec le bouton haut-parleur), sauvegarde automatique.
+- **Aujourd’hui** : chaque jour, 6 à 10 clients (puis davantage) se présentent. Chacun est une carte à traiter : ouvrir un compte, enregistrer un dépôt, placer un livret, vendre une carte, calmer une réclamation, démasquer un faux client, étudier une demande de prêt… Plus un objectif du jour, la réunion du lundi et des tâches de bureau. Ce que tu ne traites pas, ton équipe s’en charge (moins bien que toi).
+- **Ordre réaliste** : d’abord le guichet et les comptes, puis les prêts se débloquent quand tu as assez d’argent des clients.
+- **Prêts réalistes** : revenus, taux d’endettement (35 % maximum), apport, garanties, taux d’usure, vraies durées.
+- **Ma banque** : plan 3D animé de chaque agence, personnalisable ; employés avec portrait, niveau, formation et promotion.
+- **Produits** : compte courant, livret, assurance-vie, carte bancaire.
+- **Monde**, **concurrents** qui agissent (et qu’on peut racheter), **fraudes**, **événements**, **Grande Crise**, **9 chapitres**.
+- **Accessibilité** : taille du texte, animations réduites, contraste élevé, mode daltonien, mode détente, lexique « ? ».
 
-Le temps avance à vitesse fixe (1 seconde = 1 jour). **Échap** ou le bouton pause ouvre le menu et arrête le temps.
+**Entrée** ou **Espace** = jour suivant · **Échap** = menu.
 
 Fait en HTML/CSS/JavaScript, sans aucune dépendance.
 
