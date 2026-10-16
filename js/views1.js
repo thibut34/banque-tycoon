@@ -19,7 +19,7 @@ function renderTabs() {
     let badge = '';
     if (id === 'loans' && s.requests.length) badge = `<span class="badge">${s.requests.length}</span>`;
     if (id === 'missions' && s.challenge) badge = '<span class="dot"></span>';
-    if ((s.newTabs || []).includes(id)) badge = '<span class="badge new">Nouveau</span>';
+    if ((s.newTabs || []).includes(id)) badge = '<span class="dot new" title="Nouveau"></span>';
     const pulse = ui.coachTab === id ? 'pulse' : '';
     return `<button class="nav-btn ${ui.tab === id ? 'on' : ''} ${pulse}" data-act="tab" data-tab="${id}">${ic(TAB_ICON[id])}<span class="lbl">${lb}</span>${badge}</button>`;
   }).join('');

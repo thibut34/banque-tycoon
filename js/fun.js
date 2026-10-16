@@ -281,7 +281,7 @@ Object.assign(actions, {
 document.addEventListener('keydown', e => {
   if (!S || ui.modal || e.target.matches('input,textarea,select') || e.ctrlKey || e.metaKey || e.altKey) return;
   if (!/^[1-5]$/.test(e.key) || ui.tab !== 'dash') return;
-  const b = $$('.ccards .ccard:first-child .cc-actions .btn')[+e.key - 1];
+  const b = $$('.focus-card .cc-actions .btn')[+e.key - 1];
   if (b && !b.disabled) { e.preventDefault(); b.click(); }
 });
 
@@ -289,7 +289,7 @@ document.addEventListener('keydown', e => {
 let funLast = null;
 setInterval(() => {
   if (!S || $('#game').hidden) return;
-  if (funLast !== S) { funLast = S; ui.combo = null; checkLogin(S); }
+  if (funLast !== S) { funLast = S; ui.combo = null; checkLogin(S); if (S.today) ui.cardSeq = Math.max(ui.cardSeq || 0, ...S.today.cards.map(c => +c.id || 0)); }
   funHUD();
   if (ui.modal || S.over || ui.bannerUntil > Date.now()) return;
   const m = M(S);

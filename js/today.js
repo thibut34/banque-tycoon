@@ -70,33 +70,53 @@ function cardBody(s, c) {
   return ['', ''];
 }
 
-function clientCard(s, c) {
-  const [ico, title] = CARD_META[c.kind], b = c.branch && CITIES[c.branch];
+// Le visage du client quand c'est une personne, sinon une icône
+function cardFace(s, c, size) {
+  const p = c.kind === 'compte' ? c.p : c.pid && findPerson(s, c.pid);
+  return p && p.i ? avatar({ face: personFace(p), role: 'client', trait: p.q < 40 ? 'raleur' : '' }, size) : `<span class="cc-ico" style="width:${size}px;height:${size}px">${CARD_META[c.kind][0]}</span>`;
+}
+function cardWho(s, c) {
+  const p = c.kind === 'compte' ? c.p : c.pid && findPerson(s, c.pid);
+  return p && p.i ? pname(p) : c.name || CARD_META[c.kind][1];
+}
+
+function clientCard(s, c, n, tot) {
+  const [, title] = CARD_META[c.kind], b = c.branch && CITIES[c.branch];
   const [body, actions] = cardBody(s, c);
-  return `<article class="ccard ${c.task ? 'task' : ''} k-${c.kind}">
-    <header><span class="cc-ico">${ico}</span><div class="grow"><b>${title}</b>${b && S.branches.length > 1 ? `<small>${b.name}</small>` : ''}</div></header>
+  return `<article class="ccard focus-card ${c.task ? 'task' : ''} k-${c.kind}">
+    <header>${cardFace(s, c, 52)}<div class="grow"><small class="eyebrow">${title}${b && S.branches.length > 1 ? ' · ' + b.name : ''}</small><h2>${esc(cardWho(s, c))}</h2></div><span class="cc-count">${n} / ${tot}</span></header>
     <div class="cc-body">${body}</div><div class="cc-actions">${actions}</div></article>`;
 }
 
-function starsLine(s, t) {
-  if (!(t.total || t.cards.length)) return '';
-  const r = starRules(s, t), nx = r.find(x => !x[1]);
-  return `<div class="dstars"><span class="st-lbl">Étoiles du jour</span>${r.map(([txt, ok]) => `<span class="st ${ok ? 'on' : ''}" title="${txt}">★</span>`).join('')}<small class="muted">${nx ? 'Prochaine : ' + nx[0].toLowerCase() : 'Les 3 étoiles sont à vous !'} · touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre vite</small></div>`;
-}
 function vToday() {
   const s = S;
   if (!s.today) startDay(s);
-  const t = s.today, left = t.cards.filter(c => !c.done), y = s.yesterday;
+  const t = s.today, left = t.cards.filter(c => !c.done), y = s.yesterday, tot = t.cards.length;
   const noStaff = !s.branches.some(b => b.gs || b.bs);
-  const o = t.obj, ob = o ? `<div class="dobj ${o.done ? 'done' : ''}"><span>🎯</span><div class="grow"><small>Objectif du jour</small><b>${OBJECTIVES[o.k].txt(o.n)}</b></div><span class="pill ${o.done ? '' : 'gold'}">${o.done ? '✓ Réussi' : '+' + money(o.reward)}</span></div>` : '';
-  const yest = y ? `<div class="yest">Hier : <b>${y.comptes}</b> compte${y.comptes > 1 ? 's' : ''} ouvert${y.comptes > 1 ? 's' : ''} · <b>${y.prets}</b> prêt${y.prets > 1 ? 's' : ''} · <b>${y.ventes}</b> vente${y.ventes > 1 ? 's' : ''} · ${y.lost ? `<span class="neg">${y.lost} visiteur${y.lost > 1 ? 's' : ''} non reçu${y.lost > 1 ? 's' : ''}</span>` : '<span class="pos">tout le monde reçu</span>'}${y.auto ? ` · ${y.auto} traité${y.auto > 1 ? 's' : ''} par l’équipe` : ''}</div>` : '';
-  const dom = s.day % 30 + 1, cal = dom === 28 ? '💶 Jour de paie : les salaires arrivent sur les comptes.' : dom === 5 ? '🏠 Les loyers sont prélevés aujourd’hui.' : dom === 10 ? '📄 Prélèvement des factures (électricité, téléphone, assurances).' : dom === 1 && s.day > 1 ? '📆 Nouveau mois : mensualités de prêt prélevées, frais, cotisations, agios et intérêts du livret.' : '';
-  const flows = s.people.length ? `<div class="flows"><span>👥 <b>${nf0.format(s.clients)}</b> clients</span><span>💳 Sur les comptes <b>${money(s.depCC)}</b></span><span>🐷 Livrets <b>${money(s.depLiv)}</b></span><span class="${s.ovd ? 'neg' : ''}">🔴 Découverts <b>${money(s.ovd)}</b></span></div>` : '';
-  const head = `<section class="card day-head">
-    <div class="dh-top"><div><small class="eyebrow">${dateStr(s.day)}</small><h2>${noStaff ? 'Votre agence est encore fermée' : left.length ? `${left.length} situation${left.length > 1 ? 's' : ''} à traiter` : 'Journée terminée !'}</h2>
-      <p class="muted small">${noStaff ? 'Construisez un guichet et recrutez un guichetier dans « Ma banque » pour ouvrir vos portes.' : `${t.arrived} visiteurs aujourd’hui${t.lost ? ` · <span class="neg">${t.lost} repartis faute de personnel</span>` : ''}`}</p></div>
-      <div class="dh-btns">${left.length ? '<button class="btn" data-act="delegate">Laisser l’équipe gérer</button>' : ''}<button class="btn primary big-next ${left.length ? '' : 'pulse'}" data-act="nextDay">Jour suivant ▶</button></div></div>
-    ${cal ? `<div class="cal">${cal}</div>` : ''}${flows}${ob}${starsLine(s, t)}${yest}</section>`;
-  const cards = left.length ? `<div class="ccards">${left.map(c => clientCard(s, c)).join('')}</div>` : (noStaff ? '' : '<div class="card muted center">Tout est traité. Profitez-en pour aménager vos agences ou consulter vos clients… puis passez au jour suivant.</div>');
-  return head + cards + `<h3 class="sec">Votre banque</h3>` + vDash();
+  let cur = left.find(c => c.id === ui.focusCard) || left[0];
+  const n = t.cards.filter(c => c.done).length + 1;
+
+  // Colonne principale : un seul client à la fois
+  let main;
+  if (noStaff) main = `<div class="empty-desk"><div class="ed-ico">🏦</div><h2>Votre agence est encore fermée</h2><p class="muted">Construisez un guichet et recrutez un guichetier dans <b>Ma banque</b> pour ouvrir vos portes.</p><button class="btn primary big" data-act="tab" data-tab="plan">Aller dans Ma banque</button></div>`;
+  else if (cur) main = clientCard(s, cur, n, tot) + `<p class="hint">Touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre · enchaînez vite pour faire des combos</p>`;
+  else main = `<div class="empty-desk"><div class="ed-ico">✅</div><h2>Journée terminée</h2><p class="muted">${tot ? `Vous avez reçu ${tot} personne${tot > 1 ? 's' : ''}.` : 'Personne n’est venu aujourd’hui.'}${t.lost ? ` <span class="neg">${t.lost} sont repartis faute de personnel.</span>` : ''}</p><button class="btn primary big big-next pulse" data-act="nextDay">Jour suivant ▶</button></div>`;
+
+  // Colonne de droite : objectif, étoiles, file d'attente, chiffres
+  const o = t.obj, rules = tot ? starRules(s, t) : [];
+  const goal = (o || rules.length) ? `<section class="side-box">
+      ${o ? `<div class="sb-goal ${o.done ? 'done' : ''}"><small>Objectif du jour</small><b>${OBJECTIVES[o.k].txt(o.n)}</b><span>${o.done ? '✓ Réussi' : '+' + money(o.reward)}</span></div>` : ''}
+      ${rules.length ? `<ul class="sb-stars">${rules.map(([txt, ok]) => `<li class="${ok ? 'on' : ''}"><span>★</span>${txt}</li>`).join('')}</ul>` : ''}</section>` : '';
+  const queue = left.length > 1 || (left.length && cur !== left[0]) ? `<section class="side-box"><h3>En attente <span class="muted">${left.length - 1}</span></h3><div class="queue">${left.filter(c => c !== cur).map(c => `<button class="q-item" data-act="focusCard" data-id="${c.id}">${cardFace(s, c, 28)}<span class="grow"><b>${esc(cardWho(s, c))}</b><small>${CARD_META[c.kind][1]}</small></span></button>`).join('')}</div>
+      <button class="btn ghost full small-btn" data-act="delegate">Laisser l’équipe gérer le reste</button></section>` : '';
+  const dom = s.day % 30 + 1, cal = dom === 28 ? '💶 Jour de paie : les salaires arrivent.' : dom === 5 ? '🏠 Les loyers sont prélevés.' : dom === 10 ? '📄 Prélèvement des factures.' : dom === 1 && s.day > 1 ? '📆 Nouveau mois : mensualités, frais et intérêts.' : '';
+  const figures = s.people.length ? `<section class="side-box"><h3>Vos clients</h3><dl class="figs">
+      <div><dt>Clients</dt><dd>${nf0.format(s.clients)}</dd></div><div><dt>Sur les comptes</dt><dd>${money(s.depCC)}</dd></div>
+      <div><dt>Livrets</dt><dd>${money(s.depLiv)}</dd></div><div><dt>Découverts</dt><dd class="${s.ovd ? 'neg' : ''}">${money(s.ovd)}</dd></div></dl>
+      ${cal ? `<p class="sb-note">${cal}</p>` : ''}${y ? `<p class="sb-note muted">Hier : ${y.comptes} compte${y.comptes > 1 ? 's' : ''}, ${y.prets} prêt${y.prets > 1 ? 's' : ''}, ${y.ventes} vente${y.ventes > 1 ? 's' : ''}${y.lost ? `, <span class="neg">${y.lost} non reçu${y.lost > 1 ? 's' : ''}</span>` : ''}</p>` : ''}</section>` : '';
+  const ch = CHAPTERS[s.chapter];
+  const chap = ch ? `<button class="side-box chap" data-act="tab" data-tab="missions"><small>Chapitre ${s.chapter + 1} · objectif de la campagne</small><b>${ch.name}</b><span class="muted">${ch.desc}</span></button>` : '';
+
+  return `<div class="desk"><div class="desk-main">${main}</div><aside class="desk-side">${goal}${queue}${figures}${chap}</aside></div>
+    <details class="more dash-more"><summary>Votre banque en détail</summary>${vDash()}</details>`;
 }

@@ -133,6 +133,7 @@ const actions = {
   clSort: el => { ui.clSort = el.dataset.v; renderPanel(true); },
   clPage: el => { ui.clPage = +el.dataset.v; renderPanel(true); $('#panel').scrollTop = 0; },
   nextDay: () => nextDay(),
+  focusCard: el => { ui.focusCard = +el.dataset.id; renderPanel(true); },
   delegate: () => { const n = delegateRest(S); if (n) toast(`👥 Votre équipe a reçu ${n} client${n > 1 ? 's' : ''}`, 'good'); renderTop(); renderPanel(true); },
   card: el => {
     const c = S.today && S.today.cards.find(x => x.id == el.dataset.id); if (!c || c.done) return;
