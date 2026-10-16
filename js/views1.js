@@ -33,7 +33,7 @@ function renderTop() {
   const ep = $('#tbEcon'); ep.textContent = E.label; ep.style.setProperty('--c', E.color);
   setNum($('#tbCash'), s.cash); $('#tbCash').classList.toggle('neg', s.cash < s.deposits * 0.08);
   setNum($('#tbEq'), eq); $('#tbEq').classList.toggle('neg', eq < 0);
-  $('#tbRatio').textContent = r === Infinity ? '∞' : pct(r); $('#tbRatio').className = r < minRatio(s) ? 'neg' : r < minRatio(s) + 3 ? 'warn' : 'pos';
+  $('#tbRatio').textContent = r === Infinity || r > 500 ? '> 500 %' : pct(r); $('#tbRatio').className = r < minRatio(s) ? 'neg' : r < minRatio(s) + 3 ? 'warn' : 'pos';
   $('#tbRep').textContent = Math.round(s.reputation) + '/100'; $('#tbRep').className = s.reputation < 30 ? 'neg' : s.reputation > 70 ? 'pos' : '';
   $('#tbRank').textContent = rankOf(s) + 'ᵉ / ' + (s.rivals.length + 1);
   $('#chapterPill').textContent = s.chapter < CHAPTERS.length ? `Chapitre ${s.chapter + 1} · ${CHAPTERS[s.chapter].name}` : 'Campagne terminée';

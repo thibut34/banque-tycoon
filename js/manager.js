@@ -1,8 +1,9 @@
 'use strict';
 /* =====================================================================
-   BANQUE TYCOON — mode gérant et bilan de fin de mois
-   En mode gérant, l'équipe traite les affaires courantes : plus elle est
-   compétente (niveau, caractère, formation), meilleures sont ses décisions.
+   BANQUE TYCOON — vous êtes le PDG
+   Votre équipe traite le quotidien (comptes, petits prêts, réclamations…) :
+   plus elle est compétente, meilleures sont ses décisions. Les dossiers
+   importants et délicats remontent jusqu'à votre bureau.
    Chaque fin de mois, un bilan explique d'où vient (ou où part) l'argent.
    ===================================================================== */
 
@@ -18,17 +19,44 @@ const avgTeamQ = s => s.branches.length ? s.branches.reduce((a, b) => a + teamQ(
 // Chances d'une décision : vous (manual) faites au mieux, l'équipe d'autant mieux qu'elle est compétente
 const sk = (manual, a, b) => manual ? a : b + (a - b) * (ui.teamQ || 0);
 
-const ROUTINE = ['compte', 'demande', 'reclam', 'decouvert', 'facture', 'courrier', 'reunion', 'fraudecb'];
-const gerantOpen = s => s.chapter >= 1;
-// Mode gérant : l'équipe traite d'abord les affaires courantes
-function gerantDay(s, t) {
-  if (!s.flags.gerant || !gerantOpen(s)) return;
-  const before = { ...t.tally }, sum = { n: 0, msgs: [] };
+const ROUTINE = ['compte', 'demande', 'reclam', 'decouvert', 'facture', 'courrier', 'reunion', 'fraudecb', 'suspect', 'av'];
+// Au-delà de ce montant, un prêt doit être signé par vous
+const seuil = s => Math.round(Math.max(30e3, equity(s) * 0.04) / 5e3) * 5e3;
+// Les cas délicats remontent jusqu'à votre bureau
+function escalate(s, c) {
+  const p = c.pid && findPerson(s, c.pid);
+  switch (c.kind) {
+    case 'suspect': return c.amt > 50e3 || chance(0.25);
+    case 'reclam': return chance(0.15);
+    case 'demande': return c.sub === 'cloture' && p && p.b + (p.l || 0) > 15e3;
+    case 'fraudecb': return c.amt > 2500;
+    case 'decouvert': return p && -p.b > Math.max(3000, p.o * 3);
+    default: return false;
+  }
+}
+// Vos conseillers décident seuls des petits prêts, selon votre politique de crédit (onglet Prêts)
+function advisorLoan(s, c, sum, q) {
+  const r = c.req, A = s.auto || { min: 'B', margin: 0.5 };
+  c.done = true;
+  if (r.fraud && chance(0.35 + q * 0.55)) { sum.fraud++; log(`🕵️ Vos conseillers démasquent un faux dossier : ${r.name}.`, 'good'); return; }
+  const ok = 'ABCDE'.slice(0, 'ABCDE'.indexOf(A.min) + 1);
+  if (s.surveillance || !ok.includes(grade(r.score)) || endet(r) > 0.35 || s.cash - r.amount < s.deposits * 0.1) { sum.refus++; s.stats.refused++; return; }
+  r.offer = Math.round(clamp(fairRate(s, r) + A.margin, 0.5, usure(r)) * 10) / 10;
+  if (chance(acceptProb(r))) { grantLoan(s, r); s.today.tally.prets++; sum.prets++; sum.pretAmt += r.amount; }
+  else { sum.refus++; s.stats.refused++; }
+}
+// Chaque matin, votre équipe traite le quotidien ; vous ne gardez que les dossiers de PDG
+function ceoDay(s, t) {
+  const before = { ...t.tally }, sum = { n: 0, prets: 0, pretAmt: 0, refus: 0, fraud: 0, esc: 0 };
   for (const c of t.cards) {
-    if (c.done || !ROUTINE.includes(c.kind)) continue;
-    ui.teamQ = teamQ(s, getBranch(s, c.branch) || s.branches[0]);
-    const m = resolveCard(s, c, delegateChoice(s, c), false); sum.n++;
-    if (m && sum.msgs.length < 4) sum.msgs.push(m);
+    if (c.done) continue;
+    const q = ui.teamQ = teamQ(s, getBranch(s, c.branch) || s.branches[0]);
+    if ((c.kind === 'pret' || c.kind === 'pro') && !c.back && c.req && c.req.amount <= seuil(s)) { advisorLoan(s, c, sum, q); sum.n++; continue; }
+    if (!ROUTINE.includes(c.kind)) continue;
+    if (escalate(s, c)) { c.esc = 1; sum.esc++; continue; }
+    const fraudBefore = s.stats.tracfin || 0;
+    resolveCard(s, c, delegateChoice(s, c), false); sum.n++;
+    if (c.kind === 'suspect' && (s.stats.tracfin || 0) > fraudBefore) sum.fraud++;
   }
   t.cards = t.cards.filter(c => !c.done); t.done = 0; t.total = t.cards.length;
   for (const k of ['comptes', 'ventes', 'recl']) sum[k] = t.tally[k] - before[k];
@@ -73,6 +101,5 @@ function showBilan() {
 }
 
 Object.assign(actions, {
-  gerant: () => { S.flags.gerant = !S.flags.gerant; if (S.flags.gerant && S.today) gerantDay(S, S.today); toast(S.flags.gerant ? '🧑‍💼 Mode gérant activé : votre équipe s’occupe des affaires courantes.' : 'Mode gérant désactivé : vous recevez tous les clients.', 'gold'); renderPanel(true); },
   bilan: () => { if (S.flags.bilan) showBilan(); },
 });

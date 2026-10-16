@@ -144,6 +144,7 @@ function monthlyCosts(s) {
   let c = 0; for (const b of s.branches) c += branchCosts(s, b);
   for (const u in s.upgrades) c += UPGRADES[u].monthly;
   if (s.flags.cats) c += 2000;
+  if (s.flags.samedi) c += 1500;
   return c;
 }
 const tradeFee = () => S.upgrades.trading ? 0.001 : 0.005;

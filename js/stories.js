@@ -182,7 +182,7 @@ const sdMod = (s, k) => (s.today && s.today.sd && s.today.sd[k]) || 1;
 // ---------- Ajout des épisodes du jour ----------
 function storyCard(s, sid, step, pid, d = {}) {
   const c = { id: ++ui.cardSeq, kind: 'story', sid, step, pid, d: { ...d } };
-  const p = pid && findPerson(s, pid), St = sid === 'quartier' ? QUARTIER.find(q => q.id === d.q) : sid === 'liquidite' ? LIQ : STORIES[sid].steps[step];
+  const p = pid && findPerson(s, pid), St = storyStep({ sid, step, d });
   if (St.init) St.init(s, c, p);
   c.name = p ? pname(p) : '';
   if (!p) c.task = true;
@@ -214,6 +214,8 @@ function addStoryCards(s, t) {
     const q = pick(pool.length ? pool : QUARTIER); s.flags.qSeen.push(q.id);
     t.cards.push(storyCard(s, 'quartier', 0, null, { q: q.id }));
   }
+  // Une décision de direction (presque chaque jour au début, pour que le bureau ne soit jamais vide)
+  if (chance(s.chapter === 0 ? 0.55 : 0.35)) addDirectionCard(s, t);
   // Alerte de liquidités
   if (s.deposits > 1e5 && s.cash < s.deposits * 0.1 && !(s.flags.liqAlert > s.day - 15)) {
     s.flags.liqAlert = s.day;
@@ -228,7 +230,7 @@ const LIQ = { ico: '🚨', title: 'Caisses presque vides', txt: s => `Il ne rest
   ], auto: 2 };
 
 // ---------- Affichage et choix ----------
-function storyStep(c) { return c.sid === 'quartier' ? QUARTIER.find(q => q.id === c.d.q) : c.sid === 'liquidite' ? LIQ : STORIES[c.sid].steps[c.step]; }
+function storyStep(c) { return c.sid === 'quartier' ? QUARTIER.find(q => q.id === c.d.q) : c.sid === 'direction' ? DIRECTION.find(q => q.id === c.d.q) : c.sid === 'liquidite' ? LIQ : STORIES[c.sid].steps[c.step]; }
 const val = (v, s, c, p) => typeof v === 'function' ? v(s, c, p) : v;
 function storyMeta(s, c) { const St = storyStep(c); return [val(St.ico, s, c), val(St.title, s, c)]; }
 function storyBody(s, c) {
@@ -252,3 +254,49 @@ function resolveStory(s, c, choice, manual) {
   return msg;
 }
 const storyAuto = c => String(storyStep(c).auto || 0);
+
+// ---------- Les décisions de direction (vous êtes le PDG) ----------
+const DIRECTION = [
+  { id: 'frais', ico: '🏷️', title: 'Le prix du compte', txt: s => `Vos guichetiers vous demandent quels frais de tenue de compte appliquer. Aujourd’hui : <b>${nf1.format(s.prod.cc.fee)} €/mois</b> (la concurrence : 5 €).`,
+    ch: [['2 € : attirer du monde', 'Plus de clients, moins de revenus', '', s => { s.prod.cc.fee = 2; return 'Frais à 2 € : le bouche-à-oreille va tourner.'; }], ['5 € : prix du marché', '', 'success', s => { s.prod.cc.fee = 5; return 'Frais alignés sur le marché.'; }], ['8 € : rentabilité', 'Plus de revenus, plus de départs', 'danger', s => { s.prod.cc.fee = 8; return 'Frais à 8 € : surveillez les départs.'; }]], auto: 1 },
+  { id: 'pub', ico: '🚋', title: 'Campagne dans le tram', txt: () => 'Une régie propose une campagne d’affichage sur les trams de la ville : <b>8 000 €</b> pour un mois.',
+    ch: [['Lancer la campagne', '+15 % de visiteurs pendant 30 jours', 'success', s => { pay(s, 8000); s.flags.sponsorUntil = Math.max(s.flags.sponsorUntil || 0, s.day + 30); rep(s, 1); return 'Votre logo roule dans toute la ville !'; }, s => s.cash < 8000], ['Pas maintenant', '', 'ghost', () => null]], auto: 1 },
+  { id: 'samedi', once: true, ico: '📅', title: 'Ouvrir le samedi ?', txt: () => 'Vos clients réclament une ouverture le <b>samedi matin</b>. Cela coûte 1 500 €/mois d’heures supplémentaires.',
+    ch: [['Ouvrir le samedi', '+12 % de visiteurs, 1 500 €/mois', 'success', s => { s.flags.samedi = true; sat(s, 3); return 'Les samedis matins, la file d’attente déborde !'; }], ['Rester fermé', 'L’équipe est soulagée', 'ghost', s => { sat(s, -2); return null; }]], auto: 1 },
+  { id: 'inspection', ico: '🔍', title: 'Inspection de l’ACPR', txt: () => 'Le gendarme des banques annonce une <b>inspection</b> la semaine prochaine.',
+    ch: [['Préparer un dossier impeccable', '6 000 € de consultants', 'success', s => { pay(s, 6000); rep(s, 1); return 'Inspection parfaite : « une banque exemplaire ».'; }, s => s.cash < 6000], ['Improviser', '40 % de risque d’amende', 'ghost', s => { if (chance(0.4)) { pay(s, 15000); rep(s, -3); return 'Des papiers manquants : 15 000 € d’amende.'; } return 'Ouf, l’inspecteur n’a rien vu.'; }]], auto: 1 },
+  { id: 'concurrent', ico: '⚔️', title: 'Un concurrent s’installe', txt: (s, c) => `<b>${c.d.r}</b> ouvre une agence juste en face et propose des frais à 1 €/mois.`,
+    init: (s, c) => { c.d.r = pick(RIVALS).name; },
+    ch: [['Baisser vos frais à 3 €', 'Garder vos clients', '', s => { s.prod.cc.fee = Math.min(s.prod.cc.fee, 3); return 'Frais baissés : vos clients restent.'; }], ['Contre-campagne (10 000 €)', 'Visiteurs en hausse', 'success', s => { pay(s, 10000); s.flags.sponsorUntil = Math.max(s.flags.sponsorUntil || 0, s.day + 45); return '« La vraie banque du quartier, c’est nous ! »'; }, s => s.cash < 10000], ['Miser sur la qualité', 'Ils perdront des clients', 'ghost', s => { for (const b of s.branches) b.rivalUntil = s.day + 60; return 'Le concurrent vous prendra quelques clients pendant deux mois.'; }]], auto: 2 },
+  { id: 'prime', need: s => staffTotal(s, 'gs') + staffTotal(s, 'bs') >= 2, ico: '💶', title: 'Votre équipe demande une prime', txt: () => 'Après une bonne période, vos employés espèrent une petite prime.',
+    ch: [['Prime de 300 € chacun', 'Équipe motivée', 'success', s => { const n = staffTotal(s, 'gs') + staffTotal(s, 'bs'); pay(s, n * 300); sat(s, 5); for (const b of s.branches) for (const e of b.staff || []) if (e.lvl < MAX_LVL) e.xp = Math.min(xpNeed(e.lvl), e.xp + 10); return `${n} employés ravis.`; }], ['Un restaurant d’équipe (800 €)', '', '', s => { pay(s, 800); sat(s, 3); return 'Soirée réussie !'; }], ['Refuser', 'Ambiance tendue', 'ghost', s => { sat(s, -6); return 'Les sourires se font rares au guichet…'; }]], auto: 2 },
+  { id: 'vert', once: true, ico: '🌱', title: 'Le label « Banque verte »', txt: () => 'Un organisme propose de vous labelliser « Banque verte » après un audit à <b>12 000 €</b>.',
+    ch: [['Obtenir le label', '+4 réputation, épargne attirée 6 mois', 'success', s => { pay(s, 12000); rep(s, 4); s.flags.greenUntil = s.day + 180; return 'Label obtenu : les épargnants adorent.'; }, s => s.cash < 12000], ['Non merci', '', 'ghost', () => null]], auto: 1 },
+  { id: 'vip', need: s => s.chapter >= 1, ico: '🤵', title: 'Un très gros client', txt: (s, c) => `Un chef d’entreprise veut déposer <b>${money(c.d.amt)}</b> chez vous… si vous lui offrez <b>3 %</b> la première année.`,
+    init: (s, c) => { c.d.amt = Math.round(Math.max(3e5, equity(s) * rnd(0.3, 0.8)) / 1e5) * 1e5; },
+    ch: [['Accepter à 3 %', 'Vous lui versez la différence', 'success', (s, c) => { const extra = Math.round(c.d.amt * Math.max(0, 3 - s.depositRate) / 100); vipDeposit(s, c.d.amt); pay(s, extra); return `${money(c.d.amt)} arrivent ! Prime de bienvenue versée : ${money(extra)}.`; }], ['Négocier à 2 %', '55 % de chances', '', (s, c) => { if (!chance(0.55)) return 'Il part chez un concurrent.'; const extra = Math.round(c.d.amt * Math.max(0, 2 - s.depositRate) / 100); vipDeposit(s, c.d.amt); pay(s, extra); return `Marché conclu à 2 % : ${money(c.d.amt)} déposés.`; }], ['Refuser', '', 'ghost', () => null]], auto: 2 },
+  { id: 'presse', need: s => (s.prod.cc.agio || 14) >= 13, ico: '📺', title: 'Enquête sur les frais bancaires', txt: s => `Un journaliste de France 3 enquête sur les agios. Les vôtres sont à <b>${pct(s.prod.cc.agio || 14)}</b>.`,
+    ch: [['Baisser les agios à 10 %', '+3 réputation', 'success', s => { s.prod.cc.agio = 10; rep(s, 3); return '« Une banque qui écoute ses clients. »'; }], ['Défendre vos tarifs', 'Mauvaise presse', 'ghost', s => { rep(s, -3); return 'Le reportage n’est pas tendre avec vous…'; }]], auto: 1 },
+  { id: 'mecenat', ico: '🎭', title: 'Mécénat culturel', txt: () => 'Le festival Montpellier Danse cherche un mécène : <b>15 000 €</b>.',
+    ch: [['Devenir mécène', '+5 réputation', 'success', s => { pay(s, 15000); rep(s, 5); return 'Votre nom en grand sur l’affiche du festival !'; }, s => s.cash < 15000], ['Décliner', '', 'ghost', () => null]], auto: 1 },
+  { id: 'informatique', ico: '💻', title: 'Informatique vieillissante', txt: () => 'Votre logiciel bancaire date de 2009 et plante deux fois par semaine.',
+    ch: [['Moderniser (20 000 €)', 'Équipe plus efficace', 'success', s => { pay(s, 20000); sat(s, 5); rep(s, 1); for (const b of s.branches) for (const e of b.staff || []) if (e.lvl < MAX_LVL) e.xp = Math.min(xpNeed(e.lvl), e.xp + 15); return 'Nouveau système installé : tout va plus vite.'; }, s => s.cash < 20000], ['Encore un an', 'Clients agacés', 'ghost', s => { sat(s, -3); return 'Écran bleu au guichet… encore.'; }]], auto: 1 },
+  { id: 'jeunes', once: true, ico: '🧑‍🎓', title: 'Une offre pour les jeunes', txt: () => 'Votre équipe propose une offre « compte jeune » : carte gratuite pour les 18-25 ans.',
+    ch: [['Lancer l’offre (5 000 €)', '+ de visiteurs, + réputation', 'success', s => { pay(s, 5000); s.flags.jeunes = true; rep(s, 2); return 'Les étudiants affluent !'; }, s => s.cash < 5000], ['Non', '', 'ghost', () => null]], auto: 1 },
+];
+function vipDeposit(s, amt) {
+  const b = s.branches[0], p = newPersonFor(s, b);
+  p.j = 12; p.s = rint(12, 25) * 1000; p.sp = Math.round(p.s * 0.4); p.b = Math.round(amt * 0.1); p.save0 = Math.round(amt * 0.9); p.q = 85;
+  const sv = p.save0;
+  openPersonAccount(s, p, { livret: s.prod.liv.on, card: true });
+  if (!s.prod.liv.on) { p.b += sv; s.cash += sv; }
+  p.c = 2; recomputeAgg(s);
+}
+function addDirectionCard(s, t) {
+  const seen = s.flags.dSeen = s.flags.dSeen || [], once = s.flags.dOnce = s.flags.dOnce || [];
+  let pool = DIRECTION.filter(d => (!d.need || d.need(s)) && !once.includes(d.id) && !seen.includes(d.id));
+  if (!pool.length) { s.flags.dSeen = []; pool = DIRECTION.filter(d => (!d.need || d.need(s)) && !once.includes(d.id)); }
+  if (!pool.length) return;
+  const d = pick(pool); s.flags.dSeen.push(d.id); if (d.once) once.push(d.id);
+  t.cards.push(storyCard(s, 'direction', 0, null, { q: d.id }));
+}

@@ -44,7 +44,7 @@ function cardBody(s, c) {
       }[c.sub];
       return [`<p>${D[0]}</p>${st}`, D[1]];
     }
-    case 'reclam': return [`<p>${p ? who(p) : esc(c.name)} est furieux à cause d’<b>${c.reason}</b>.</p>`,
+    case 'reclam': return [`<p>${p ? who(p) : esc(c.name)} est furieux à cause d’<b>${c.reason}</b>.${c.esc ? ' Il menace d’aller raconter son histoire au journal !' : ''}</p>`,
       btn(id, 'rembourse', `Geste commercial (${money(c.cost)})`, 'success', 'Calme assuré') + btn(id, 'excuse', 'S’excuser', '', '60 % de chances') + btn(id, 'ignore', 'L’ignorer', 'ghost', 'Il risque de partir')];
     case 'av': return [`<p>${p ? who(p) : esc(c.name)} veut placer <b>${money(c.amt)}</b> pour sa retraite.</p>`,
       btn(id, 'ok', 'Ouvrir une assurance-vie', 'success', `Frais ${pct(s.prod.av.fee)}/an`) + btn(id, 'refuse', 'Refuser', 'ghost')];
@@ -83,7 +83,7 @@ function cardWho(s, c) {
 }
 
 function clientCard(s, c, n, tot) {
-  const title = c.kind === 'story' && c.pid ? cmeta(s, c)[1] : c.sid === 'liquidite' ? 'Alerte de la direction' : c.kind === 'story' ? 'Vie du quartier' : c.back ? 'Un client fidèle revient' : CARD_META[c.kind][1], b = c.branch && CITIES[c.branch];
+  const title = (c.esc ? 'Remonté par l’équipe · ' : '') + (c.kind === 'story' && c.pid ? cmeta(s, c)[1] : c.sid === 'liquidite' ? 'Alerte de la direction' : c.kind === 'story' ? 'Vie du quartier' : c.back ? 'Un client fidèle revient' : CARD_META[c.kind][1]), b = c.branch && CITIES[c.branch];
   const [body, actions] = cardBody(s, c);
   return `<article class="ccard focus-card ${c.task ? 'task' : ''} k-${c.kind}">
     <header>${cardFace(s, c, 52)}<div class="grow"><small class="eyebrow">${title}${b && S.branches.length > 1 ? ' · ' + b.name : ''}</small><h2>${esc(cardWho(s, c))}</h2></div><span class="cc-count">${n} / ${tot}</span></header>
@@ -103,14 +103,14 @@ function vToday() {
   if (noStaff) main = `<div class="empty-desk"><div class="ed-ico">🏦</div><h2>Votre agence est encore fermée</h2><p class="muted">Construisez un guichet et recrutez un guichetier dans <b>Ma banque</b> pour ouvrir vos portes.</p><button class="btn primary big" data-act="tab" data-tab="plan">Aller dans Ma banque</button></div>`;
   else if (cur) main = clientCard(s, cur, n, tot) + `<p class="hint">Touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre · enchaînez vite pour faire des combos</p>`;
   else if (!tot && !y) main = `<div class="empty-desk"><div class="ed-ico">🚪</div><h2>Tout est prêt !</h2><p class="muted">Vos portes ouvrent demain matin. Passez au jour suivant pour accueillir vos premiers clients.</p><button class="btn primary big big-next pulse" data-act="nextDay">Jour suivant ▶</button></div>`;
-  else main = `<div class="empty-desk"><div class="ed-ico">✅</div><h2>Journée terminée</h2><p class="muted">${tot ? `Vous avez reçu ${tot} personne${tot > 1 ? 's' : ''}.` : 'Personne n’est venu aujourd’hui.'}${t.lost ? ` <span class="neg">${t.lost} sont repartis faute de personnel.</span>` : ''}</p><button class="btn primary big big-next pulse" data-act="nextDay">Jour suivant ▶</button></div>`;
+  else main = `<div class="empty-desk"><div class="ed-ico">✅</div><h2>${tot ? 'Bureau vide !' : 'Rien sur votre bureau'}</h2><p class="muted">${tot ? `Vous avez réglé ${tot} dossier${tot > 1 ? 's' : ''}.` : 'Votre équipe s’occupe de tout aujourd’hui. Profitez-en pour gérer vos produits, vos agences et votre équipe.'}${t.lost ? ` <span class="neg">${t.lost} sont repartis faute de personnel.</span>` : ''}</p><button class="btn primary big big-next pulse" data-act="nextDay">Jour suivant ▶</button></div>`;
 
   // Colonne de droite : objectif, étoiles, file d'attente, chiffres
-  const o = t.obj, rules = tot ? starRules(s, t) : [];
+  const o = t.obj, rules = tot || t.arrived ? starRules(s, t) : [];
   const goal = (o || rules.length) ? `<section class="side-box">
       ${o ? `<div class="sb-goal ${o.done ? 'done' : ''}"><small>Objectif du jour</small><b>${OBJECTIVES[o.k].txt(o.n)}</b><span>${o.done ? '✓ Réussi' : '+' + money(o.reward)}</span></div>` : ''}
       ${rules.length ? `<ul class="sb-stars">${rules.map(([txt, ok]) => `<li class="${ok ? 'on' : ''}"><span>★</span>${txt}</li>`).join('')}</ul>` : ''}</section>` : '';
-  const queue = left.length > 1 || (left.length && cur !== left[0]) ? `<section class="side-box"><h3>En attente <span class="muted">${left.length - 1}</span></h3><div class="queue">${left.filter(c => c !== cur).map(c => `<button class="q-item" data-act="focusCard" data-id="${c.id}">${cardFace(s, c, 28)}<span class="grow"><b>${esc(cardWho(s, c))}</b><small>${c.kind === 'story' ? cmeta(s, c)[1] : CARD_META[c.kind][1]}</small></span></button>`).join('')}</div>
+  const queue = left.length > 1 || (left.length && cur !== left[0]) ? `<section class="side-box"><h3>Sur votre bureau <span class="muted">${left.length - 1}</span></h3><div class="queue">${left.filter(c => c !== cur).map(c => `<button class="q-item" data-act="focusCard" data-id="${c.id}">${cardFace(s, c, 28)}<span class="grow"><b>${esc(cardWho(s, c))}</b><small>${c.kind === 'story' ? cmeta(s, c)[1] : CARD_META[c.kind][1]}</small></span></button>`).join('')}</div>
       <button class="btn ghost full small-btn" data-act="delegate">Laisser l’équipe gérer le reste</button></section>` : '';
   const dom = s.day % 30 + 1, cal = dom === 28 ? '💶 Jour de paie : les salaires arrivent.' : dom === 5 ? '🏠 Les loyers sont prélevés.' : dom === 10 ? '📄 Prélèvement des factures.' : dom === 1 && s.day > 1 ? '📆 Nouveau mois : mensualités, frais et intérêts.' : '';
   const figures = s.people.length ? `<section class="side-box"><h3>Vos clients</h3><dl class="figs">
@@ -126,11 +126,12 @@ function vToday() {
     <canvas id="floor" data-mini="1" data-maxh="${innerWidth < 700 ? 200 : 280}" role="img" aria-label="Votre agence, vue en 3D"></canvas>
     ${t.arrived ? `<div class="scene-stats"><span>🚶 ${t.arrived} visiteur${t.arrived > 1 ? 's' : ''} aujourd’hui</span>${t.lost ? `<span class="neg">😤 ${t.lost} reparti${t.lost > 1 ? 's' : ''}</span>` : ''}</div>` : ''}</div>` : '';
   const tq = avgTeamQ(s), stars = Math.round(tq / 0.9 * 4) + 1;
-  const gerant = gerantOpen(s) ? `<section class="side-box gerant ${s.flags.gerant ? 'on' : ''}"><div class="gr-h"><h3>🧑‍💼 Mode gérant</h3><button class="toggle ${s.flags.gerant ? 'on' : ''}" data-act="gerant" role="switch" aria-checked="${!!s.flags.gerant}" aria-label="Mode gérant"><i></i></button></div>
-      <p class="small muted">${s.flags.gerant ? 'Votre équipe traite les affaires courantes. Vous ne voyez que les prêts, les histoires et les cas délicats.' : 'Laissez votre équipe traiter les affaires courantes et ne gardez que les décisions importantes.'}</p>
-      <div class="gr-q"><span>Compétence de l’équipe</span><b><span class="gold-t">${'★'.repeat(stars)}</span><span class="st-off">${'★'.repeat(5 - stars)}</span></b></div><small class="muted">Formez et promouvez vos employés dans « Ma banque » : ils décideront mieux à votre place.</small></section>` : '';
-  const autoSum = t.auto && t.auto.n ? `<div class="auto-sum"><span class="as-ico">🧑‍💼</span><div><b>Votre équipe a traité ${t.auto.n} affaire${t.auto.n > 1 ? 's' : ''} courante${t.auto.n > 1 ? 's' : ''}</b><small>${[t.auto.comptes ? `${t.auto.comptes} compte${t.auto.comptes > 1 ? 's' : ''} ouvert${t.auto.comptes > 1 ? 's' : ''}` : '', t.auto.ventes ? `${t.auto.ventes} vente${t.auto.ventes > 1 ? 's' : ''}` : '', t.auto.recl ? `${t.auto.recl} réclamation${t.auto.recl > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'Rien de notable'}</small></div></div>` : '';
+  const team = s.people.length ? `<section class="side-box gerant"><h3>🧑‍💼 Votre équipe</h3>
+      <div class="gr-q"><span>Compétence</span><b><span class="gold-t">${'★'.repeat(stars)}</span><span class="st-off">${'★'.repeat(5 - stars)}</span></b></div>
+      <p class="small muted">Elle ouvre les comptes, vend, gère les découverts${loansOpen(s) ? ` et décide seule des prêts jusqu’à <b>${money(seuil(s))}</b> selon votre politique de crédit` : ''}. Formez-la dans « Ma banque » pour qu’elle décide mieux.</p></section>` : '';
+  const A = t.auto, parts = A ? [A.comptes ? `🙋 <b>${A.comptes}</b> compte${A.comptes > 1 ? 's' : ''} ouvert${A.comptes > 1 ? 's' : ''}` : '', A.ventes ? `💳 <b>${A.ventes}</b> vente${A.ventes > 1 ? 's' : ''}` : '', A.prets ? `🤝 <b>${A.prets}</b> prêt${A.prets > 1 ? 's' : ''} signé${A.prets > 1 ? 's' : ''} (${money(A.pretAmt)})` : '', A.refus ? `✋ ${A.refus} dossier${A.refus > 1 ? 's' : ''} refusé${A.refus > 1 ? 's' : ''}` : '', A.fraud ? `🕵️ <b>${A.fraud}</b> fraude${A.fraud > 1 ? 's' : ''} déjouée${A.fraud > 1 ? 's' : ''}` : '', A.recl ? `😠 ${A.recl} réclamation${A.recl > 1 ? 's' : ''} gérée${A.recl > 1 ? 's' : ''}` : ''].filter(Boolean) : [];
+  const autoSum = A && (A.n || A.esc) ? `<div class="auto-sum"><span class="as-ico">📋</span><div><b>Rapport du matin</b><small>${parts.join(' · ') || 'Journée calme au guichet'}${A.esc ? ` · <span class="gold-t">${A.esc} dossier${A.esc > 1 ? 's' : ''} sensible${A.esc > 1 ? 's' : ''} pour vous</span>` : ''}</small></div></div>` : '';
   const bil = s.flags.bilan ? `<button class="side-box chap bil" data-act="bilan"><small>Dernier bilan mensuel</small><b class="${s.flags.bilan.pl.net >= 0 ? 'pos' : 'neg'}">${s.flags.bilan.pl.net >= 0 ? '+' : '−'}${money(Math.abs(s.flags.bilan.pl.net))}</b><span class="muted">Voir d’où vient l’argent</span></button>` : '';
-  return scene + `<div class="desk"><div class="desk-main">${autoSum}${main}</div><aside class="desk-side">${goal}${gerant}${queue}${figures}${bil}${chap}</aside></div>
+  return scene + `<div class="desk"><div class="desk-main">${autoSum}${main}</div><aside class="desk-side">${goal}${queue}${team}${figures}${bil}${chap}</aside></div>
     <details class="more dash-more"><summary>Votre banque en détail</summary>${vDash()}</details>`;
 }

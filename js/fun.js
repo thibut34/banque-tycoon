@@ -136,7 +136,7 @@ function funCard(s, c, before, el) {
   t.manual = (t.manual || 0) + 1;
   const n = bumpCombo(s);
   const dComptes = a.comptes - before.comptes, dVentes = a.ventes - before.ventes, dPrets = a.prets - before.prets;
-  const base = c.task ? 5 : 8;
+  const base = c.task ? 12 : 18;
   const xp = Math.round((base + dComptes * 10 + dVentes * 14 + dPrets * 40) * comboMul(n));
   const r = el ? el.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0 };
   const x = r.left + r.width / 2, y = r.top;
@@ -158,13 +158,13 @@ function funCard(s, c, before, el) {
 function starRules(s, t) {
   const tot = t.total || t.cards.length, man = t.manual || 0;
   return [
-    ['Traiter vous-même au moins la moitié des situations', tot > 0 && man >= Math.ceil(tot / 2)],
+    ['Décider vous-même de tous les dossiers de votre bureau', man >= tot],
     ['Réussir l’objectif du jour', !!(t.obj && t.obj.done)],
-    ['Journée parfaite : tout traiter vous-même, personne renvoyé', tot > 0 && man >= tot && !t.lost],
+    ['Assez de personnel : aucun visiteur reparti', t.arrived > 0 && !t.lost],
   ];
 }
 function funEndDay(s, t) {
-  if (!t || !(t.total || t.cards.length)) return;
+  if (!t || !(t.total || t.cards.length || t.arrived)) return;
   const m = M(s), rules = starRules(s, t);
   let st = rules.filter(r => r[1]).length;
   if (st === 3) st += perk(s, 'etoile');

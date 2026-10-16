@@ -18,7 +18,7 @@ function dayArrivals(s, b) {
   if (!b.gs && !b.bs) return 0;
   let n = rnd(6, 10) * cityOf(b).traffic / 3 * (0.6 + s.reputation / 125);
   if (s.upgrades.marketing) n *= 1.15;
-  n *= sdMod(s, 'vis');
+  n *= sdMod(s, 'vis') * (s.flags.samedi ? 1.12 : 1) * (s.flags.jeunes ? 1.08 : 1);
   n += perk(s, 'aimant');
   if (b.rivalUntil > s.day) n *= 0.8;
   if (s.flags.sponsorUntil > s.day) n *= 1.15;
@@ -138,18 +138,19 @@ function startDay(s) {
   if (s.clients > 40 && chance(0.12)) t.cards.push(makeTask(s, 'courrier'));
   addStoryCards(s, t);
   t.total = t.cards.length;
-  gerantDay(s, t);
+  ceoDay(s, t);
+  if (!t.cards.length && s.branches.some(b => b.gs || b.bs) && chance(0.6)) { addDirectionCard(s, t); t.total = t.cards.length; }
   t.obj = makeObjective(s, t);
   ui.dirty = true;
 }
 
 // ---------- Objectif du jour ----------
 const OBJECTIVES = {
-  comptes: { txt: n => `Ouvrir ${n} comptes`, cur: t => t.m.comptes, ok: t => t.cards.filter(c => c.kind === 'compte').length >= 2, n: t => Math.max(2, Math.ceil(t.cards.filter(c => c.kind === 'compte').length * 0.7)) },
-  ventes: { txt: n => `Réussir ${n} vente${n > 1 ? 's' : ''} (carte, livret, assurance-vie)`, cur: t => t.m.ventes, ok: (t, s) => s.prod.liv.on || s.prod.carte.on, n: () => rint(1, 2) },
-  pret: { txt: () => 'Accorder un prêt', cur: t => t.m.prets, ok: t => t.cards.some(c => c.kind === 'pret' || c.kind === 'pro'), n: () => 1 },
-  recl: { txt: () => 'Calmer tous les clients mécontents', cur: t => t.cards.filter(c => c.kind === 'reclam' && !c.done).length ? 0 : 1, ok: t => t.cards.some(c => c.kind === 'reclam'), n: () => 1 },
-  zero: { txt: () => 'Ne perdre aucun visiteur aujourd’hui', cur: t => t.lost ? 0 : 1, ok: t => t.arrived > 0 && !t.lost, n: () => 1 },
+  pret: { txt: () => 'Signer un prêt', cur: t => t.m.prets, ok: t => t.cards.some(c => c.kind === 'pret' || c.kind === 'pro'), n: () => 1 },
+  bureau: { txt: () => 'Traiter tous les dossiers de votre bureau', cur: t => t.cards.every(c => c.done) && (t.manual || 0) >= t.cards.length ? 1 : 0, ok: t => t.cards.length >= 2, n: () => 1 },
+  histoire: { txt: () => 'Faire avancer l’histoire d’un client', cur: t => t.cards.some(c => c.kind === 'story' && c.pid && c.done) ? 1 : 0, ok: t => t.cards.some(c => c.kind === 'story' && c.pid), n: () => 1 },
+  direction: { txt: () => 'Prendre une décision de direction', cur: t => t.cards.some(c => c.sid === 'direction' && c.done) ? 1 : 0, ok: t => t.cards.some(c => c.sid === 'direction'), n: () => 1 },
+  sensible: { txt: () => 'Régler les dossiers sensibles', cur: t => t.cards.some(c => c.esc && !c.done) ? 0 : 1, ok: t => t.cards.some(c => c.esc), n: () => 1 },
 };
 function makeObjective(s, t) {
   const pool = Object.keys(OBJECTIVES).filter(k => OBJECTIVES[k].ok(t, s));

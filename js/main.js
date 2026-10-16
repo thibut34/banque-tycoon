@@ -253,8 +253,8 @@ const TUTO = [
   { tab: 'plan', txt: 'Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est vide. Ouvrez <b>Ma banque</b> et construisez un <b>guichet</b>.', done: s => getBranch(s, HQ).g >= 1 },
   { tab: 'plan', txt: 'Recrutez maintenant un <b>guichetier</b> : c’est lui qui accueillera vos clients. Choisissez bien parmi les candidats.', done: s => getBranch(s, HQ).gs >= 1 },
   { tab: 'dash', txt: 'Tout est prêt ! Ouvrez <b>Aujourd’hui</b> et cliquez sur <b>Jour suivant</b> pour ouvrir vos portes.', done: s => s.today && s.today.cards.length > 0 },
-  { tab: 'dash', txt: 'Vos premiers clients sont là ! Ouvrez-leur un <b>compte</b> : leur argent rejoint vos caisses. Attention aux clients louches…', done: s => s.clients >= 3 },
-  { tab: 'dash', txt: 'Quand tout le monde est reçu, cliquez sur <b>Jour suivant</b>. Les clients que vous ne recevez pas seront traités par votre équipe, moins bien que vous.', done: s => s.day >= 3 },
+  { tab: 'dash', txt: 'Votre guichetier ouvre les comptes de vos premiers clients : leur argent rejoint vos caisses. Vous, vous êtes le <b>PDG</b> : seuls les dossiers importants arrivent sur votre bureau.', done: s => s.clients >= 3 },
+  { tab: 'dash', txt: 'Chaque matin, le <b>rapport</b> résume le travail de votre équipe. Réglez vos dossiers, puis cliquez sur <b>Jour suivant</b>. Plus votre équipe est formée, mieux elle travaille.', done: s => s.day >= 3 },
   { tab: 'missions', txt: 'Objectif : <b>25 comptes</b> et <b>50 000 €</b> déposés. Ensuite, vous pourrez prêter cet argent : c’est là que la banque gagne vraiment sa vie.', btn: 'C’est parti', done: s => s.chapter >= 1 },
 ];
 function updateCoach(force) {
