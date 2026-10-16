@@ -11,6 +11,8 @@ function branchTraffic(s, b) {
   let t = cityOf(b).traffic * 6 * (0.6 + s.reputation / 125);
   if (s.upgrades.marketing) t *= 1.15;
   if (b.rivalUntil > s.day) t *= 0.8;
+  if (s.flags.sponsorUntil > s.day) t *= 1.15;
+  t *= specOf(b).traffic || 1;
   return { acc: b.gs || b.dab ? t * 0.75 : 0, loan: b.bs ? t * 0.25 : 0 };
 }
 function branchCapacity(b) { return { acc: staffEff(b, 'gs') * 8 + b.dab * 5, loan: staffEff(b, 'bs') * 4 }; }

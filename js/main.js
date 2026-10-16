@@ -126,6 +126,14 @@ const actions = {
     ui.dirty = true; renderPanel(true);
   },
   closeModal: () => closeModal(),
+  spec: el => {
+    const b = getBranch(S, ui.branch), v = el.dataset.v; if ((b.spec || 'aucune') === v) return;
+    const cost = Math.round(cityOf(b).build * 0.2 / 1e3) * 1e3;
+    if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad');
+    S.cash -= cost; b.spec = v; SFX.play('build');
+    toast(`${SPECS[v].icon} ${CITIES[b.id].name} devient une agence « ${SPECS[v].name} »`, 'good'); log(`${SPECS[v].icon} ${CITIES[b.id].name} se spécialise : ${SPECS[v].name}.`);
+    renderPlanSide();
+  },
   tip: el => showTip(el.dataset.k),
   settings: () => openSettings(),
   setPref: el => setPref(el.dataset.k, el.dataset.v),

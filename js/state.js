@@ -57,8 +57,8 @@ function satTarget(s, b) {
   const svc = b.svc == null ? 1 : b.svc;
   return clamp(30 + 35 * svc - 40 * Math.max(0, 0.85 - svc) + 4 * b.deco + 3 * b.dab + (s.upgrades.rh ? 10 : 0) + staffSat(b), 5, 100);
 }
-function branchCap(b) { return cityOf(b).cap * (b.gs ? 0.25 + 0.3 * staffEff(b, 'gs') + 0.05 * b.dab : 0) * (0.8 + b.sat / 250) * (0.5 + 0.5 * (b.svc == null ? 1 : b.svc)); }
-function branchLoanF(b) { return cityOf(b).loans * 0.45 * staffEff(b, 'bs'); }
+function branchCap(b) { return cityOf(b).cap * (b.gs ? 0.25 + 0.3 * staffEff(b, 'gs') + 0.05 * b.dab : 0) * (0.8 + b.sat / 250) * (0.5 + 0.5 * (b.svc == null ? 1 : b.svc)) * (specOf(b).cap || 1); }
+function branchLoanF(b) { return cityOf(b).loans * 0.45 * staffEff(b, 'bs') * (specOf(b).loans || 1); }
 function branchCosts(s, b) {
   const w = wageMult(s, b);
   const wages = b.staff ? b.staff.reduce((a, e) => a + empWage(s, b, e), 0) : (b.gs * ITEMS.gs.wage + b.bs * ITEMS.bs.wage + b.vig * ITEMS.vig.wage) * w;

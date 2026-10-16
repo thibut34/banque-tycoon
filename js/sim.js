@@ -37,6 +37,7 @@ function grantLoan(s, r) {
   const T = LOAN_TYPES[r.type], souv = r.type === 'souv';
   let pdA = reqPD(r) * (1 + Math.max(0, r.offer - r.maxRate + 1) * 0.06);
   if (s.upgrades.ia && !souv) pdA *= 0.75;
+  if (s.flags.genius && !souv) pdA *= 0.9;
   s.cash -= r.amount;
   const L = { id: r.id, type: r.type, name: r.name, out: r.amount, amount: r.amount, rate: r.offer, left: r.dur, dur: r.dur, pmt: payment(r.amount, r.offer, r.dur), pdA, grade: reqGrade(r), since: s.day };
   if (souv) { L.rw = RATINGS[r.rating].rw; s.stats.souv++; }
@@ -185,9 +186,24 @@ function monthEnd(s) {
   s.stats.interest += pl.interest;
   if (pl.net > 0) s.stats.profit += pl.net;
   s.lastPL = pl;
+  // Conseil de Gisèle si la banque perd de l'argent plusieurs mois de suite
+  s.flags.lossStreak = pl.net < 0 ? (s.flags.lossStreak || 0) + 1 : 0;
+  if (s.flags.lossStreak === 3 || (s.flags.lossStreak > 3 && s.flags.lossStreak % 6 === 0)) {
+    const income = pl.interest + pl.fees + pl.coupons + (pl.reserves || 0);
+    const empty = s.branches.filter(b => !b.gs && !b.bs && !b.dab);
+    let tipTxt = '';
+    if (empty.length) tipTxt = `L’agence de <b>${CITIES[empty[0].id].name}</b> est vide mais paie un loyer : équipez-la ou fermez-la.`;
+    else if (pl.losses > income * 0.4) tipTxt = 'Les <b>défauts de paiement</b> vous coûtent cher : prêtez plus cher aux clients risqués (D, E) ou refusez-les.';
+    else if (pl.depInt > pl.interest * 0.6 && s.cash > s.deposits * 0.3) tipTxt = 'Trop d’épargne dort sans être prêtée : <b>baissez le taux du livret</b> dans Produits.';
+    else if (pl.costs > income) tipTxt = `Vos <b>loyers et salaires</b> (${money(pl.costs)}/mois) dépassent vos revenus : prêtez davantage avant d’embaucher ou d’ouvrir de nouvelles agences.`;
+    else tipTxt = 'Prêtez davantage : ce sont les intérêts des prêts qui font vivre une banque.';
+    toast(`🧑‍💼 <b>Gisèle</b> : vous perdez de l’argent depuis ${s.flags.lossStreak} mois. ${tipTxt}`, 'bad');
+    log(`🧑‍💼 Conseil : ${tipTxt.replace(/<[^>]+>/g, '')}`, 'bad');
+  }
 
   // Satisfaction des agences et réputation
   staffMonth(s); serveMonth(s);
+  if (s.day % 360 === 0) for (const b of s.branches) if (b.spec === 'jeunes') s.reputation = clamp(s.reputation + 10 / s.branches.length, 0, 100);
   for (const b of s.branches) b.sat += (satTarget(s, b) - b.sat) * 0.5;
   let dr = (50 - s.reputation) * 0.03 + feeRep(s) + (s.upgrades.app ? 1 : 0) + (avgSat(s) - 50) / 40;
   if (s.surveillance) dr -= 3;

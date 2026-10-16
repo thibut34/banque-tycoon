@@ -308,3 +308,14 @@ Object.assign(ACHS, {
   promo: { name: 'Promotion !', icon: '⭐', desc: 'Promouvoir un employé.', t: s => s.stats.promos >= 1 },
   lvl5: { name: 'La perle rare', icon: '💎', desc: 'Avoir un employé au niveau 5.', t: s => s.branches.some(b => (b.staff || []).some(e => e.lvl >= 5)) },
 });
+
+// ---------- Spécialités d'agence (à partir du niveau 2) ----------
+const SPECS = {
+  aucune: { name: 'Généraliste', icon: '🏦', desc: 'Un peu de tout, pour tout le monde.' },
+  particuliers: { name: 'Particuliers', icon: '👪', desc: '+25 % d’épargne possible.', cap: 1.25 },
+  entreprises: { name: 'Entreprises', icon: '🏭', desc: '+40 % de demandes de prêt, mais -15 % d’épargne.', loans: 1.4, cap: 0.85 },
+  patrimoine: { name: 'Gestion de patrimoine', icon: '💎', desc: 'Assurance-vie ×2, mais 20 % de visiteurs en moins.', av: 2, traffic: 0.8 },
+  jeunes: { name: 'Jeunes', icon: '🎓', desc: '+30 % de visiteurs et +10 réputation par an, mais -15 % d’épargne.', traffic: 1.3, cap: 0.85 },
+};
+const specOf = b => SPECS[b.spec] || SPECS.aucune;
+const specUnlocked = (s, b) => b.size >= 2 && s.chapter >= 2;

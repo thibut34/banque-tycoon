@@ -155,8 +155,10 @@ function renderPlanSide() {
       <button class="btn sm ghost" data-act="fire" data-id="${e.id}">Licencier</button></div>` : '<small class="muted tap">Cliquez pour former ou promouvoir</small>'}
     </div>`;
   }).join('');
+  const specCost = Math.round(cityOf(b).build * 0.2 / 1e3) * 1e3;
+  const spec = specUnlocked(s, b) ? `<h3 class="sec">Spécialité de l’agence <span class="muted small">(changer coûte ${money(specCost)})</span></h3><div class="specs">${Object.entries(SPECS).map(([k, p]) => `<button class="spec ${(b.spec || 'aucune') === k ? 'on' : ''}" data-act="spec" data-v="${k}" ${(b.spec || 'aucune') !== k && s.cash < specCost ? 'disabled' : ''}><span>${p.icon}</span><b>${p.name}</b><small>${p.desc}</small></button>`).join('')}</div>` : (s.chapter >= 2 ? `<p class="hint">${ic('lock')} Agrandissez l’agence au niveau 2 pour lui choisir une spécialité.</p>` : '');
   const readyN = (b.staff || []).filter(e => e.lvl < MAX_LVL && e.xp >= xpNeed(e.lvl)).length;
-  el.innerHTML = `<div class="tools">${tools}${up}</div>${hint}
+  el.innerHTML = `<div class="tools">${tools}${up}</div>${hint}${spec}
     ${team ? `<h3 class="sec">Équipe (${b.staff.length})${readyN ? ` <span class="pill gold">${readyN} promotion${readyN > 1 ? 's' : ''} possible${readyN > 1 ? 's' : ''}</span>` : ''}</h3><div class="team">${team}</div>` : ''}${b.id !== HQ ? `<button class="btn ghost sm" data-act="closeBranch" data-id="${b.id}">Fermer cette agence</button>` : ''}`;
 }
 

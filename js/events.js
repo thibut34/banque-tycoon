@@ -227,9 +227,12 @@ const RIVAL_EVENTS = [
 EVENTS.push(...RIVAL_EVENTS);
 
 function triggerEvent() {
-  const pool = EVENTS.filter(e => !e.cond || e.cond(S));
+  const seen = S.flags.evSeen = S.flags.evSeen || {};
+  let pool = EVENTS.filter(e => (!e.cond || e.cond(S)) && !(S.day - (seen[e.id] || -9999) < 540));
+  if (!pool.length) pool = EVENTS.filter(e => !e.cond || e.cond(S));
   const w = {}; pool.forEach((e, i) => w[i] = e.w);
   const e = pool[weighted(w)];
+  seen[e.id] = S.day;
   const m = e.make(S);
   S.stats.events++;
   SFX.play('notify');

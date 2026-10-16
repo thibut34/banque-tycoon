@@ -45,8 +45,8 @@ function staffMonth(s) {
     e.xp = Math.min(xpNeed(e.lvl), e.xp + Math.round(rint(12, 20) * (e.trait === 'ambitieux' ? 1.5 : 1) * (s.upgrades.rh ? 1.3 : 1)));
     if (e.xp >= xpNeed(e.lvl)) {
       if (!e.ready) { e.ready = s.day; toast(`⭐ <b>${esc(e.name)}</b> (${CITIES[b.id].name}) mérite une promotion !`, 'gold', 'promo' + e.id); }
-      else if (s.day - e.ready > 55 && !e.warned && e.trait !== 'fidele') { e.warned = true; toast(`😠 <b>${esc(e.name)}</b> (${CITIES[b.id].name}) menace de démissionner sans promotion !`, 'bad'); }
-      else if (s.day - e.ready > 90 && e.trait !== 'fidele' && chance(0.25)) {
+      else if (s.day - e.ready > 90 && !e.warned && e.trait !== 'fidele') { e.warned = true; toast(`😠 <b>${esc(e.name)}</b> (${CITIES[b.id].name}) menace de démissionner sans promotion !`, 'bad'); }
+      else if (s.day - e.ready > 150 && e.trait !== 'fidele' && chance(0.15)) {
         b.staff = b.staff.filter(x => x !== e); b[e.role]--;
         log(`🚪 ${e.name} démissionne : promotion refusée trop longtemps (${CITIES[b.id].name}).`, 'bad');
         toast(`🚪 <b>${esc(e.name)}</b> démissionne, faute de promotion !`, 'bad');

@@ -39,11 +39,11 @@ function reconcile(s) {
 const ccAtt = fee => clamp(Math.exp(-0.18 * (fee - 3)), 0.3, 1.8);
 const repAtt = s => 0.4 + s.reputation / 80;
 function ccTarget(s) { return s.prod.cc.on ? depositCap(s) * 0.4 * ccAtt(s.prod.cc.fee) * repAtt(s) : 0; }
-function livTarget(s) { return s.prod.liv.on ? depositCap(s) * 0.6 * clamp(Math.exp(0.6 * (s.depositRate - marketDepRate(s))), 0.15, 4) * repAtt(s) * (s.flags.priceWar > s.day ? 0.7 : 1) : 0; }
+function livTarget(s) { return s.prod.liv.on ? depositCap(s) * 0.6 * clamp(Math.exp(0.6 * (s.depositRate - marketDepRate(s))), 0.15, 4) * repAtt(s) * (s.flags.priceWar > s.day ? 0.7 : 1) * (s.flags.greenUntil > s.day ? 1.15 : 1) : 0; }
 const clientsOf = s => Math.round(s.depCC / AVG_BALANCE);
 function avTarget(s) {
   if (!s.prod.av.on) return 0;
-  let t = 0; for (const b of s.branches) t += cityOf(b).cap * 0.25 * staffEff(b, 'bs');
+  let t = 0; for (const b of s.branches) t += cityOf(b).cap * 0.25 * staffEff(b, 'bs') * (specOf(b).av || 1);
   return t * clamp(Math.exp(-0.8 * (s.prod.av.fee - 1.2)), 0.2, 2) * repAtt(s);
 }
 function cardHolders(s) {

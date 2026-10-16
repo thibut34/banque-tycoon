@@ -482,3 +482,11 @@ details.more[open] summary { margin-bottom: 14px; color: var(--text); }
 .cb b.pos::before, .cb small.pos::before, .cb td.pos::before { content: "▲ "; font-size: .8em; }
 .cb b.neg::before, .cb small.neg::before, .cb td.neg::before { content: "▼ "; font-size: .8em; }
 @media (prefers-reduced-motion: reduce) { .confetti { display: none; } }
+
+/* ---------- Spécialités ---------- */
+.specs { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.spec { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line2); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+.spec span { font-size: 20px; }
+.spec small { color: var(--muted); font-size: 11.5px; }
+.spec.on { border-color: var(--accent2); box-shadow: 0 0 0 1px var(--accent2); background: rgba(99,102,241,.1); }
+.spec:disabled { opacity: .45; cursor: not-allowed; }
