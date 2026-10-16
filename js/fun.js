@@ -82,7 +82,7 @@ function renderCombo(dur) {
   if (n < 2) { el.hidden = true; return; }
   el.hidden = false;
   el.className = n >= 8 ? 'hot3' : n >= 5 ? 'hot2' : 'hot1';
-  el.innerHTML = `<b>COMBO x${n}</b><small>XP ×${nf2.format(comboMul(n)).replace(',00', '')}</small><i style="animation-duration:${dur}ms"></i>`;
+  el.innerHTML = `<b>COMBO x${Math.min(n, 99)}${n > 99 ? '+' : ''}</b><small>XP ×${nf2.format(comboMul(n)).replace(',00', '')}</small><i style="animation-duration:${dur}ms"></i>`;
   el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
   clearTimeout(ui.comboT); ui.comboT = setTimeout(() => { el.hidden = true; }, dur);
 }

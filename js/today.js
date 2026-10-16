@@ -15,7 +15,9 @@ function profileLine(p) {
   return `<div class="profile"><span>${pjob(p)}${p.u ? ' <b class="neg">(au chômage)</b>' : ''}</span><span>Salaire <b>${money(pinc(p))}</b>/mois</span><span>${p.own ? 'Propriétaire' : `Loyer <b>${money(p.r)}</b>`}</span></div>`;
 }
 
+const cmeta = (s, c) => c.kind === 'story' ? storyMeta(s, c) : CARD_META[c.kind];
 function cardBody(s, c) {
+  if (c.kind === 'story') return storyBody(s, c);
   const id = c.id, up = upsellChance(s, true), p = c.pid && findPerson(s, c.pid);
   switch (c.kind) {
     case 'compte': {
@@ -73,15 +75,15 @@ function cardBody(s, c) {
 // Le visage du client quand c'est une personne, sinon une icône
 function cardFace(s, c, size) {
   const p = c.kind === 'compte' ? c.p : c.pid && findPerson(s, c.pid);
-  return p && p.i ? avatar({ face: personFace(p), role: 'client', trait: p.q < 40 ? 'raleur' : '' }, size) : `<span class="cc-ico" style="width:${size}px;height:${size}px">${CARD_META[c.kind][0]}</span>`;
+  return p && p.i ? avatar({ face: personFace(p), role: 'client', trait: p.q < 40 ? 'raleur' : '' }, size) : `<span class="cc-ico" style="width:${size}px;height:${size}px">${cmeta(s, c)[0]}</span>`;
 }
 function cardWho(s, c) {
   const p = c.kind === 'compte' ? c.p : c.pid && findPerson(s, c.pid);
-  return p && p.i ? pname(p) : c.name || CARD_META[c.kind][1];
+  return p && p.i ? pname(p) : c.kind === 'story' ? cmeta(s, c)[1] : c.name || CARD_META[c.kind][1];
 }
 
 function clientCard(s, c, n, tot) {
-  const [, title] = CARD_META[c.kind], b = c.branch && CITIES[c.branch];
+  const title = c.kind === 'story' && c.pid ? cmeta(s, c)[1] : c.sid === 'liquidite' ? 'Alerte de la direction' : c.kind === 'story' ? 'Vie du quartier' : c.back ? 'Un client fidèle revient' : CARD_META[c.kind][1], b = c.branch && CITIES[c.branch];
   const [body, actions] = cardBody(s, c);
   return `<article class="ccard focus-card ${c.task ? 'task' : ''} k-${c.kind}">
     <header>${cardFace(s, c, 52)}<div class="grow"><small class="eyebrow">${title}${b && S.branches.length > 1 ? ' · ' + b.name : ''}</small><h2>${esc(cardWho(s, c))}</h2></div><span class="cc-count">${n} / ${tot}</span></header>
@@ -108,7 +110,7 @@ function vToday() {
   const goal = (o || rules.length) ? `<section class="side-box">
       ${o ? `<div class="sb-goal ${o.done ? 'done' : ''}"><small>Objectif du jour</small><b>${OBJECTIVES[o.k].txt(o.n)}</b><span>${o.done ? '✓ Réussi' : '+' + money(o.reward)}</span></div>` : ''}
       ${rules.length ? `<ul class="sb-stars">${rules.map(([txt, ok]) => `<li class="${ok ? 'on' : ''}"><span>★</span>${txt}</li>`).join('')}</ul>` : ''}</section>` : '';
-  const queue = left.length > 1 || (left.length && cur !== left[0]) ? `<section class="side-box"><h3>En attente <span class="muted">${left.length - 1}</span></h3><div class="queue">${left.filter(c => c !== cur).map(c => `<button class="q-item" data-act="focusCard" data-id="${c.id}">${cardFace(s, c, 28)}<span class="grow"><b>${esc(cardWho(s, c))}</b><small>${CARD_META[c.kind][1]}</small></span></button>`).join('')}</div>
+  const queue = left.length > 1 || (left.length && cur !== left[0]) ? `<section class="side-box"><h3>En attente <span class="muted">${left.length - 1}</span></h3><div class="queue">${left.filter(c => c !== cur).map(c => `<button class="q-item" data-act="focusCard" data-id="${c.id}">${cardFace(s, c, 28)}<span class="grow"><b>${esc(cardWho(s, c))}</b><small>${c.kind === 'story' ? cmeta(s, c)[1] : CARD_META[c.kind][1]}</small></span></button>`).join('')}</div>
       <button class="btn ghost full small-btn" data-act="delegate">Laisser l’équipe gérer le reste</button></section>` : '';
   const dom = s.day % 30 + 1, cal = dom === 28 ? '💶 Jour de paie : les salaires arrivent.' : dom === 5 ? '🏠 Les loyers sont prélevés.' : dom === 10 ? '📄 Prélèvement des factures.' : dom === 1 && s.day > 1 ? '📆 Nouveau mois : mensualités, frais et intérêts.' : '';
   const figures = s.people.length ? `<section class="side-box"><h3>Vos clients</h3><dl class="figs">
@@ -119,7 +121,7 @@ function vToday() {
   const chap = ch ? `<button class="side-box chap" data-act="tab" data-tab="missions"><small>Chapitre ${s.chapter + 1} · objectif de la campagne</small><b>${ch.name}</b><span class="muted">${ch.desc}</span></button>` : '';
 
   const sb = getBranch(s, ui.branch) || s.branches[0];
-  const scene = sb ? `<div class="scene"><div class="scene-tag"><b>${CITIES[sb.id].name}</b><span class="pill">${dateStr(s.day)}</span></div>
+  const scene = sb ? `<div class="scene"><div class="scene-tag"><b>${CITIES[sb.id].name}</b><span class="pill">${dateStr(s.day)}</span></div>${t.sd ? `<div class="scene-sd"><b>${t.sd.ico} ${t.sd.name}</b><small>${t.sd.desc}</small></div>` : ''}
     <button class="btn sm scene-go" data-act="tab" data-tab="plan">Aménager l’agence</button>
     <canvas id="floor" data-mini="1" data-maxh="${innerWidth < 700 ? 200 : 280}" role="img" aria-label="Votre agence, vue en 3D"></canvas>
     ${t.arrived ? `<div class="scene-stats"><span>🚶 ${t.arrived} visiteur${t.arrived > 1 ? 's' : ''} aujourd’hui</span>${t.lost ? `<span class="neg">😤 ${t.lost} reparti${t.lost > 1 ? 's' : ''}</span>` : ''}</div>` : ''}</div>` : '';

@@ -18,6 +18,7 @@ function dayArrivals(s, b) {
   if (!b.gs && !b.bs) return 0;
   let n = rnd(6, 10) * cityOf(b).traffic / 3 * (0.6 + s.reputation / 125);
   if (s.upgrades.marketing) n *= 1.15;
+  n *= sdMod(s, 'vis');
   n += perk(s, 'aimant');
   if (b.rivalUntil > s.day) n *= 0.8;
   if (s.flags.sponsorUntil > s.day) n *= 1.15;
@@ -28,7 +29,7 @@ const potentialFor = (s, b) => cityOf(b).cap / 2500 * 0.4 * (specOf(b).cap || 1)
 function pickKind(s, b, mine) {
   const sat = clamp(1 - mine / Math.max(1, potentialFor(s, b)), 0.1, 1), c = Math.min(1, mine / 20);
   const w = {
-    compte: b.gs ? 5 * sat : 0, suspect: b.gs ? 0.3 : 0,
+    compte: b.gs ? 5 * sat * sdMod(s, 'compte') : 0, suspect: b.gs ? 0.3 : 0,
     demande: b.gs ? 2.2 * c : 0, reclam: b.gs ? 0.5 * c : 0,
     pret: loansOpen(s) && b.bs ? 2.4 * Math.max(0.15, c) : 0, pro: loansOpen(s) && b.bs ? 0.5 : 0,
     av: s.prod.av.on && b.bs ? 0.6 * c : 0,
@@ -104,14 +105,16 @@ function makeTask(s, kind, extra = {}) {
 // ---------- Début de journée ----------
 function startDay(s) {
   reconcile(s);
+  if (s.day > 20 && chance(1 / 70)) s.flags.greve = s.day;
   const t = s.today = { day: s.day, cards: [], arrived: 0, lost: 0, done: 0, tally: { comptes: 0, prets: 0, ventes: 0, recl: 0 }, m: { comptes: 0, prets: 0, ventes: 0 }, obj: null };
+  t.sd = specialDay(s);
   // Alertes de la nuit
   const alerts = (s.alerts || []).splice(0);
   for (const id of alerts.slice(0, 5)) { const p = findPerson(s, id); if (p && p.b < -p.o) t.cards.push(makeTask(s, 'decouvert', { pid: p.i, name: pname(p) })); }
   for (const id of alerts.slice(5)) { const p = findPerson(s, id); if (p) autoOverdraft(s, p); }
   for (const L of s.loans.filter(l => l.missNew)) { L.missNew = false; t.cards.push(makeTask(s, 'impaye', { loan: L.id, name: L.name, amt: Math.round(L.pmt), miss: L.miss })); }
   const holders = s.cards + s.cardsGold;
-  if (holders && chance(Math.min(0.6, holders * 0.0015))) { const p = pick(s.people.filter(p => p.c)); if (p) t.cards.push(makeTask(s, 'fraudecb', { pid: p.i, name: pname(p) })); }
+  if (holders && chance(Math.min(0.8, holders * 0.0015 * sdMod(s, 'fraud')))) { const p = pick(s.people.filter(p => p.c)); if (p) t.cards.push(makeTask(s, 'fraudecb', { pid: p.i, name: pname(p) })); }
   // Les visiteurs du jour
   for (const b of s.branches) {
     const A = dayArrivals(s, b); if (!A) continue;
@@ -133,6 +136,7 @@ function startDay(s) {
   if (s.day % 7 === 1 && s.day > 1 && s.branches.some(b => b.gs || b.bs)) t.cards.unshift({ id: ++ui.cardSeq, kind: 'reunion', task: true });
   if (s.clients > 20 && chance(0.2)) t.cards.push(makeTask(s, 'facture'));
   if (s.clients > 40 && chance(0.12)) t.cards.push(makeTask(s, 'courrier'));
+  addStoryCards(s, t);
   t.total = t.cards.length;
   t.obj = makeObjective(s, t);
   ui.dirty = true;
@@ -169,6 +173,7 @@ function autoOverdraft(s, p) { p.q -= 4; p.k = (p.k || 0) + 0.3; }
 
 function resolveCard(s, c, choice, manual = true) {
   const b = c.branch && getBranch(s, c.branch), p = c.pid && findPerson(s, c.pid);
+  if (c.kind === 'story') return resolveStory(s, c, choice, manual);
   let msg = null;
   const before = { ...s.today.tally };
   reconcile(s);
@@ -270,6 +275,7 @@ function closePerson(s, p) {
 // Ce que ferait votre équipe à votre place
 function delegateChoice(s, c) {
   switch (c.kind) {
+    case 'story': return storyAuto(c);
     case 'compte': return s.prod.carte.on ? 'carte' : s.prod.liv.on ? 'livret' : 'ouvre';
     case 'suspect': return s.upgrades.conformite || focusOn(s, 'prudence') ? 'signale' : 'refuse';
     case 'demande': return c.sub === 'cloture' ? (findPerson(s, c.pid) && findPerson(s, c.pid).b < 0 ? 'refuse' : 'ok') : c.sub === 'plafond' ? 'refuse' : 'ok';

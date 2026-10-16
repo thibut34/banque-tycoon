@@ -98,7 +98,7 @@ function reconcile(s) {
 
 // ---------- La vie des comptes, chaque jour ----------
 function peopleDay(s) {
-  const dom = s.day % 30, agioRate = (s.prod.cc.agio || 14) / 100 / 360;
+  const dom = s.day % 30, agioRate = (s.prod.cc.agio || 14) / 100 / 360, sd = specialDay(s), spMul = (sd && sd.spend) || 1;
   let cashIn = 0, cashOut = 0;
   s.alerts = s.alerts || [];
   for (const p of s.people) {
@@ -106,7 +106,7 @@ function peopleDay(s) {
     if (dom === p.pd) { p.b += inc; cashIn += inc * w; }                 // salaire
     if (dom === 4 && p.r) { p.b -= p.r; cashOut += p.r * w; }            // loyer
     if (dom === 9) { p.b -= p.f; cashOut += p.f * w; }                   // électricité, téléphone, assurances
-    const sp = p.sp / 30 * (0.4 + Math.random() * 1.2) * (p.blk > s.day ? 0.35 : 1) * (p.u ? 0.8 : 1);
+    const sp = p.sp / 30 * spMul * (0.4 + Math.random() * 1.2) * (p.blk > s.day ? 0.35 : 1) * (p.u ? 0.8 : 1);
     p.b -= sp; cashOut += sp * w;                                         // dépenses (carte, retraits)
     if (p.l != null && dom === (p.pd + 2) % 30) {                         // épargne du mois
       const extra = p.b - inc * 0.4;
