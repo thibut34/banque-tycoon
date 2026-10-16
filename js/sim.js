@@ -42,6 +42,7 @@ function grantLoan(s, r) {
   if (s.upgrades.ia && !souv) pdA *= 0.75;
   if (s.flags.genius && !souv) pdA *= 0.9;
   s.cash -= r.amount;
+  if (!souv) { const fee = Math.round(r.amount * 0.01); s.cash += fee; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + fee; } // frais de dossier : 1 %
   const L = { id: r.id, type: r.type, name: r.name, out: r.amount, amount: r.amount, rate: r.offer, left: r.dur, dur: r.dur, pmt: payment(r.amount, r.offer, r.dur), pdA, grade: reqGrade(r), since: s.day };
   if (souv) { L.rw = RATINGS[r.rating].rw; s.stats.souv++; }
   if (r.fraud) L.fraud = true;

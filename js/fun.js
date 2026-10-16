@@ -10,7 +10,7 @@ function M(s) {
 }
 const xpFor = l => Math.round(110 * Math.pow(l, 1.7));
 const perk = (s, k) => (s && s.meta && s.meta.perks[k]) || 0;
-const CHEST_STARS = 24;
+const CHEST_STARS = 12;
 const primeAmt = s => Math.round(Math.max(5000, equity(s) * 0.02) / 500) * 500;
 
 // ---------- Atouts ----------
@@ -136,7 +136,8 @@ function funCard(s, c, before, el) {
   t.manual = (t.manual || 0) + 1;
   const n = bumpCombo(s);
   const dComptes = a.comptes - before.comptes, dVentes = a.ventes - before.ventes, dPrets = a.prets - before.prets;
-  const base = c.task ? 12 : 18;
+  const base = c.task ? 25 : 35;
+  m.stars++; if (m.stars % CHEST_STARS === 0) m.chests++;
   const xp = Math.round((base + dComptes * 10 + dVentes * 14 + dPrets * 40) * comboMul(n));
   const r = el ? el.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0 };
   const x = r.left + r.width / 2, y = r.top;
@@ -294,7 +295,6 @@ setInterval(() => {
   if (ui.modal || S.over || ui.bannerUntil > Date.now()) return;
   const m = M(S);
   if (ui.loginPending && m.login && !m.login.claimed && S.day > 0) { ui.loginPending = false; return showLogin(); }
-  if (S.flags.bilan && !S.flags.bilan.seen) return showBilan();
   if (m.pendingPerk > 0) return showPerkModal();
   if (m.chests > 0) return showChest();
 }, 400);

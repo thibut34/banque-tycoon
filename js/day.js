@@ -139,8 +139,8 @@ function startDay(s) {
   addStoryCards(s, t);
   t.total = t.cards.length;
   ceoDay(s, t);
-  if (!t.cards.length && s.branches.some(b => b.gs || b.bs) && chance(0.6)) { addDirectionCard(s, t); t.total = t.cards.length; }
-  t.obj = makeObjective(s, t);
+  inboxMerge(s, t);
+  t.obj = null; // en temps réel, plus d'objectif quotidien : les chapitres guident la partie
   ui.dirty = true;
 }
 

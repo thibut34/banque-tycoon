@@ -1,0 +1,146 @@
+'use strict';
+/* =====================================================================
+   BANQUE TYCOON — le temps réel
+   Le temps avance tout seul (un jour toutes les quelques secondes). Il se
+   met en pause quand une fenêtre est ouverte ou que l'onglet est caché.
+   Les dossiers importants attendent sur votre bureau quelques jours :
+   sans réponse, votre équipe tranche à votre place.
+   ===================================================================== */
+
+const DAY_MS = 4000;
+const clock = { acc: 0, last: 0 };
+const hasStaff = s => s.branches.some(b => b.gs || b.bs);
+function clockState(s) {
+  if (!s || s.over) return 'stop';
+  if (!hasStaff(s)) return 'staff';
+  if (s.flags.paused) return 'pause';
+  if (ui.modal || document.hidden) return 'wait';
+  return 'run';
+}
+function clockLoop() {
+  const ts = Date.now(), dt = clock.last ? Math.min(250, ts - clock.last) : 0; clock.last = ts;
+  const s = S; if (!s || $('#game').hidden) return;
+  if (clockState(s) === 'run') {
+    clock.acc += dt;
+    if (clock.acc >= DAY_MS) { clock.acc -= DAY_MS; advanceDay(); }
+  }
+  clockUI(s);
+}
+setInterval(clockLoop, 50);
+
+function clockUI(s) {
+  const b = $('#clockBtn'); if (!b) return;
+  const st = clockState(s), key = st + (st === 'run' ? '' : '');
+  if (b.dataset.st !== key) {
+    b.dataset.st = key;
+    b.classList.toggle('paused', st !== 'run');
+    b.querySelector('span').textContent = st === 'run' ? '⏸ Pause' : st === 'staff' ? '⏳ Recrutez un guichetier' : st === 'pause' ? '▶ Reprendre' : '⏸ En pause';
+  }
+  b.querySelector('i').style.width = (st === 'run' || st === 'wait' ? clock.acc / DAY_MS * 100 : 0) + '%';
+}
+
+// ---------- Un nouveau jour ----------
+function advanceDay() {
+  const s = S, dep0 = s.deposits, cl0 = s.clients, loans0 = s.stats.granted;
+  tickDay();
+  if (s.over) return;
+  startDay(s);
+  const t = s.today;
+  s.flags.lostAvg = (s.flags.lostAvg || 0) * 0.8 + (t.lost || 0) * 0.2;
+  dayFx(s, s.deposits - dep0, s.clients - cl0, s.stats.granted - loans0);
+  if (s.day % 5 === 0) save();
+  renderTop();
+}
+// Petites bulles au-dessus de l'agence : on voit la banque vivre
+function dayFx(s, dDep, dCl, dLoans) {
+  const sc = $('.scene'); if (!sc || ui.tab !== 'dash') return;
+  const r = sc.getBoundingClientRect(), fx = [];
+  if (dCl > 0) fx.push([`+${dCl} client${dCl > 1 ? 's' : ''} 🙋`, 'big']);
+  if (dLoans > 0 && s.today.auto && s.today.auto.pretAmt) fx.push([`🤝 Prêt signé : ${money(s.today.auto.pretAmt)}`, 'big']);
+  else if (dDep > 500) fx.push([`💰 +${money(dDep)} déposés`, 'xp']);
+  if (s.day % 30 === 27) fx.push(['💶 Jour de paie !', 'big']);
+  fx.slice(0, 2).forEach(([txt, cls], i) => setTimeout(() => floatText(r.left + r.width * (0.35 + Math.random() * 0.3), r.top + r.height * (0.45 - i * 0.12), txt, cls), i * 400));
+  if (dLoans > 0) SFX.play('coin');
+}
+
+// ---------- Le bureau : les dossiers attendent quelques jours ----------
+const MAX_INBOX = 5;
+function inboxMerge(s, t) {
+  const old = (s.inbox || []).filter(c => !c.done);
+  for (const c of old) if (c.exp <= s.day) expireCard(s, c);
+  for (const c of t.cards) c.exp = s.day + (c.kind === 'pret' || c.kind === 'pro' ? 7 : 6);
+  let all = old.filter(c => !c.done).concat(t.cards);
+  while (all.length > MAX_INBOX) { expireCard(s, all[0]); all = all.filter(c => !c.done); }
+  t.cards = s.inbox = all;
+  t.total = all.length;
+}
+function expireCard(s, c) {
+  ui.teamQ = teamQ(s, getBranch(s, c.branch) || s.branches[0]);
+  if ((c.kind === 'pret' || c.kind === 'pro') && c.req) {
+    c.done = true; s.stats.refused++;
+    log(`⌛ ${c.name} attendait votre signature : sans réponse, il est allé voir un concurrent.`, 'bad');
+    return;
+  }
+  const m = resolveCard(s, c, delegateChoice(s, c), false);
+  log(`⌛ Sans décision de votre part, votre équipe a tranché${c.name ? ' pour ' + c.name : ''}${m ? ' : ' + m.replace(/<[^>]+>/g, '') : '.'}`);
+}
+
+// ---------- Résultat en direct ----------
+function dailyEstimate(s) {
+  const interest = s.loans.reduce((a, L) => a + L.out * L.rate / 1200, 0);
+  const fees = (s.clients || 0) * s.prod.cc.fee + ((s.cards || 0) * s.prod.carte.fee + (s.cardsGold || 0) * s.prod.carte.fee * 2.5) / 12 + (s.prod.av.aum || 0) * s.prod.av.fee / 1200 + (s.ovd || 0) * (s.prod.cc.agio || 14) / 1200;
+  // frais de dossier encaissés depuis le début du mois, distributeurs, réserves placées et obligations
+  const dom = s.day % 30 + 1, dossier = (s.flags.mExtraFees || 0) / dom * 30;
+  let other = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1) / 1200 + holdingValue(s, 'oat') * (s.policyRate + 0.4) / 1200;
+  for (const b of s.branches) other += dabIncome(b);
+  const livret = (s.depLiv || 0) * s.depositRate / 1200;
+  const costs = monthlyCosts(s) + s.cbDebt * cbRate(s) / 1200;
+  const f = fees + dossier;
+  return { interest: interest / 30, fees: f / 30, other: other / 30, livret: livret / 30, costs: costs / 30, net: (n => n > 0 ? n * 0.75 : n)((interest + f + other - livret - costs) / 30) }; // après impôt (25 %)
+}
+
+// ---------- Développer ma banque : quoi acheter maintenant ----------
+function growthOptions(s) {
+  const b = getBranch(s, HQ) || s.branches[0]; if (!b) return [];
+  const lim = SIZES[b.size], out = [], lost = s.flags.lostAvg || 0;
+  if (b.g > b.gs) out.push({ k: 'gs', ico: '🧑‍💼', name: 'Embaucher un guichetier', fx: '+6 clients servis par jour', cost: itemCost(b, 'gs'), hot: true });
+  else if (b.g < lim.g) out.push({ k: 'g', ico: '🪟', name: 'Nouveau guichet', fx: lost > 0.5 ? `${Math.round(lost)} clients repartent chaque jour faute de place` : 'Accueillir plus de clients', cost: itemCost(b, 'g'), hot: lost > 0.5 });
+  if (loansOpen(s) || staffTotal(s, 'gs') >= 1) {
+    if (b.b > b.bs) out.push({ k: 'bs', ico: '👔', name: 'Recruter un conseiller', fx: '+3 dossiers de prêt par jour', cost: itemCost(b, 'bs'), hot: true });
+    else if (b.b < lim.b && itemUnlocked('b')) out.push({ k: 'b', ico: '🗂️', name: 'Bureau de conseil', fx: 'Pour recevoir les demandes de prêt', cost: itemCost(b, 'b') });
+  }
+  for (const k of ['liv', 'carte', 'av']) if (!s.prod[k].on && PROD_UNLOCK[k](s)) out.push({ launch: k, ico: PRODUCTS[k].icon, name: `Lancer : ${PRODUCTS[k].name}`, fx: PRODUCTS[k].desc.split('.')[0], cost: 0, hot: true });
+  if (!(s.flags.sponsorUntil > s.day) && s.clients >= 5) out.push({ pub: 1, ico: '📣', name: 'Campagne de publicité', fx: '+15 % de visiteurs pendant 30 jours', cost: 8000 });
+  const emp = s.branches.flatMap(x => (x.staff || []).map(e => [x, e])).filter(([, e]) => canTrain(s, e)).sort((a, c) => a[1].lvl - c[1].lvl)[0];
+  if (emp) out.push({ train: emp[1].id, ico: '🎓', name: `Former ${emp[1].name.split(' ')[0]}`, fx: 'Votre équipe décidera mieux à votre place', cost: trainCost(s, emp[0], emp[1]) });
+  if (itemUnlocked('dab') && b.dab < lim.dab) out.push({ k: 'dab', ico: '🏧', name: 'Distributeur de billets', fx: 'Des revenus chaque mois', cost: itemCost(b, 'dab') });
+  if (b.g >= lim.g && b.b >= lim.b && b.size < 3) out.push({ k: 'size', ico: '🏗️', name: 'Agrandir l’agence', fx: 'Plus de guichets et de bureaux', cost: sizeUpCost(b) });
+  if (tabUnlocked('world')) out.push({ world: 1, ico: '🌍', name: 'Ouvrir une nouvelle agence', fx: 'Conquérir d’autres villes', cost: null });
+  return out.slice(0, 5);
+}
+function growthHTML(s) {
+  const o = growthOptions(s); if (!o.length) return '';
+  return `<section class="grow-box"><h3>🚀 Développer ma banque</h3><div class="grow-list">${o.map((g, i) => {
+    const poor = g.cost && s.cash < g.cost;
+    return `<button class="grow-item ${g.hot ? 'hot' : ''}" data-act="grow" data-i="${i}" ${poor ? 'disabled' : ''}><span class="gi-ico">${g.ico}</span><span class="grow"><b>${g.name}</b><small>${g.fx}</small></span><span class="gi-cost">${g.cost === null ? '→' : g.cost ? money(g.cost) : 'Gratuit'}</span></button>`;
+  }).join('')}</div></section>`;
+}
+
+Object.assign(actions, {
+  pause: () => { if (!S) return; S.flags.paused = !S.flags.paused; clock.acc = Math.min(clock.acc, DAY_MS * 0.5); SFX.play('click'); clockUI(S); },
+  grow: el => {
+    const g = growthOptions(S)[+el.dataset.i]; if (!g) return;
+    ui.branch = HQ;
+    if (g.k) { if (doBuild(g.k)) { renderTop(); SFX.play('build'); } }
+    else if (g.launch) actions.launch({ dataset: { p: g.launch } });
+    else if (g.pub) { if (S.cash < 8000) return; S.cash -= 8000; S.flags.sponsorUntil = S.day + 30; toast('📣 Campagne lancée : plus de visiteurs pendant 30 jours !', 'good'); }
+    else if (g.train) trainEmp(g.train);
+    else if (g.world) return actions.tab({ dataset: { tab: 'world' } });
+    renderTop(); renderPanel(true);
+  },
+});
+// Espace : pause / reprise
+document.addEventListener('keydown', e => {
+  if (!S || ui.modal || e.code !== 'Space' || e.target.matches('input,textarea,select,button')) return;
+  e.preventDefault(); e.stopImmediatePropagation(); actions.pause();
+}, true);

@@ -201,13 +201,13 @@ function addStoryCards(s, t) {
   }
   // Une nouvelle histoire commence
   const active = s.people.filter(p => p.saga).length;
-  if (s.people.length >= 15 && active < 4 && chance(0.15 * (sdMod(s, 'vis') > 1 ? 1.2 : 1))) {
+  if (s.people.length >= 15 && active < 4 && chance(0.06 * (sdMod(s, 'vis') > 1 ? 1.2 : 1))) {
     const sid = s.today.sd && s.today.sd.name === 'Saint-Valentin' ? 'mariage' : pick(Object.keys(STORIES));
     const cands = s.people.filter(p => !p.saga && pw(p) === 1 && STORIES[sid].pick(p));
     if (cands.length) { const p = pick(cands); p.saga = sid; t.cards.push(storyCard(s, sid, 0, p.i)); }
   }
   // La vie du quartier
-  if (s.clients >= 10 && chance(0.1)) {
+  if (s.clients >= 10 && chance(0.05)) {
     s.flags.qSeen = s.flags.qSeen || [];
     const pool = QUARTIER.filter(q => (!q.need || q.need(s)) && !s.flags.qSeen.includes(q.id));
     if (!pool.length) s.flags.qSeen = [];
@@ -215,7 +215,7 @@ function addStoryCards(s, t) {
     t.cards.push(storyCard(s, 'quartier', 0, null, { q: q.id }));
   }
   // Une décision de direction (presque chaque jour au début, pour que le bureau ne soit jamais vide)
-  if (chance(s.chapter === 0 ? 0.55 : 0.35)) addDirectionCard(s, t);
+  if (chance(s.chapter === 0 ? 0.12 : 0.07)) addDirectionCard(s, t);
   // Alerte de liquidités
   if (s.deposits > 1e5 && s.cash < s.deposits * 0.1 && !(s.flags.liqAlert > s.day - 15)) {
     s.flags.liqAlert = s.day;

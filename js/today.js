@@ -83,55 +83,62 @@ function cardWho(s, c) {
 }
 
 function clientCard(s, c, n, tot) {
-  const title = (c.esc ? 'Remonté par l’équipe · ' : '') + (c.kind === 'story' && c.pid ? cmeta(s, c)[1] : c.sid === 'liquidite' ? 'Alerte de la direction' : c.kind === 'story' ? 'Vie du quartier' : c.back ? 'Un client fidèle revient' : CARD_META[c.kind][1]), b = c.branch && CITIES[c.branch];
+  const title = (c.esc ? 'Remonté par l’équipe · ' : '') + (c.kind === 'story' && c.pid ? cmeta(s, c)[1] : c.sid === 'liquidite' ? 'Alerte de la direction' : c.sid === 'direction' ? 'Décision de direction' : c.kind === 'story' ? 'Vie du quartier' : c.back ? 'Un client fidèle revient' : CARD_META[c.kind][1]), b = c.branch && CITIES[c.branch];
   const [body, actions] = cardBody(s, c);
   return `<article class="ccard focus-card ${c.task ? 'task' : ''} k-${c.kind}">
-    <header>${cardFace(s, c, 52)}<div class="grow"><small class="eyebrow">${title}${b && S.branches.length > 1 ? ' · ' + b.name : ''}</small><h2>${esc(cardWho(s, c))}</h2></div><span class="cc-count">${n} / ${tot}</span></header>
+    <header>${cardFace(s, c, 52)}<div class="grow"><small class="eyebrow">${title}${b && S.branches.length > 1 ? ' · ' + b.name : ''}</small><h2>${esc(cardWho(s, c))}</h2></div>${c.exp ? `<span class="cc-count" title="Sans décision, votre équipe tranchera">⏳ ${Math.max(0, c.exp - s.day)} j</span>` : ''}</header>
     <div class="cc-body">${body}</div><div class="cc-actions">${actions}</div></article>`;
 }
 
 function vToday() {
   const s = S;
   if (!s.today) startDay(s);
-  const t = s.today, left = t.cards.filter(c => !c.done), y = s.yesterday, tot = t.cards.length;
-  const noStaff = !s.branches.some(b => b.gs || b.bs);
-  let cur = left.find(c => c.id === ui.focusCard) || left[0];
-  const n = t.cards.filter(c => c.done).length + 1;
+  const t = s.today, left = t.cards.filter(c => !c.done);
+  const noStaff = !hasStaff(s);
+  const cur = left.find(c => c.id === ui.focusCard) || left[0];
 
-  // Colonne principale : un seul client à la fois
-  let main;
-  if (noStaff) main = `<div class="empty-desk"><div class="ed-ico">🏦</div><h2>Votre agence est encore fermée</h2><p class="muted">Construisez un guichet et recrutez un guichetier dans <b>Ma banque</b> pour ouvrir vos portes.</p><button class="btn primary big" data-act="tab" data-tab="plan">Aller dans Ma banque</button></div>`;
-  else if (cur) main = clientCard(s, cur, n, tot) + `<p class="hint">Touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre · enchaînez vite pour faire des combos</p>`;
-  else if (!tot && !y) main = `<div class="empty-desk"><div class="ed-ico">🚪</div><h2>Tout est prêt !</h2><p class="muted">Vos portes ouvrent demain matin. Passez au jour suivant pour accueillir vos premiers clients.</p><button class="btn primary big big-next pulse" data-act="nextDay">Jour suivant ▶</button></div>`;
-  else main = `<div class="empty-desk"><div class="ed-ico">✅</div><h2>${tot ? 'Bureau vide !' : 'Rien sur votre bureau'}</h2><p class="muted">${tot ? `Vous avez réglé ${tot} dossier${tot > 1 ? 's' : ''}.` : 'Votre équipe s’occupe de tout aujourd’hui. Profitez-en pour gérer vos produits, vos agences et votre équipe.'}${t.lost ? ` <span class="neg">${t.lost} sont repartis faute de personnel.</span>` : ''}</p><button class="btn primary big big-next pulse" data-act="nextDay">Jour suivant ▶</button></div>`;
-
-  // Colonne de droite : objectif, étoiles, file d'attente, chiffres
-  const o = t.obj, rules = tot || t.arrived ? starRules(s, t) : [];
-  const goal = (o || rules.length) ? `<section class="side-box">
-      ${o ? `<div class="sb-goal ${o.done ? 'done' : ''}"><small>Objectif du jour</small><b>${OBJECTIVES[o.k].txt(o.n)}</b><span>${o.done ? '✓ Réussi' : '+' + money(o.reward)}</span></div>` : ''}
-      ${rules.length ? `<ul class="sb-stars">${rules.map(([txt, ok]) => `<li class="${ok ? 'on' : ''}"><span>★</span>${txt}</li>`).join('')}</ul>` : ''}</section>` : '';
-  const queue = left.length > 1 || (left.length && cur !== left[0]) ? `<section class="side-box"><h3>Sur votre bureau <span class="muted">${left.length - 1}</span></h3><div class="queue">${left.filter(c => c !== cur).map(c => `<button class="q-item" data-act="focusCard" data-id="${c.id}">${cardFace(s, c, 28)}<span class="grow"><b>${esc(cardWho(s, c))}</b><small>${c.kind === 'story' ? cmeta(s, c)[1] : CARD_META[c.kind][1]}</small></span></button>`).join('')}</div>
-      <button class="btn ghost full small-btn" data-act="delegate">Laisser l’équipe gérer le reste</button></section>` : '';
-  const dom = s.day % 30 + 1, cal = dom === 28 ? '💶 Jour de paie : les salaires arrivent.' : dom === 5 ? '🏠 Les loyers sont prélevés.' : dom === 10 ? '📄 Prélèvement des factures.' : dom === 1 && s.day > 1 ? '📆 Nouveau mois : mensualités, frais et intérêts.' : '';
-  const figures = s.people.length ? `<section class="side-box"><h3>Vos clients</h3><dl class="figs">
-      <div><dt>Clients</dt><dd>${nf0.format(s.clients)}</dd></div><div><dt>Sur les comptes</dt><dd>${money(s.depCC)}</dd></div>
-      <div><dt>Livrets</dt><dd>${money(s.depLiv)}</dd></div><div><dt>Découverts</dt><dd class="${s.ovd ? 'neg' : ''}">${money(s.ovd)}</dd></div></dl>
-      ${cal ? `<p class="sb-note">${cal}</p>` : ''}${y ? `<p class="sb-note muted">Hier : ${y.comptes} compte${y.comptes > 1 ? 's' : ''}, ${y.prets} prêt${y.prets > 1 ? 's' : ''}, ${y.ventes} vente${y.ventes > 1 ? 's' : ''}${y.lost ? `, <span class="neg">${y.lost} non reçu${y.lost > 1 ? 's' : ''}</span>` : ''}</p>` : ''}</section>` : '';
-  const ch = CHAPTERS[s.chapter];
-  const chap = ch ? `<button class="side-box chap" data-act="tab" data-tab="missions"><small>Chapitre ${s.chapter + 1} · objectif de la campagne</small><b>${ch.name}</b><span class="muted">${ch.desc}</span></button>` : '';
-
+  // La scène : votre agence qui vit
   const sb = getBranch(s, ui.branch) || s.branches[0];
+  const lost = Math.round(s.flags.lostAvg || 0);
   const scene = sb ? `<div class="scene"><div class="scene-tag"><b>${CITIES[sb.id].name}</b><span class="pill">${dateStr(s.day)}</span></div>${t.sd ? `<div class="scene-sd"><b>${t.sd.ico} ${t.sd.name}</b><small>${t.sd.desc}</small></div>` : ''}
     <button class="btn sm scene-go" data-act="tab" data-tab="plan">Aménager l’agence</button>
     <canvas id="floor" data-mini="1" data-maxh="${innerWidth < 700 ? 200 : 280}" role="img" aria-label="Votre agence, vue en 3D"></canvas>
-    ${t.arrived ? `<div class="scene-stats"><span>🚶 ${t.arrived} visiteur${t.arrived > 1 ? 's' : ''} aujourd’hui</span>${t.lost ? `<span class="neg">😤 ${t.lost} reparti${t.lost > 1 ? 's' : ''}</span>` : ''}</div>` : ''}</div>` : '';
+    ${t.arrived ? `<div class="scene-stats"><span>🚶 ${t.arrived} visiteurs par jour</span>${lost ? `<span class="neg">😤 ${lost} repartent faute de place</span>` : ''}</div>` : ''}</div>` : '';
+
+  // Le résultat, en direct
+  const E = dailyEstimate(s), dom = s.day % 30 + 1;
+  const profit = !noStaff ? `<section class="side-box profit ${E.net >= 0 ? 'up' : 'down'}"><h3>💰 Votre résultat</h3>
+      <div class="pf-big ${E.net >= 0 ? 'pos' : 'neg'}">${E.net >= 0 ? '+' : '−'}${money(Math.abs(E.net))}<small> / jour</small></div>
+      <div class="pf-rows">
+        <span>Intérêts des prêts</span><b class="pos">+${money(E.interest)}</b>
+        <span>Frais, cartes et dossiers</span><b class="pos">+${money(E.fees)}</b>
+        ${E.other >= 1 ? `<span>Placements et distributeurs</span><b class="pos">+${money(E.other)}</b>` : ''}
+        ${E.livret >= 1 ? `<span>Intérêts des livrets</span><b class="neg">−${money(E.livret)}</b>` : ''}
+        <span>Salaires et loyers</span><b class="neg">−${money(E.costs)}</b>
+        ${E.net > 0 ? `<span>Impôt sur les bénéfices</span><b class="neg">−${money(E.net / 3)}</b>` : ''}
+      </div>
+      <small class="muted">${E.net >= 0 ? 'Vous gagnez de l’argent ! ' : 'Vous perdez de l’argent : '}${E.net >= 0 ? 'Prêtez davantage pour gagner plus.' : (loansOpen(s) ? 'les prêts sont votre première source de revenus.' : 'ouvrez des comptes pour pouvoir prêter bientôt.')} Bilan complet dans ${30 - dom + 1} jour${30 - dom + 1 > 1 ? 's' : ''}.</small></section>` : '';
+
+  // Le bureau
+  let main;
+  if (noStaff) main = `<div class="empty-desk"><div class="ed-ico">🏦</div><h2>Votre agence est encore fermée</h2><p class="muted">Construisez un guichet et recrutez un guichetier : le temps démarrera et vos premiers clients arriveront tout seuls.</p><button class="btn primary big" data-act="tab" data-tab="plan">Aller dans Ma banque</button></div>`;
+  else if (cur) main = clientCard(s, cur) + `<p class="hint">Touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre · <kbd>Espace</kbd> pour mettre en pause</p>`;
+  else main = `<div class="empty-desk calm-desk"><div class="ed-ico">☕</div><h2>Aucun dossier sur votre bureau</h2><p class="muted">Votre banque tourne toute seule. Investissez pour la faire grandir : les dossiers importants apparaîtront ici.</p></div>`;
+
+  const queue = left.length > 1 ? `<section class="side-box"><h3>Sur votre bureau <span class="muted">${left.length}</span></h3><div class="queue">${left.filter(c => c !== cur).map(c => `<button class="q-item" data-act="focusCard" data-id="${c.id}">${cardFace(s, c, 28)}<span class="grow"><b>${esc(cardWho(s, c))}</b><small>${c.kind === 'story' ? cmeta(s, c)[1] : CARD_META[c.kind][1]} · ⏳ ${Math.max(0, c.exp - s.day)} j</small></span></button>`).join('')}</div>
+      <button class="btn ghost full small-btn" data-act="delegate">Tout confier à l’équipe</button></section>` : '';
   const tq = avgTeamQ(s), stars = Math.round(tq / 0.9 * 4) + 1;
   const team = s.people.length ? `<section class="side-box gerant"><h3>🧑‍💼 Votre équipe</h3>
       <div class="gr-q"><span>Compétence</span><b><span class="gold-t">${'★'.repeat(stars)}</span><span class="st-off">${'★'.repeat(5 - stars)}</span></b></div>
-      <p class="small muted">Elle ouvre les comptes, vend, gère les découverts${loansOpen(s) ? ` et décide seule des prêts jusqu’à <b>${money(seuil(s))}</b> selon votre politique de crédit` : ''}. Formez-la dans « Ma banque » pour qu’elle décide mieux.</p></section>` : '';
-  const A = t.auto, parts = A ? [A.comptes ? `🙋 <b>${A.comptes}</b> compte${A.comptes > 1 ? 's' : ''} ouvert${A.comptes > 1 ? 's' : ''}` : '', A.ventes ? `💳 <b>${A.ventes}</b> vente${A.ventes > 1 ? 's' : ''}` : '', A.prets ? `🤝 <b>${A.prets}</b> prêt${A.prets > 1 ? 's' : ''} signé${A.prets > 1 ? 's' : ''} (${money(A.pretAmt)})` : '', A.refus ? `✋ ${A.refus} dossier${A.refus > 1 ? 's' : ''} refusé${A.refus > 1 ? 's' : ''}` : '', A.fraud ? `🕵️ <b>${A.fraud}</b> fraude${A.fraud > 1 ? 's' : ''} déjouée${A.fraud > 1 ? 's' : ''}` : '', A.recl ? `😠 ${A.recl} réclamation${A.recl > 1 ? 's' : ''} gérée${A.recl > 1 ? 's' : ''}` : ''].filter(Boolean) : [];
-  const autoSum = A && (A.n || A.esc) ? `<div class="auto-sum"><span class="as-ico">📋</span><div><b>Rapport du matin</b><small>${parts.join(' · ') || 'Journée calme au guichet'}${A.esc ? ` · <span class="gold-t">${A.esc} dossier${A.esc > 1 ? 's' : ''} sensible${A.esc > 1 ? 's' : ''} pour vous</span>` : ''}</small></div></div>` : '';
+      <p class="small muted">Elle ouvre les comptes, vend, gère les découverts${loansOpen(s) ? ` et signe seule les prêts jusqu’à <b>${money(seuil(s))}</b>` : ''}. Plus elle est formée, mieux elle décide.</p>
+      ${s.flags.mTeam ? `<p class="small">Ce mois-ci : <b>${s.flags.mTeam.comptes || 0}</b> comptes ouverts · <b>${s.flags.mTeam.prets || 0}</b> prêts signés${s.flags.mTeam.fraud ? ` · <b>${s.flags.mTeam.fraud}</b> fraudes déjouées` : ''}</p>` : ''}</section>` : '';
+  const figures = s.people.length ? `<section class="side-box"><h3>Vos clients</h3><dl class="figs">
+      <div><dt>Clients</dt><dd>${nf0.format(s.clients)}</dd></div><div><dt>Sur les comptes</dt><dd>${money(s.depCC)}</dd></div>
+      <div><dt>Livrets</dt><dd>${money(s.depLiv)}</dd></div><div><dt>Prêts en cours</dt><dd>${money(loansOut(s))}</dd></div></dl></section>` : '';
   const bil = s.flags.bilan ? `<button class="side-box chap bil" data-act="bilan"><small>Dernier bilan mensuel</small><b class="${s.flags.bilan.pl.net >= 0 ? 'pos' : 'neg'}">${s.flags.bilan.pl.net >= 0 ? '+' : '−'}${money(Math.abs(s.flags.bilan.pl.net))}</b><span class="muted">Voir d’où vient l’argent</span></button>` : '';
-  return scene + `<div class="desk"><div class="desk-main">${autoSum}${main}</div><aside class="desk-side">${goal}${queue}${team}${figures}${bil}${chap}</aside></div>
+  const ch = CHAPTERS[s.chapter];
+  const chap = ch ? `<button class="side-box chap" data-act="tab" data-tab="missions"><small>Chapitre ${s.chapter + 1} · objectif de la campagne</small><b>${ch.name}</b><span class="muted">${ch.goals.map(g => { const v = g.cur(s); return `${v >= g.goal ? '✅' : '▫️'} ${g.txt} : ${g.fmt ? g.fmt(Math.min(v, g.goal)) : nf0.format(Math.min(v, g.goal))} / ${g.fmt ? g.fmt(g.goal) : nf0.format(g.goal)}`; }).join('<br>')}</span></button>` : '';
+
+  return scene + `<div class="desk"><div class="desk-main">${main}${noStaff ? '' : growthHTML(s)}</div><aside class="desk-side">${profit}${chap}${queue}${team}${figures}${bil}</aside></div>
     <details class="more dash-more"><summary>Votre banque en détail</summary>${vDash()}</details>`;
 }

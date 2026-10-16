@@ -54,7 +54,9 @@ function renderPanel(force) {
   const views = { dash: vToday, plan: vPlan, clients: vClients, loans: vLoans, deposits: vProducts, world: vWorld, markets: vMarkets, missions: vMissions, ranking: vRanking, cb: vCB, upgrades: vUpgrades, me: vMe, achs: vAchs };
   const st = $('#panel').scrollTop;
   const alert = S.surveillance ? `<div class="alert red">${ic('alert')}<div><b>Banque sous surveillance</b> : ratio de solvabilité sous ${minRatio(S)} % (${S.lowCap}/6 mois avant retrait de licence). Nouveaux prêts, achats d’actifs et bonus interdits.</div></div>` : '';
+  const keep = ui.tab === 'dash' && $('#floor[data-mini]');
   $('#panel').innerHTML = `<div class="page">${alert}${views[ui.tab]()}</div>`;
+  if (keep) { const ph = $('#floor[data-mini]'); if (ph) ph.replaceWith(keep); }
   $('#panel').scrollTop = st;
   drawCharts();
   if (ui.tab === 'plan') { renderPlanSide(); floorStart(); }

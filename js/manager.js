@@ -21,16 +21,16 @@ const sk = (manual, a, b) => manual ? a : b + (a - b) * (ui.teamQ || 0);
 
 const ROUTINE = ['compte', 'demande', 'reclam', 'decouvert', 'facture', 'courrier', 'reunion', 'fraudecb', 'suspect', 'av'];
 // Au-delà de ce montant, un prêt doit être signé par vous
-const seuil = s => Math.round(Math.max(30e3, equity(s) * 0.04) / 5e3) * 5e3;
+const seuil = s => Math.round(Math.max(60e3, equity(s) * 0.06) / 5e3) * 5e3;
 // Les cas délicats remontent jusqu'à votre bureau
 function escalate(s, c) {
   const p = c.pid && findPerson(s, c.pid);
   switch (c.kind) {
-    case 'suspect': return c.amt > 50e3 || chance(0.25);
-    case 'reclam': return chance(0.15);
-    case 'demande': return c.sub === 'cloture' && p && p.b + (p.l || 0) > 15e3;
-    case 'fraudecb': return c.amt > 2500;
-    case 'decouvert': return p && -p.b > Math.max(3000, p.o * 3);
+    case 'suspect': return c.amt > 60e3 && chance(0.6);
+    case 'reclam': return chance(0.03);
+    case 'demande': return c.sub === 'cloture' && p && p.b + (p.l || 0) > 40e3;
+    case 'fraudecb': return c.amt > 6000;
+    case 'decouvert': return p && -p.b > Math.max(6000, p.o * 4) && chance(0.3);
     default: return false;
   }
 }
@@ -40,7 +40,8 @@ function advisorLoan(s, c, sum, q) {
   c.done = true;
   if (r.fraud && chance(0.35 + q * 0.55)) { sum.fraud++; log(`🕵️ Vos conseillers démasquent un faux dossier : ${r.name}.`, 'good'); return; }
   const ok = 'ABCDE'.slice(0, 'ABCDE'.indexOf(A.min) + 1);
-  if (s.surveillance || !ok.includes(grade(r.score)) || endet(r) > 0.35 || s.cash - r.amount < s.deposits * 0.1) { sum.refus++; s.stats.refused++; return; }
+  const big = r.amount > seuil(s); // trop gros pour l'équipe : elle reste très prudente
+  if (s.surveillance || !ok.includes(grade(r.score)) || (big && ('AB'.indexOf(grade(r.score)) < 0 || r.amount > equity(s) * 0.1)) || endet(r) > 0.35 || s.cash - r.amount < s.deposits * 0.1) { sum.refus++; s.stats.refused++; return; }
   r.offer = Math.round(clamp(fairRate(s, r) + A.margin, 0.5, usure(r)) * 10) / 10;
   if (chance(acceptProb(r))) { grantLoan(s, r); s.today.tally.prets++; sum.prets++; sum.pretAmt += r.amount; }
   else { sum.refus++; s.stats.refused++; }
@@ -48,10 +49,14 @@ function advisorLoan(s, c, sum, q) {
 // Chaque matin, votre équipe traite le quotidien ; vous ne gardez que les dossiers de PDG
 function ceoDay(s, t) {
   const before = { ...t.tally }, sum = { n: 0, prets: 0, pretAmt: 0, refus: 0, fraud: 0, esc: 0 };
+  let deskLoans = (s.inbox || []).filter(x => !x.done && (x.kind === 'pret' || x.kind === 'pro')).length;
   for (const c of t.cards) {
     if (c.done) continue;
     const q = ui.teamQ = teamQ(s, getBranch(s, c.branch) || s.branches[0]);
-    if ((c.kind === 'pret' || c.kind === 'pro') && !c.back && c.req && c.req.amount <= seuil(s)) { advisorLoan(s, c, sum, q); sum.n++; continue; }
+    if ((c.kind === 'pret' || c.kind === 'pro') && !c.back && c.req) {
+      if (c.req.amount <= seuil(s) || deskLoans >= 1) { advisorLoan(s, c, sum, q); sum.n++; continue; }
+      deskLoans++; continue; // un gros dossier pour vous
+    }
     if (!ROUTINE.includes(c.kind)) continue;
     if (escalate(s, c)) { c.esc = 1; sum.esc++; continue; }
     const fraudBefore = s.stats.tracfin || 0;
@@ -61,6 +66,9 @@ function ceoDay(s, t) {
   t.cards = t.cards.filter(c => !c.done); t.done = 0; t.total = t.cards.length;
   for (const k of ['comptes', 'ventes', 'recl']) sum[k] = t.tally[k] - before[k];
   t.auto = sum;
+  const mi = Math.floor(s.day / 30);
+  const mt = s.flags.mTeam && s.flags.mTeam.m === mi ? s.flags.mTeam : (s.flags.mTeam = { m: mi, comptes: 0, prets: 0, fraud: 0 });
+  mt.comptes += sum.comptes; mt.prets += sum.prets; mt.fraud += sum.fraud;
 }
 
 // ---------- Bilan du mois ----------
@@ -68,6 +76,7 @@ function makeBilan(s, eq0) {
   const pl = s.lastPL, eq1 = equity(s);
   if (eq0 == null) eq0 = eq1 - pl.net; // première fois : pas de point de départ connu
   s.flags.eqM = eq1;
+  toast(`📊 Bilan du mois : <b class="${pl.net >= 0 ? 'pos' : 'neg'}">${pl.net >= 0 ? '+' : '−'}${money(Math.abs(pl.net))}</b> — détails à droite de votre bureau`, pl.net >= 0 ? 'good' : 'bad');
   s.flags.bilan = { month: Math.floor((s.day - 1) / 30), pl: { ...pl }, eq0, eq1, other: (eq1 - eq0) - pl.net, cash: s.cash, deposits: s.deposits, seen: false };
 }
 function bilanTip(s, B) {

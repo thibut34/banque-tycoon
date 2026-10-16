@@ -252,9 +252,9 @@ function confetti(n = 90) {
 const TUTO = [
   { tab: 'plan', txt: 'Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est vide. Ouvrez <b>Ma banque</b> et construisez un <b>guichet</b>.', done: s => getBranch(s, HQ).g >= 1 },
   { tab: 'plan', txt: 'Recrutez maintenant un <b>guichetier</b> : c’est lui qui accueillera vos clients. Choisissez bien parmi les candidats.', done: s => getBranch(s, HQ).gs >= 1 },
-  { tab: 'dash', txt: 'Tout est prêt ! Ouvrez <b>Aujourd’hui</b> et cliquez sur <b>Jour suivant</b> pour ouvrir vos portes.', done: s => s.today && s.today.cards.length > 0 },
+  { tab: 'dash', txt: 'Tout est prêt ! Le temps démarre : vos premiers clients arrivent tout seuls. <b>⏸ Pause</b> (ou Espace) arrête le temps.', done: s => s.clients >= 1 },
   { tab: 'dash', txt: 'Votre guichetier ouvre les comptes de vos premiers clients : leur argent rejoint vos caisses. Vous, vous êtes le <b>PDG</b> : seuls les dossiers importants arrivent sur votre bureau.', done: s => s.clients >= 3 },
-  { tab: 'dash', txt: 'Chaque matin, le <b>rapport</b> résume le travail de votre équipe. Réglez vos dossiers, puis cliquez sur <b>Jour suivant</b>. Plus votre équipe est formée, mieux elle travaille.', done: s => s.day >= 3 },
+  { tab: 'dash', txt: 'À droite, <b>votre résultat</b> vous dit combien vous gagnez chaque jour. Pour grandir, utilisez <b>Développer ma banque</b>.', done: s => s.day >= 8 },
   { tab: 'missions', txt: 'Objectif : <b>25 comptes</b> et <b>50 000 €</b> déposés. Ensuite, vous pourrez prêter cet argent : c’est là que la banque gagne vraiment sa vie.', btn: 'C’est parti', done: s => s.chapter >= 1 },
 ];
 function updateCoach(force) {
@@ -338,7 +338,6 @@ document.addEventListener('pointerup', () => { ui.pointerDown = false; });
 document.addEventListener('pointercancel', () => { ui.pointerDown = false; });
 document.addEventListener('keydown', e => {
   if (!S || e.target.matches('input')) return;
-  if ((e.key === 'Enter' || e.code === 'Space') && !ui.modal && !e.target.closest('button')) { e.preventDefault(); nextDay(); return; }
   if (e.key === 'Escape') { if (ui.modal && !$('#modal').dataset.noclose) closeModal(); else if (!ui.modal) actions.menu(); }
 });
 $('#tickerText').addEventListener('animationiteration', nextNews);

@@ -63,7 +63,7 @@ function doBuild(k, cand) {
   if (cand) { syncStaff(S); const list = staffOf(b, k); const auto = list[list.length - 1]; delete cand.cand; Object.assign(auto, cand, { since: S.day }); }
   if (MOVABLE.includes(k)) autoPlace(b, k, b[k] - 1);
   SFX.play(k === 'size' ? 'level' : 'build');
-  log(`${k === 'size' ? '🏗️' : ITEMS[k].icon} ${c.name} : ${cand ? msg : msg.charAt(0).toLowerCase() + msg.slice(1)} (${money(cost)}).`);
+  log(`${k === 'size' ? '🏗️' : ITEMS[k].icon} ${c.name} : ${cand || k === 'size' ? msg : msg.charAt(0).toLowerCase() + msg.slice(1)} (${money(cost)}).`);
   toast(`${k === 'size' ? '🏗️' : ITEMS[k].icon} ${msg}`, 'good');
   // Petite animation de pose sur le plan
   const lay = blay(b), key = k === 'gs' ? 'g' : k === 'bs' ? 'b' : k, arr = lay[key];
