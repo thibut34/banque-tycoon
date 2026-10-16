@@ -126,6 +126,12 @@ const actions = {
     ui.dirty = true; renderPanel(true);
   },
   closeModal: () => closeModal(),
+  tip: el => showTip(el.dataset.k),
+  settings: () => openSettings(),
+  setPref: el => setPref(el.dataset.k, el.dataset.v),
+  verify: el => { verifyRequest(el.dataset.id); renderPanel(true); },
+  buyout: el => { const R = RIVALS.find(x => x.id === el.dataset.id), r = S.rivals.find(x => x.id === el.dataset.id); confirmBox('🦈', `Racheter ${R.name} ?`, `Prix : <b>${money(buyoutPrice(r))}</b>. Vous récupérez ses clients et jusqu’à deux de ses agences.`, 'doBuyout', 'Racheter', el.dataset.id); },
+  doBuyout: el => { closeModal(); buyoutRival(el.dataset.id); renderPanel(true); },
   editPlan: () => { ui.editPlan = !ui.editPlan; floor.drag = null; floor.editHover = null; renderPanel(true); },
   theme: el => {
     const b = getBranch(S, ui.branch); b.theme = { ...themeOf(b), [el.dataset.g]: el.dataset.v };
@@ -149,6 +155,7 @@ const actions = {
     showModal(`<div class="m-ico">☰</div><h2>Pause</h2><p class="center muted">Le temps est arrêté tant que ce menu est ouvert.</p><div class="choices">
       <button class="btn primary" data-act="closeModal">Reprendre</button>
       <button class="btn" data-act="help">Comment jouer</button>
+      <button class="btn" data-act="settings">Options et accessibilité</button>
       <button class="btn" data-act="saveNow">Sauvegarder</button>
       <button class="btn" data-act="tutRestart">Revoir le tutoriel</button>
       <button class="btn" data-act="confirmRetire">Prendre sa retraite (terminer)</button>
@@ -199,6 +206,7 @@ function showCandidates(role) {
 
 // ---------- Confettis ----------
 function confetti(n = 90) {
+  if (reduceMotion()) return;
   const cols = ['#6366f1', '#818cf8', '#f4c25b', '#34d399', '#f472b6', '#60a5fa'];
   for (let i = 0; i < n; i++) {
     const el = document.createElement('i');
@@ -235,14 +243,14 @@ function updateCoach(force) {
 // ---------- Textes ----------
 const HELP = `<div class="m-ico">📘</div><h2>Comment jouer</h2>
 <ul>
-<li>🎯 <b>But</b> : terminer les 8 chapitres de la campagne, d’une petite agence à Montpellier jusqu’à une banque interplanétaire.</li>
-<li>🏦 <b>Ma banque</b> : construisez des guichets, embauchez des guichetiers et des conseillers, installez des distributeurs. C’est ce qui attire les dépôts et les demandes de prêt.</li>
-<li>💰 <b>Dépôts</b> : rémunérez vos clients assez pour les attirer.</li>
-<li>🤝 <b>Prêts</b> : prêtez plus cher que vous n’empruntez. Les mauvais payeurs (D/E) font souvent défaut.</li>
-<li>🌍 <b>Monde</b> : ouvrez des agences. Chaque chapitre terminé débloque de nouvelles régions.</li>
-<li>⏱️ <b>Défis</b> : des objectifs chronométrés apparaissent régulièrement, avec une récompense.</li>
-<li>📊 <b>Classement</b> : dépassez les géants de la finance.</li>
-<li>⚖️ <b>Ratio de solvabilité</b> : fonds propres ÷ actifs risqués. Sous 8 %, le régulateur vous surveille ; 6 mois d’affilée et c’est la fin.</li>
+<li>🎯 <b>But</b> : terminer les 8 chapitres, d’une agence vide à Montpellier jusqu’à la première banque interplanétaire.</li>
+<li>🏦 <b>Ma banque</b> : installez des bureaux, des guichets et des distributeurs, recrutez et formez votre équipe. Chaque jour, des clients viennent : s’il n’y a pas assez de monde pour les servir, ils repartent et vous perdez de l’argent.</li>
+<li>🤝 <b>Prêts</b> : vos conseillers reçoivent les demandes. Choisissez le taux, et faites vérifier (🔎) les dossiers douteux : certains sont des escrocs.</li>
+<li>💳 <b>Produits</b> : comptes courants, livrets, assurance-vie et cartes attirent l’argent des clients et rapportent des frais.</li>
+<li>🌍 <b>Monde</b> : chaque chapitre terminé ouvre de nouvelles régions.</li>
+<li>📊 <b>Classement</b> : les concurrents s’installent près de vous, lancent des guerres des taux, débauchent vos employés… et vous pouvez les racheter.</li>
+<li>⚖️ <b>Ratio de solvabilité</b> : gardez au moins 8 % de fonds propres face à vos risques, sinon le régulateur intervient.</li>
+<li>❓ Les petits <b>?</b> expliquent chaque terme. <b>⚙️ Options</b> : taille du texte, animations réduites, contraste, mode daltonien et mode détente.</li>
 <li>⏸️ <b>Échap</b> ouvre le menu et met le jeu en pause. Sauvegarde automatique chaque mois.</li>
 </ul><div class="choices"><button class="btn primary" data-act="closeModal">Compris</button></div>`;
 const WELCOME = () => `<div class="m-ico">🎉</div><h2>Bienvenue, PDG !</h2>

@@ -127,7 +127,7 @@ function floorStep(dt, b, lay) {
     if (floor.walkers.length < 6) floor.walkers.push(newPerson({ x: l ? -2 : lay.W + 2, y: lay.D + rnd(1.9, 2.5), path: [[l ? lay.W + 2 : -2, lay.D + rnd(1.9, 2.5)]], st: 'pass' }));
   }
   // Clients
-  const lam = (0.25 + 0.12 * cityOf(b).traffic) * (0.6 + S.reputation / 125);
+  const T = branchTraffic(S, b), lam = clamp((T.acc + T.loan) / 22, 0.15, 1.3);
   floor.spawnAcc += dt * lam * (b.gs || b.bs || b.dab ? 1 : 0);
   if (floor.spawnAcc >= 1) {
     floor.spawnAcc = 0;

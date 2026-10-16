@@ -80,7 +80,7 @@ const EVENTS = [
         s.cash -= amt; const r = Math.random();
         if (r < 0.6) return 'Faillite au bout de 8 mois. Ils ont tout dépensé en baby-foot.';
         if (r < 0.9) { s.cash += amt * 2.5; return `Rachetés par un géant ! Vous touchez ${money(amt * 2.5)}.`; }
-        s.cash += amt * 30; s.flags.unicorn = true; return `🦄 C’EST UNE LICORNE ! Vous touchez ${money(amt * 30)} !`;
+        s.cash += amt * 12; s.flags.unicorn = true; return `🦄 C’EST UNE LICORNE ! Vous touchez ${money(amt * 12)} !`;
       } },
       { label: 'Non merci', fn: () => 'Ils partent pitcher chez votre concurrent.' },
     ] };
@@ -179,8 +179,8 @@ const EVENTS = [
     { label: 'Baisser les frais à 2 €/mois', sub: '+5 réputation', fn: s => { s.prod.cc.fee = 2; s.reputation += 5; return 'L’article vous présente en exemple.'; } },
     { label: 'Assumer', sub: s.prod.cc.fee > 6 ? '-10 réputation' : '-3 réputation', fn: s => { s.reputation -= s.prod.cc.fee > 6 ? 10 : 3; } },
   ] }) },
-  { id: 'reseau', w: 1.2, cond: s => s.rivals.some(r => r.eq > 1e6 && r.eq < equity(s) * 0.5) && freeCity(s), make: s => {
-    const r = s.rivals.filter(r => r.eq > 1e6 && r.eq < equity(s) * 0.5).sort((a, b) => b.eq - a.eq)[0];
+  { id: 'reseau', w: 1.2, cond: s => s.rivals.some(r => !r.gone && r.eq > 1e6 && r.eq < equity(s) * 0.5) && freeCity(s), make: s => {
+    const r = s.rivals.filter(r => !r.gone && r.eq > 1e6 && r.eq < equity(s) * 0.5).sort((a, b) => b.eq - a.eq)[0];
     const R = RIVALS.find(x => x.id === r.id), city = freeCity(s), price = Math.round(CITIES[city].build * 1.5 / 1e4) * 1e4, dep = r.eq * 1.5;
     return { icon: '🤝', title: `${R.name} vend une agence`, text: `En difficulté, <b>${R.name}</b> vous propose son agence de <b>${CITIES[city].name}</b>, avec ses clients (<b>${money(dep)}</b> de dépôts), pour <b>${money(price)}</b>.`, choices: [
       { label: `Racheter (${money(price)})`, disabled: s => s.cash < price, fn: s => {
@@ -198,6 +198,33 @@ const EVENTS = [
     ] };
   } },
 ];
+
+const RIVAL_EVENTS = [
+  { id: 'rival_agence', w: 1.4, cond: s => s.chapter >= 1 && aliveRivals(s).length && s.branches.some(b => !(b.rivalUntil > s.day)), make: s => {
+    const b = pick(s.branches.filter(b => !(b.rivalUntil > s.day))), c = cityOf(b), R = randomRival(s);
+    const cost = Math.round(Math.max(20e3, c.build * 0.15) / 1e3) * 1e3;
+    return { icon: '🏪', title: `${R.name} s’installe à ${c.name}`, text: `<b>${R.name}</b> ouvre une agence juste en face de la vôtre à ${c.name}, avec des cadeaux de bienvenue pour vos clients.`, choices: [
+      { label: `Riposter : campagne locale (${money(cost)})`, sub: 'Vos clients restent fidèles', disabled: s => s.cash < cost, fn: s => { s.cash -= cost; s.reputation += 1; return `Vos affiches envahissent ${c.name}. Les clients restent chez vous.`; } },
+      { label: 'Laisser faire', sub: '-20 % de clients dans cette agence pendant un an', fn: s => { const x = getBranch(s, b.id); if (x) x.rivalUntil = s.day + 360; return `${R.name} vous prend des clients à ${c.name}.`; } },
+    ] };
+  } },
+  { id: 'guerre_taux', w: 1, cond: s => s.prod && s.prod.liv.on && !(s.flags.priceWar > s.day) && aliveRivals(s).length, make: s => {
+    const R = randomRival(s);
+    return { icon: '⚔️', title: 'Guerre des taux', text: `<b>${R.name}</b> lance un livret à ${pct(s.depositRate + 1, 2)} pour attirer vos épargnants.`, choices: [
+      { label: 'S’aligner : +0,5 point sur votre livret', sub: 'Vous pourrez le baisser plus tard dans Produits', fn: s => { s.depositRate = Math.round((s.depositRate + 0.5) * 100) / 100; return 'Votre livret reste compétitif.'; } },
+      { label: 'Ignorer', sub: 'Votre livret attire 30 % d’épargne en moins pendant 6 mois', fn: s => { s.flags.priceWar = s.day + 180; } },
+    ] };
+  } },
+  { id: 'debauchage', w: 1.2, cond: s => s.branches.some(b => (b.staff || []).some(e => e.lvl >= 3)) && aliveRivals(s).length, make: s => {
+    const all = []; for (const b of s.branches) for (const e of b.staff || []) if (e.lvl >= 3) all.push([b, e]);
+    const [b, e] = pick(all), R = randomRival(s);
+    return { icon: '🎣', title: 'Chasseur de têtes', text: `<b>${R.name}</b> propose un pont d’or à <b>${esc(e.name)}</b>, votre ${empTitle(e).toLowerCase()} de ${CITIES[b.id].name}.`, choices: [
+      { label: 'L’augmenter de 15 %', sub: 'Salaire plus élevé, mais il devient fidèle', fn: s => { e.raise = (e.raise || 0) + 0.15; e.trait = 'fidele'; return `${e.name} reste chez vous, ravi(e).`; } },
+      { label: 'Le laisser partir', fn: s => { fireEmp(e.id); return `${e.name} rejoint ${R.name}.`; } },
+    ] };
+  } },
+];
+EVENTS.push(...RIVAL_EVENTS);
 
 function triggerEvent() {
   const pool = EVENTS.filter(e => !e.cond || e.cond(S));

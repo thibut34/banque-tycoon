@@ -10,17 +10,17 @@ function makeRequest(s, forcedType) {
   const types = {}; for (const t in LOAN_TYPES) if (LOAN_TYPES[t].w) types[t] = LOAN_TYPES[t].w;
   const type = forcedType || weighted(types);
   const T = LOAN_TYPES[type];
-  const amount = Math.round(Math.exp(rnd(Math.log(T.amt[0]), Math.log(T.amt[1]))) * loanScale(s) / 1000) * 1000;
+  const amount = Math.round(Math.min(Math.exp(rnd(Math.log(T.amt[0]), Math.log(T.amt[1]))) * loanScale(s), Math.max(30e3, equity(s) * 0.2)) / 1000) * 1000;
   const name = T.who === 'p' ? personName() : T.who === 'c' ? pick(COMPANY).replace('{L}', pick(LAST)) : pick(STARTUP);
   const score = clamp(Math.round(640 + gauss() * 110), 300, 850);
   const pd = annualPD(score, type);
   const el = pd * (1 - T.rec) * 100;
   const fair = s.policyRate + T.spread + el;
-  return {
+  return maybeFraud(s, {
     id: s.nextId++, type, name, reason: pick(T.reasons), amount,
     dur: rint(T.dur[0] / 6, T.dur[1] / 6) * 6, score, maxRate: s.policyRate + T.spread + el * 0.8 + rnd(-0.6, 1.6),
     offer: Math.round(clamp(fair, 0.5, 25) * 10) / 10, expires: s.day + rint(40, 70),
-  };
+  });
 }
 function makeSovereign(s) {
   const [name, rating, reason] = pick(COUNTRIES), R = RATINGS[rating];
@@ -40,6 +40,7 @@ function grantLoan(s, r) {
   s.cash -= r.amount;
   const L = { id: r.id, type: r.type, name: r.name, out: r.amount, amount: r.amount, rate: r.offer, left: r.dur, dur: r.dur, pmt: payment(r.amount, r.offer, r.dur), pdA, grade: reqGrade(r), since: s.day };
   if (souv) { L.rw = RATINGS[r.rating].rw; s.stats.souv++; }
+  if (r.fraud) L.fraud = true;
   s.loans.push(L);
   s.stats.granted++;
   log(`${T.icon} Prêt de ${money(r.amount)} accordé à ${r.name} à ${pct(r.offer)}.`, 'good');
@@ -51,6 +52,8 @@ function autopilot(s) {
   const ok = 'ABCDE'.slice(0, 'ABCDE'.indexOf(A.min) + 1);
   for (const r of [...s.requests]) {
     if (r.type === 'souv' || !ok.includes(grade(r.score))) continue;
+    if (r.flagged || r.amount > equity(s) * 0.2) continue; // pas de grand risque en pilote automatique
+    if (!r.checked && r.amount > equity(s) * 0.05) { verifyRequest(r.id); if (!s.requests.includes(r)) continue; } // les gros dossiers sont vérifiés
     if (s.cash - r.amount < s.deposits * 0.1) break;
     if (equity(s) / (rwa(s) + r.amount * LOAN_TYPES[r.type].rw) * 100 < minRatio(s) + 4) break; // garde une marge de solvabilité
     r.offer = Math.round(clamp(fairRate(s, r) + A.margin, 0.5, 25) * 10) / 10;
@@ -65,13 +68,15 @@ function tickDay() {
   s.day++;
   syncStaff(s);
   updateMarket(s);
+  serveDay(s);
   updateDeposits(s);
+  if (s.flags.bigCrisisPending && !ui.modal) startBigCrisis(s);
 
   const retail = s.requests.filter(r => r.type !== 'souv').length;
   const maxReq = Math.min(10, 1 + 2 * staffTotal(s, 'bs'));
   // Le tout premier client arrive vite après l'embauche du premier conseiller
   const first = !s.flags.firstReq && staffTotal(s, 'bs') >= 1 && s.day - (s.flags.bsDay || (s.flags.bsDay = s.day)) >= 4;
-  if (retail < maxReq && (first || chance(clamp(0.2 * loanDemand(s), 0, 0.6)))) {
+  if (retail < maxReq && (first || chance(clamp(0.35 * loanDemand(s), 0, 0.6)))) {
     s.flags.firstReq = true;
     s.requests.push(makeRequest(s));
     if (ui.tab !== 'loans' && !(s.auto && s.auto.on)) toast('🤝 Un client vient demander un prêt', '', 'req');
@@ -99,7 +104,7 @@ function tickDay() {
     if (s.reputation < 25 && chance(0.02)) bankRun(s, 0.25);
   }
 
-  if (s.day > 90 && !ui.modal && chance(1 / 50)) triggerEvent();
+  if (s.day > 90 && !ui.modal && chance(s.day < 720 ? 1 / 90 : 1 / 60)) triggerEvent();
   updateChallenge(s);
   if (s.day % 30 === 0) monthEnd(s);
   if (!s.over) { checkChapter(s); checkAchievements(s); checkUnlocks(s); }
@@ -136,6 +141,12 @@ function monthEnd(s) {
   const rec0 = s.upgrades.recouvrement ? 0.2 : 0;
 
   for (const L of s.loans) {
+    if (L.fraud && s.day - L.since >= 60) { // l'escroc disparaît avec l'argent
+      const got = L.out * 0.3; s.cash += got; pl.losses += L.out - got; L.dead = true; defaults++; s.stats.defaults++;
+      log(`💸 Escroquerie : ${L.name} a disparu. La justice ne récupère que ${money(got)} sur ${money(L.out)}.`, 'bad');
+      toast(`💸 <b>${esc(L.name)}</b> était un escroc : ${money(L.out - got)} perdus !`, 'bad');
+      continue;
+    }
     const m = L.type === 'souv' ? Math.pow(econ.pd, 0.6) : econ.pd;
     const pdm = 1 - Math.pow(1 - clamp(L.pdA * m, 0, 0.95), 1 / 12);
     if (chance(pdm)) {
@@ -166,7 +177,7 @@ function monthEnd(s) {
   for (const b of s.branches) pl.fees += dabIncome(b);
   s.cash += pl.fees;
   pl.coupons = holdingValue(s, 'oat') * (s.policyRate + 0.4) / 1200; s.cash += pl.coupons;
-  pl.reserves = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1.5) / 1200; s.cash += pl.reserves;
+  pl.reserves = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1) / 1200; s.cash += pl.reserves;
 
   const profit = pl.interest + pl.fees + pl.coupons + pl.reserves - pl.depInt - pl.cbInt - pl.costs - pl.losses;
   if (profit > 0) { pl.tax = profit * 0.15; s.cash -= pl.tax; }
@@ -176,7 +187,7 @@ function monthEnd(s) {
   s.lastPL = pl;
 
   // Satisfaction des agences et réputation
-  staffMonth(s);
+  staffMonth(s); serveMonth(s);
   for (const b of s.branches) b.sat += (satTarget(s, b) - b.sat) * 0.5;
   let dr = (50 - s.reputation) * 0.03 + feeRep(s) + (s.upgrades.app ? 1 : 0) + (avgSat(s) - 50) / 40;
   if (s.surveillance) dr -= 3;
@@ -197,7 +208,7 @@ function monthEnd(s) {
     const old = s.economy;
     s.economy = s.nextEcon; s.nextEcon = null;
     s.econTimer = s.economy === 'crise' ? rint(3, 7) : rint(6, 16);
-    if (old === 'crise') s.stats.crises++;
+    if (old === 'crise') { s.stats.crises++; if (s.flags.bigCrisis && !s.flags.bigCrisisDone) { s.flags.bigCrisisDone = true; toast('🌈 Vous avez traversé la Grande Crise !', 'good'); log('🌈 La Grande Crise est terminée. Votre banque a tenu bon.', 'good'); } }
     const E = ECON[s.economy], bad = s.economy === 'crise' || s.economy === 'recession';
     log(`L’économie entre en phase : ${E.label}.`, bad ? 'bad' : 'good');
     toast(`Nouvelle conjoncture : <b>${E.label}</b>`, s.economy === 'crise' ? 'bad' : 'gold');
@@ -222,13 +233,20 @@ function monthEnd(s) {
 
   // Régulateur
   const eq = equity(s), ratio = capRatio(s);
-  if (eq < 0) return gameOver('faillite');
+  if (eq < 0) {
+    if (s.flags.easy && s.day - (s.flags.bailout || -9999) > 1800) {
+      const aid = -eq + 500e3; s.cash += aid; s.cbDebt += 0; s.flags.bailout = s.day; s.reputation = clamp(s.reputation - 30, 0, 100);
+      s.flags.bailoutCost = (s.flags.bailoutCost || 0) + aid;
+      log(`🛟 Mode détente : l’État vous renfloue de ${money(aid)}.`, 'bad');
+      eventModal('🛟', 'Sauvé par l’État', `<p class="center">Vos fonds propres sont passés sous zéro, mais le mode détente est activé : l’État injecte <b>${money(aid)}</b>. Réputation -30. Ce sauvetage n’est possible qu’une fois tous les 5 ans.</p>`, [{ label: 'Plus jamais ça' }]);
+    } else return gameOver('faillite');
+  }
   if (ratio < minRatio(s)) {
     s.lowCap++;
     if (!s.surveillance) log(`⚠️ Ratio de solvabilité sous ${minRatio(s)} % : banque placée sous surveillance.`, 'bad');
     s.surveillance = true;
-    toast(`⚠️ Sous surveillance du régulateur (${s.lowCap}/6 mois)`, 'bad');
-    if (s.lowCap >= 6) return gameOver('licence');
+    toast(`⚠️ Sous surveillance du régulateur (${s.lowCap}/${s.flags.easy ? 12 : 6} mois)`, 'bad');
+    if (s.lowCap >= (s.flags.easy ? 12 : 6)) return gameOver('licence');
   } else {
     if (s.surveillance) { log('✅ Le régulateur lève la surveillance.', 'good'); toast('✅ Surveillance levée', 'good'); }
     s.surveillance = false; s.lowCap = 0;
@@ -243,12 +261,13 @@ function monthEnd(s) {
 function updateRivals(s) {
   const e = ECON[s.economy];
   s.rivals.forEach((r, i) => {
+    if (r.gone) return;
     r.eq = Math.max(5e5, r.eq * Math.exp(RIVALS[i].g + e.rival + 0.015 * gauss()));
     r.hist.push(r.eq); if (r.hist.length > 120) r.hist.shift();
   });
   const rk = rankOf(s);
   if (s.flags.lastRank && rk < s.flags.lastRank) {
-    const passed = s.rivals.filter(r => r.eq < equity(s)).sort((a, b) => b.eq - a.eq)[0];
+    const passed = s.rivals.filter(r => !r.gone && r.eq < equity(s)).sort((a, b) => b.eq - a.eq)[0];
     if (passed) { toast(`📊 Vous dépassez <b>${RIVALS.find(x => x.id === passed.id).name}</b> : ${rk}ᵉ du classement !`, 'good'); log(`📊 Vous passez ${rk}ᵉ du classement.`, 'good'); }
   }
   s.flags.lastRank = rk;
@@ -260,6 +279,7 @@ function checkChapter(s) {
   const ch = CHAPTERS[s.chapter];
   if (!ch || !chapterDone(s, ch)) return;
   s.chapter++;
+  if (s.chapter === 7 && !s.flags.bigCrisis) s.flags.bigCrisisPending = true;
   s.cash += ch.reward;
   log(`🏁 Chapitre terminé : ${ch.name} (+${money(ch.reward)})`, 'good');
   const unl = Object.values(REGIONS).filter(r => r.unlock === s.chapter).map(r => r.name);

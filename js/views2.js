@@ -54,17 +54,20 @@ function vMissions() {
 // ---------- Classement ----------
 function vRanking() {
   const s = S, eq = equity(s);
-  const all = [...s.rivals.map(r => { const R = RIVALS.find(x => x.id === r.id); return { name: R.name, eq: r.eq, color: R.color, hist: r.hist }; }), { name: s.name, eq, me: true, color: '#818cf8' }].sort((a, b) => b.eq - a.eq);
+  const all = [...aliveRivals(s).map(r => { const R = RIVALS.find(x => x.id === r.id); return { id: r.id, r, name: R.name, eq: r.eq, color: R.color, hist: r.hist }; }), { name: s.name, eq, me: true, color: '#818cf8' }].sort((a, b) => b.eq - a.eq);
   const max = all[0].eq;
   const rows = all.map((r, i) => {
     const h = r.hist, ch = h && h.length > 12 ? (r.eq / h[h.length - 13] - 1) * 100 : null;
     return `<div class="rank ${r.me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="rdot" style="background:${r.color}"></span>
       <div class="grow"><div class="row"><b class="grow">${esc(r.name)}${r.me ? ' <span class="pill">Vous</span>' : ''}</b><b>${money(r.eq)}</b></div>
       <div class="rbar"><i style="width:${Math.max(1, Math.sqrt(r.eq / max) * 100)}%;background:${r.color}"></i></div>
-      ${ch != null ? `<small class="${cls(ch)}">${ch >= 0 ? '+' : ''}${pct(ch)} sur un an</small>` : r.me ? '<small class="muted">Votre banque</small>' : ''}</div></div>`;
+      ${ch != null ? `<small class="${cls(ch)}">${ch >= 0 ? '+' : ''}${pct(ch)} sur un an</small>` : r.me ? '<small class="muted">Votre banque</small>' : ''}</div>
+      ${r.r && canBuyout(s, r.r) ? `<button class="btn sm gold" data-act="buyout" data-id="${r.id}" ${s.cash < buyoutPrice(r.r) ? 'disabled' : ''}>🦈 Racheter ${money(buyoutPrice(r.r))}</button>` : ''}</div>`;
   }).join('');
   return `<div class="alert blue">${ic('ranking')}<div>Les fonds propres des grandes banques. Elles grandissent en période de croissance et souffrent pendant les crises. Objectif ultime : <b>devenir numéro 1 mondial</b>.</div></div>
-  ${card(`Classement mondial · vous êtes <span class="gold-t">${rankOf(s)}ᵉ</span>`, rows)}`;
+  ${s.chapter >= 3 ? '' : `<div class="alert indigo">${ic('lock')}<div>À partir du chapitre 4, vous pourrez <b>racheter</b> les concurrents deux fois plus petits que vous.</div></div>`}
+  ${card(`Classement mondial · vous êtes <span class="gold-t">${rankOf(s)}ᵉ</span>`, rows)}
+  ${s.rivals.some(r => r.gone) ? `<p class="muted small">Absorbées par vous : ${s.rivals.filter(r => r.gone).map(r => RIVALS.find(x => x.id === r.id).name).join(', ')}</p>` : ''}`;
 }
 
 // ---------- Banque centrale ----------

@@ -78,8 +78,8 @@ function vDash() {
   const c = s.challenge, chal = c ? `<div class="alert indigo">${ic('clock')}<div class="grow"><b>Défi : ${CHALLENGES[c.tpl].txt(c)}</b> · encore ${c.until - s.day} j · récompense ${money(c.reward)}${bar(CHALLENGES[c.tpl].cur(s, c) / c.goal * 100)}</div></div>` : '';
   return `${mission}${chal}
   <div class="grid kpis four">
-    ${kpi('Fonds propres', money(eq), 'Ce que vaut votre banque', eq < 0 ? 'neg' : '')}
-    ${kpi('Liquidités', money(s.cash), `${pct(s.deposits ? s.cash / s.deposits * 100 : 100)} des dépôts`)}
+    ${kpi('Fonds propres ' + tip('equity'), money(eq), 'Ce que vaut votre banque', eq < 0 ? 'neg' : '')}
+    ${kpi('Liquidités ' + tip('cash'), money(s.cash), `${pct(s.deposits ? s.cash / s.deposits * 100 : 100)} des dépôts`)}
     ${kpi('Résultat du mois', pl ? money(pl.net) : '—', 'Après impôts', pl ? cls(pl.net) : '')}
     ${kpi('Clients satisfaits', Math.round(avgSat(s)) + '/100', `${s.branches.length} agence${s.branches.length > 1 ? 's' : ''}`, avgSat(s) < 40 ? 'neg' : avgSat(s) > 65 ? 'pos' : '')}
   </div>
@@ -110,7 +110,7 @@ function vPlan() {
   return `${chips}
   <section class="card floor-card">
     <header class="floor-h"><div><h2>${c.name} ${b.id === HQ ? '<span class="pill">Siège</span>' : ''}</h2><small class="muted">${SIZES[b.size].name} · niveau ${b.size}/3</small></div><div id="planStats"></div><button class="btn ${ui.editPlan ? 'primary' : ''}" data-act="editPlan">🎨 ${ui.editPlan ? 'Terminer' : 'Personnaliser'}</button></header>
-    <div id="floorWrap"><canvas id="floor"></canvas></div>
+    <div id="floorWrap"><canvas id="floor" role="img" aria-label="Plan de l’agence de ${c.name} vu en 3D, avec ses guichets, bureaux, distributeurs et clients"></canvas></div>
     <div id="planSide"></div>
   </section>`;
 }
@@ -118,6 +118,7 @@ function renderPlanSide() {
   const s = S, b = getBranch(s, ui.branch), el = $('#planSide'); if (!el || !b) return;
   const sat = Math.round(b.sat), need = branchNeed(b);
   $('#planStats').innerHTML = `<div class="stat"><small>Satisfaction</small><b class="${sat < 40 ? 'neg' : sat > 65 ? 'pos' : ''}">${sat}/100</b></div>
+    <div class="stat"><small>Clients servis / perdus ${tip('service')}</small><b>${b.lastServed == null ? '—' : `<span class="pos">${nf0.format(b.lastServed)}</span> / <span class="${b.lastLost ? 'neg' : 'muted'}">${nf0.format(b.lastLost)}</span>`}</b></div>
     <div class="stat"><small>Épargne possible</small><b>${money(branchCap(b))}</b></div>
     <div class="stat"><small>Charges</small><b class="neg">${money(branchCosts(s, b))}/mois</b></div>`;
   if (ui.editPlan) { if (el.dataset.mode !== 'edit' || el.dataset.key !== JSON.stringify(themeOf(b))) { el.innerHTML = customHTML(b); el.dataset.mode = 'edit'; el.dataset.key = JSON.stringify(themeOf(b)); } return; }
@@ -139,7 +140,8 @@ function renderPlanSide() {
       <span class="t-foot"><span class="t-count">${n}/${max}</span><b>${full ? '—' : money(cost)}</b></span></button>`;
   }).join('');
   const up = itemUnlocked('size') && SIZES[b.size + 1] ? `<button class="tool gold" data-act="build" data-k="size" ${s.cash < sizeUpCost(b) ? 'disabled' : ''}><span class="t-ico">🏗️</span><span class="t-name">Agrandir</span><span class="t-sub">${SIZES[b.size + 1].name}</span><span class="t-foot"><span class="t-count">niv. ${b.size + 1}</span><b>${money(sizeUpCost(b))}</b></span></button>` : '';
-  const tip = b.gs < need ? `<p class="hint">${ic('alert')} Les clients attendent : il faudrait <b>${need} guichetiers</b> ici.</p>` : '';
+  const ls = lostShare(b), rivalTxt = b.rivalUntil > s.day ? `<p class="hint">${ic('alert')} Un concurrent s’est installé en face : -20 % de clients encore ${Math.ceil((b.rivalUntil - s.day) / 30)} mois.</p>` : '';
+  const hint = (ls > 0.08 ? `<p class="hint">${ic('alert')} <span><b>${Math.round(ls * 100)} % des clients repartent</b> sans être servis : ${b.gs || b.dab ? 'ajoutez des guichetiers ou un distributeur' : ''}${(b.gs || b.dab) && b.bs ? ', ou ' : ''}${b.bs && branchTraffic(s, b).loan > branchCapacity(b).loan ? 'un conseiller' : ''}.</span></p>` : '') + rivalTxt;
   const team = (b.staff || []).slice().sort((x, y) => STAFF_KEYS.indexOf(x.role) - STAFF_KEYS.indexOf(y.role)).map(e => {
     const T = TRAITS[e.trait], max = e.lvl >= MAX_LVL, ready = !max && e.xp >= xpNeed(e.lvl), sel = ui.emp == e.id;
     const tc = trainCost(s, b, e), pc = promoCost(s, b, e);
@@ -154,7 +156,7 @@ function renderPlanSide() {
     </div>`;
   }).join('');
   const readyN = (b.staff || []).filter(e => e.lvl < MAX_LVL && e.xp >= xpNeed(e.lvl)).length;
-  el.innerHTML = `<div class="tools">${tools}${up}</div>${tip}
+  el.innerHTML = `<div class="tools">${tools}${up}</div>${hint}
     ${team ? `<h3 class="sec">Équipe (${b.staff.length})${readyN ? ` <span class="pill gold">${readyN} promotion${readyN > 1 ? 's' : ''} possible${readyN > 1 ? 's' : ''}</span>` : ''}</h3><div class="team">${team}</div>` : ''}${b.id !== HQ ? `<button class="btn ghost sm" data-act="closeBranch" data-id="${b.id}">Fermer cette agence</button>` : ''}`;
 }
 
@@ -164,17 +166,19 @@ function reqCard(s, r) {
   const pd = reqPD(r) * (s.upgrades.ia && !souv ? 0.75 : 1);
   const isNew = !ui.seen.has(r.id); ui.seen.add(r.id);
   const gcls = souv ? 'g-' + (g.startsWith('A') ? 'A' : g === 'BBB' ? 'C' : g === 'BB' ? 'D' : 'E') : 'g-' + g;
+  const big = !souv && r.amount > equity(s) * 0.15 ? `<div class="fraud">${ic('alert')} Gros risque : ${Math.round(r.amount / Math.max(1, equity(s)) * 100)} % de vos fonds propres sur un seul client</div>` : '';
+  const fraudTxt = big + (r.flagged && !r.checked ? `<div class="fraud">${ic('alert')} Dossier suspect : ${esc(r.clue)}</div>` : r.verified ? '<div class="verified">✅ Dossier vérifié</div>' : '');
   const info = souv ? `Note <b>${g}</b> · Défaut <b>${pct(pd * 100)}/an</b> · Récupération 45 %`
     : s.upgrades.analyste ? `Score <b>${r.score}</b> · Défaut <b>${pct(pd * 100)}/an</b> · Récupération ${Math.round(T.rec * 100)} %` : '🔍 Embauchez un analyste pour voir le score exact.';
   return `<div class="req ${isNew ? 'new' : ''} ${souv ? 'souv' : ''}">
     <div class="req-h"><span class="ico">${T.icon}</span><div><b>${esc(r.name)}</b><small>${souv ? 'Emprunt d’État pour ' : T.label + ' pour '}${esc(r.reason)}</small></div><span class="grade ${gcls}" title="Note de crédit">${g}</span></div>
     <div class="req-info">Montant <b>${money(r.amount)}</b> · Durée <b>${r.dur} mois</b></div>
-    <div class="req-info">${info}</div>
+    <div class="req-info">${info}</div>${fraudTxt}
     <div class="row"><span class="grow">Taux proposé</span><b data-o="rate" class="big-num">${pct(r.offer)}</b></div>
     <input type="range" min="0.5" max="25" step="0.1" value="${r.offer}" data-input="rate" data-id="${r.id}">
     <div class="req-info">Chance d’acceptation <b data-o="p" class="${p > 0.6 ? 'pos' : p < 0.3 ? 'neg' : 'warn'}">${Math.round(p * 100)} %</b> · Mensualité <b data-o="pmt">${money(payment(r.amount, r.offer, r.dur))}</b></div>
     <div class="bar"><i data-o="bar" style="width:${p * 100}%"></i></div>
-    <div class="row"><button class="btn success grow" data-act="offer" data-id="${r.id}">Proposer</button><button class="btn ghost" data-act="reject" data-id="${r.id}">Refuser</button><span class="expire ${left < 5 ? 'neg' : 'muted'}">${ic('clock')} ${left} j</span></div>
+    <div class="row"><button class="btn success grow" data-act="offer" data-id="${r.id}">Proposer</button>${!souv && !r.checked ? `<button class="btn ghost" data-act="verify" data-id="${r.id}" title="Faire vérifier le dossier pour repérer les escrocs">🔎 ${money(verifyCost(r))}</button>` : ''}<button class="btn ghost" data-act="reject" data-id="${r.id}">Refuser</button><span class="expire ${left < 5 ? 'neg' : 'muted'}">${ic('clock')} ${left} j</span></div>
   </div>`;
 }
 function vLoans() {
@@ -189,7 +193,7 @@ function vLoans() {
     <span class="muted small">Notes acceptées</span><div class="seg">${'ABCD'.split('').map(g => `<button data-act="autoMin" data-v="${g}" class="${A.min === g ? 'on' : ''}">≥ ${g}</button>`).join('')}</div>
     <span class="muted small">Marge</span><div class="seg">${[0, 0.5, 1, 2].map(m => `<button data-act="autoMargin" data-v="${m}" class="${A.margin === m ? 'on' : ''}">+${nf1.format(m)}</button>`).join('')}</div></div>`)
     : `<div class="alert indigo">${ic('lock')}<div>Le <b>pilote automatique</b> se débloque au chapitre 3.</div></div>`;
-  return `<div class="alert blue">${ic('spark')}<div>Plus le taux est élevé, plus vous gagnez… mais moins le client accepte, et plus il risque de faire défaut. La note (A → E) indique la fiabilité de l’emprunteur.</div></div>
+  return `<div class="alert blue">${ic('spark')}<div>Plus le taux ${tip('rate')} est élevé, plus vous gagnez… mais moins le client accepte, et plus il risque de faire défaut. La note ${tip('grade')} (A → E) indique la fiabilité de l’emprunteur. Méfiez-vous des escrocs ${tip('fraud')}.</div></div>
   ${auto}
   ${souv.length ? `<h3 class="sec">Demandes des États (${souv.length})</h3><div class="grid cards">${souv.map(r => reqCard(s, r)).join('')}</div>` : ''}
   <h3 class="sec">Demandes en attente (${retail.length})</h3>

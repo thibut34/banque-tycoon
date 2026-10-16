@@ -53,10 +53,11 @@ const itemCost = (b, k) => (ITEMS[k].cost || ITEMS[k].hire) * costMult(b);
 function sizeUpCost(b) { const n = SIZES[b.size + 1]; return n ? cityOf(b).build * n.cost : Infinity; }
 const branchNeed = b => cityOf(b).traffic - 1; // guichetiers recommandés
 function satTarget(s, b) {
-  if (!b.gs) return clamp(50 + (b.bs ? 5 : 0) + 4 * b.deco + staffSat(b), 5, 100);
-  return clamp(45 + 12 * (staffEff(b, 'gs') - branchNeed(b)) + 4 * b.deco + 5 * b.dab + (b.bs ? 5 : 0) + (s.upgrades.rh ? 10 : 0) + staffSat(b), 5, 100);
+  if (!b.gs && !b.bs && !b.dab) return 50;
+  const svc = b.svc == null ? 1 : b.svc;
+  return clamp(30 + 35 * svc - 40 * Math.max(0, 0.85 - svc) + 4 * b.deco + 3 * b.dab + (s.upgrades.rh ? 10 : 0) + staffSat(b), 5, 100);
 }
-function branchCap(b) { return cityOf(b).cap * (b.gs ? 0.25 + 0.3 * staffEff(b, 'gs') + 0.05 * b.dab : 0) * (0.8 + b.sat / 250); }
+function branchCap(b) { return cityOf(b).cap * (b.gs ? 0.25 + 0.3 * staffEff(b, 'gs') + 0.05 * b.dab : 0) * (0.8 + b.sat / 250) * (0.5 + 0.5 * (b.svc == null ? 1 : b.svc)); }
 function branchLoanF(b) { return cityOf(b).loans * 0.45 * staffEff(b, 'bs'); }
 function branchCosts(s, b) {
   const w = wageMult(s, b);
@@ -89,7 +90,7 @@ function checkUnlocks(s, silent) {
 }
 
 // ---------- Classement ----------
-function rankOf(s) { const eq = equity(s); return 1 + s.rivals.filter(r => r.eq > eq).length; }
+function rankOf(s) { const eq = equity(s); return 1 + s.rivals.filter(r => !r.gone && r.eq > eq).length; }
 
 // ---------- Calculs financiers ----------
 const loansOut = s => s.loans.reduce((a, l) => a + l.out, 0);

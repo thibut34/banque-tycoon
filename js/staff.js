@@ -33,7 +33,7 @@ const empTitle = e => STAFF_TITLES[e.role][e.lvl - 1];
 function empEff(e) { return (1 + 0.15 * (e.lvl - 1)) * (e.trait === 'rapide' ? 1.15 : e.trait === 'bavard' ? 0.9 : 1); }
 function staffEff(b, role) { return b.staff ? staffOf(b, role).reduce((a, e) => a + empEff(e), 0) : (b[role] || 0); }
 function staffSat(b) { return (b.staff || []).reduce((a, e) => a + (e.trait === 'souriant' ? 4 : e.trait === 'raleur' ? -4 : e.trait === 'bavard' ? 2 : 0), 0); }
-const empWage = (s, b, e) => ITEMS[e.role].wage * wageMult(s, b) * (1 + 0.2 * (e.lvl - 1));
+const empWage = (s, b, e) => ITEMS[e.role].wage * wageMult(s, b) * (1 + 0.2 * (e.lvl - 1)) * (1 + (e.raise || 0));
 const promoCost = (s, b, e) => Math.round(ITEMS[e.role].wage * wageMult(s, b) * (1 + 0.2 * e.lvl) * 3 / 100) * 100;
 const trainCost = (s, b, e) => Math.round(1500 * e.lvl * wageMult(s, b) / 100) * 100;
 const canTrain = (s, e) => e.lvl < MAX_LVL && s.day - e.trained >= 30 && e.xp < xpNeed(e.lvl);

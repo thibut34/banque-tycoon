@@ -167,9 +167,9 @@ const RIVALS = [
 // ---------- Campagne : chapitres et objectifs ----------
 const G = (txt, cur, goal, fmt) => ({ txt, cur, goal, fmt });
 const CHAPTERS = [
-  { name: 'Les premiers clients', desc: 'Votre agence de Montpellier est vide. Installez un conseiller, prêtez, puis ouvrez des comptes.', reward: 250e3, goals: [
+  { name: 'Les premiers clients', desc: 'Votre agence de Montpellier est vide. Installez un conseiller, prêtez, puis ouvrez des comptes.', reward: 400e3, goals: [
     G('Recruter un conseiller', s => staffTotal(s, 'bs'), 1), G('Accorder 3 prêts', s => s.stats.granted, 3), G('Recruter un guichetier', s => staffTotal(s, 'gs'), 1), G('Clients avec un compte', s => s.depCC / AVG_BALANCE, 200)] },
-  { name: 'Banque de quartier', desc: 'Les Montpelliérains vous font confiance. Lancez le livret, les cartes, et une deuxième agence.', reward: 600e3, goals: [
+  { name: 'Banque de quartier', desc: 'Les Montpelliérains vous font confiance. Lancez le livret, les cartes, et une deuxième agence.', reward: 1e6, goals: [
     G('Accorder 15 prêts', s => s.stats.granted, 15), G('Épargne sur les livrets', s => s.depLiv || 0, 1e6, money), G('Installer un distributeur', s => staffTotal(s, 'dab'), 1), G('Posséder 2 agences', s => s.branches.length, 2), G('Fonds propres', s => equity(s), 1.4e6, money)] },
   { name: 'Le réseau régional', desc: 'Couvrez la France et devenez une banque qui compte. À la clé : la licence européenne.', reward: 1.5e6, goals: [
     G('Agences en France', s => regionCount(s, 'france'), 6), G('Conseillers embauchés', s => staffTotal(s, 'bs'), 8), G('Réputation', s => s.reputation, 60), G('Fonds propres', s => equity(s), 8e6, money)] },
@@ -182,7 +182,7 @@ const CHAPTERS = [
   { name: 'Partout sur Terre', desc: 'Une agence sur chaque continent. Plus aucun pays ne vous échappe.', reward: 150e6, goals: [
     G('Régions couvertes', s => Object.keys(REGIONS).filter(r => r !== 'espace' && regionCount(s, r) > 0).length, 7), G('Agences', s => s.branches.length, 35), G('Classement (top 3)', s => rankOf(s) <= 3 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 1e9, money)] },
   { name: 'Au-delà du ciel', desc: 'La Terre est trop petite. Devenez la première banque interplanétaire.', reward: 0, goals: [
-    G('Base lunaire', s => s.branches.some(b => b.id === 'lune') ? 1 : 0, 1), G('Colonie martienne', s => s.branches.some(b => b.id === 'mars') ? 1 : 0, 1), G('Numéro 1 mondial', s => rankOf(s) === 1 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 20e9, money)] },
+    G('Traverser la Grande Crise', s => s.flags.bigCrisisDone ? 1 : 0, 1), G('Base lunaire', s => s.branches.some(b => b.id === 'lune') ? 1 : 0, 1), G('Colonie martienne', s => s.branches.some(b => b.id === 'mars') ? 1 : 0, 1), G('Numéro 1 mondial', s => rankOf(s) === 1 ? 1 : 0, 1), G('Fonds propres', s => equity(s), 20e9, money)] },
 ];
 
 // ---------- Défis chronométrés ----------
@@ -301,6 +301,10 @@ const TRAITS = {
 const MAX_LVL = 5;
 const xpNeed = lvl => 80 * lvl;
 Object.assign(ACHS, {
+  sherlock: { name: 'Sherlock', icon: '🕵️', desc: 'Démasquer 5 escrocs.', t: s => (s.stats.frauds || 0) >= 5 },
+  ogre: { name: 'Requin de la finance', icon: '🦈', desc: 'Racheter un concurrent.', t: s => (s.stats.buyouts || 0) >= 1 },
+  storm: { name: 'Insubmersible', icon: '🌋', desc: 'Traverser la Grande Crise.', t: s => !!s.flags.bigCrisisDone },
+  service: { name: 'Zéro file d’attente', icon: '⏱️', desc: '5 agences qui servent tous leurs clients.', t: s => s.branches.filter(b => b.lastServed > 0 && !b.lastLost).length >= 5 },
   promo: { name: 'Promotion !', icon: '⭐', desc: 'Promouvoir un employé.', t: s => s.stats.promos >= 1 },
   lvl5: { name: 'La perle rare', icon: '💎', desc: 'Avoir un employé au niveau 5.', t: s => s.branches.some(b => (b.staff || []).some(e => e.lvl >= 5)) },
 });
