@@ -117,6 +117,11 @@ function vToday() {
   const ch = CHAPTERS[s.chapter];
   const chap = ch ? `<button class="side-box chap" data-act="tab" data-tab="missions"><small>Chapitre ${s.chapter + 1} · objectif de la campagne</small><b>${ch.name}</b><span class="muted">${ch.desc}</span></button>` : '';
 
-  return `<div class="desk"><div class="desk-main">${main}</div><aside class="desk-side">${goal}${queue}${figures}${chap}</aside></div>
+  const sb = getBranch(s, ui.branch) || s.branches[0];
+  const scene = sb ? `<div class="scene"><div class="scene-tag"><b>${CITIES[sb.id].name}</b><span class="pill">${dateStr(s.day)}</span></div>
+    <button class="btn sm scene-go" data-act="tab" data-tab="plan">Aménager l’agence</button>
+    <canvas id="floor" data-mini="1" data-maxh="${innerWidth < 700 ? 200 : 280}" role="img" aria-label="Votre agence, vue en 3D"></canvas>
+    ${t.arrived ? `<div class="scene-stats"><span>🚶 ${t.arrived} visiteur${t.arrived > 1 ? 's' : ''} aujourd’hui</span>${t.lost ? `<span class="neg">😤 ${t.lost} reparti${t.lost > 1 ? 's' : ''}</span>` : ''}</div>` : ''}</div>` : '';
+  return scene + `<div class="desk"><div class="desk-main">${main}</div><aside class="desk-side">${goal}${queue}${figures}${chap}</aside></div>
     <details class="more dash-more"><summary>Votre banque en détail</summary>${vDash()}</details>`;
 }

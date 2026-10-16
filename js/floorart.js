@@ -121,10 +121,14 @@ function drawFloor(cv, b, lay) {
     minX = Math.min(minX, px); maxX = Math.max(maxX, px); minY = Math.min(minY, py); maxY = Math.max(maxY, py);
   }
   let s = (W - 16) / (maxX - minX);
-  const maxH = Math.min(620, Math.max(320, W * 0.72));
+  const maxH = cv.dataset.maxh ? +cv.dataset.maxh : Math.min(620, Math.max(320, W * 0.72));
   if ((maxY - minY) * s + 16 > maxH) s = (maxH - 16) / (maxY - minY);
-  const H = Math.round((maxY - minY) * s + 16);
-  const v = floor.view = { s, ox: 8 - minX * s + (W - 16 - (maxX - minX) * s) / 2, oy: 8 - minY * s };
+  let H = Math.round((maxY - minY) * s + 16);
+  let v = floor.view = { s, ox: 8 - minX * s + (W - 16 - (maxX - minX) * s) / 2, oy: 8 - minY * s };
+  if (cv.dataset.mini) { // vignette : on zoome sur l'agence et on remplit le cadre
+    s *= 1.3; H = maxH;
+    v = floor.view = { s, ox: W / 2 - (minX + maxX) / 2 * s, oy: H / 2 - (minY + maxY) / 2 * s + s * 0.5 };
+  }
   if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.height = H + 'px'; }
   const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
   c.clearRect(0, 0, W, H);
@@ -185,7 +189,7 @@ function drawFloor(cv, b, lay) {
     for (const k of MOVABLE) for (let i = 0; i < b[k]; i++) { const sl = lay[k][i]; const isD = d && d.kind === k && d.i === i, isH = eh && eh.kind === k && eh.i === i;
       foot(sl, sl.x, sl.y, isD ? (d.ok ? 'rgba(52,211,153,.35)' : 'rgba(248,113,113,.4)') : isH ? 'rgba(99,102,241,.3)' : 'rgba(99,102,241,.08)', isD ? (d.ok ? '#10b981' : '#ef4444') : '#6366f1'); }
   }
-  if (!ui.editPlan) for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) lay[kind].forEach((sl, i) => {
+  if (!ui.editPlan && !cv.dataset.mini) for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) lay[kind].forEach((sl, i) => {
     if (!slotVisible(b, kind, i)) return;
     const built = i < b[kind], isH = hv && hv.kind === kind && hv.i === i;
     if (built && !isH) return;
@@ -234,7 +238,7 @@ function drawFloor(cv, b, lay) {
   }
   // Boutons « + » flottants sur les emplacements libres
   for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) lay[kind].forEach((sl, i) => {
-    if (ui.editPlan || !slotVisible(b, kind, i) || i < b[kind]) return;
+    if (ui.editPlan || cv.dataset.mini || !slotVisible(b, kind, i) || i < b[kind]) return;
     const [px, py] = isoP(v, sl.x, sl.y, 1.1 + Math.sin(floor.t * 3 + i) * 0.08);
     c.fillStyle = '#6366f1'; c.beginPath(); c.arc(px, py, s * 0.32, 0, 7); c.fill();
     c.strokeStyle = '#fff'; c.lineWidth = Math.max(2, s * 0.08); c.beginPath(); c.moveTo(px - s * 0.14, py); c.lineTo(px + s * 0.14, py); c.moveTo(px, py - s * 0.14); c.lineTo(px, py + s * 0.14); c.stroke();

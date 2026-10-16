@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Banque Tycoon</title>
 <meta name="description" content="Simulateur de banque : de Montpellier à Mars. Agences, guichets, prêts, marchés, crises et concurrents.">
-<meta name="theme-color" content="#0b0e14">
+<meta name="theme-color" content="#13112e">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%236366f1'/><path d='M20 78h60M28 78V46M42 78V46M58 78V46M72 78V46M16 46 50 22l34 24z' stroke='white' stroke-width='7' fill='none' stroke-linejoin='round'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=41">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=42">
 <script>
   // Si le design n'a pas été appliqué (cache ou proxy qui sert un vieux fichier), on le recharge.
   window.addEventListener('load', function () {
@@ -60,11 +60,11 @@
     <header id="topbar">
       <div class="tb-date"><b id="tbDate"></b><span id="tbEcon" class="econ-pill"></span></div>
       <div class="tb-kpis">
-        <div><small>Liquidités <button class="tip" data-act="tip" data-k="cash" aria-label="Qu’est-ce que les liquidités ?">?</button></small><b id="tbCash"></b></div>
-        <div><small>Fonds propres <button class="tip" data-act="tip" data-k="equity" aria-label="Qu’est-ce que les fonds propres ?">?</button></small><b id="tbEq"></b></div>
-        <div><small>Solvabilité <button class="tip" data-act="tip" data-k="ratio" aria-label="Qu’est-ce que la solvabilité ?">?</button></small><b id="tbRatio"></b></div>
-        <div><small>Réputation <button class="tip" data-act="tip" data-k="rep" aria-label="Qu’est-ce que la réputation ?">?</button></small><b id="tbRep"></b></div>
-        <div><small>Classement <button class="tip" data-act="tip" data-k="rank" aria-label="Qu’est-ce que le classement ?">?</button></small><b id="tbRank"></b></div>
+        <div><span class="kv"><small>Liquidités <button class="tip" data-act="tip" data-k="cash" aria-label="Qu’est-ce que les liquidités ?">?</button></small><b id="tbCash"></b></span></div>
+        <div><span class="kv"><small>Fonds propres <button class="tip" data-act="tip" data-k="equity" aria-label="Qu’est-ce que les fonds propres ?">?</button></small><b id="tbEq"></b></span></div>
+        <div><span class="kv"><small>Solvabilité <button class="tip" data-act="tip" data-k="ratio" aria-label="Qu’est-ce que la solvabilité ?">?</button></small><b id="tbRatio"></b></span></div>
+        <div><span class="kv"><small>Réputation <button class="tip" data-act="tip" data-k="rep" aria-label="Qu’est-ce que la réputation ?">?</button></small><b id="tbRep"></b></span></div>
+        <div><span class="kv"><small>Classement <button class="tip" data-act="tip" data-k="rank" aria-label="Qu’est-ce que le classement ?">?</button></small><b id="tbRank"></b></span></div>
       </div>
       <div class="tb-actions">
         <button class="btn primary next-top" data-act="nextDay" title="Passer au jour suivant (Entrée)">Jour suivant ▶</button>
@@ -82,26 +82,26 @@
 <div id="modal" hidden></div>
 <div id="toasts"></div>
 
-<script src="js/util.js?v=41"></script>
-<script src="js/data.js?v=41"></script>
-<script src="js/state.js?v=41"></script>
-<script src="js/sim.js?v=41"></script>
-<script src="js/events.js?v=41"></script>
-<script src="js/floor.js?v=41"></script>
-<script src="js/floorart.js?v=41"></script>
-<script src="js/staff.js?v=41"></script>
-<script src="js/custom.js?v=41"></script>
-<script src="js/products.js?v=41"></script>
-<script src="js/gameplay.js?v=41"></script>
-<script src="js/events2.js?v=41"></script>
-<script src="js/people.js?v=41"></script>
-<script src="js/day.js?v=41"></script>
-<script src="js/today.js?v=41"></script>
-<script src="js/clients.js?v=41"></script>
-<script src="js/a11y.js?v=41"></script>
-<script src="js/views1.js?v=41"></script>
-<script src="js/views2.js?v=41"></script>
-<script src="js/main.js?v=41"></script>
-<script src="js/fun.js?v=41"></script>
+<script src="js/util.js?v=42"></script>
+<script src="js/data.js?v=42"></script>
+<script src="js/state.js?v=42"></script>
+<script src="js/sim.js?v=42"></script>
+<script src="js/events.js?v=42"></script>
+<script src="js/floor.js?v=42"></script>
+<script src="js/floorart.js?v=42"></script>
+<script src="js/staff.js?v=42"></script>
+<script src="js/custom.js?v=42"></script>
+<script src="js/products.js?v=42"></script>
+<script src="js/gameplay.js?v=42"></script>
+<script src="js/events2.js?v=42"></script>
+<script src="js/people.js?v=42"></script>
+<script src="js/day.js?v=42"></script>
+<script src="js/today.js?v=42"></script>
+<script src="js/clients.js?v=42"></script>
+<script src="js/a11y.js?v=42"></script>
+<script src="js/views1.js?v=42"></script>
+<script src="js/views2.js?v=42"></script>
+<script src="js/main.js?v=42"></script>
+<script src="js/fun.js?v=42"></script>
 </body>
 </html>

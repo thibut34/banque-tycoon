@@ -190,6 +190,7 @@ function slotAt(px, py) {
 function floorMount() {
   const cv = $('#floor'); if (!cv || cv.dataset.on) return;
   cv.dataset.on = '1';
+  if (cv.dataset.mini) { cv.addEventListener('click', () => actions.tab({ dataset: { tab: 'plan' } })); return; }
   dragMount(cv);
   cv.addEventListener('pointermove', e => {
     const r = cv.getBoundingClientRect(), h = slotAt(e.clientX - r.left, e.clientY - r.top);
@@ -210,7 +211,7 @@ function floorMount() {
 function floorLoop(ts) {
   floor.raf = 0;
   const cv = $('#floor');
-  if (!S || ui.tab !== 'plan' || !cv) return;
+  if (!S || !(ui.tab === 'plan' || ui.tab === 'dash') || !cv) return;
   const b = getBranch(S, ui.branch); if (!b) return;
   if (floor.id !== b.id) floorReset(b.id);
   if (floor.size !== b.size) { floor.size = b.size; floor.agents = []; floor.busy = {}; }

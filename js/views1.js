@@ -37,8 +37,8 @@ function renderTop() {
   $('#tbRep').textContent = Math.round(s.reputation) + '/100'; $('#tbRep').className = s.reputation < 30 ? 'neg' : s.reputation > 70 ? 'pos' : '';
   $('#tbRank').textContent = rankOf(s) + 'ᵉ / ' + (s.rivals.length + 1);
   $('#chapterPill').textContent = s.chapter < CHAPTERS.length ? `Chapitre ${s.chapter + 1} · ${CHAPTERS[s.chapter].name}` : 'Campagne terminée';
-  $('#tbRatio').parentNode.hidden = !(s.chapter >= 1 || s.surveillance);
-  $('#tbRank').parentNode.hidden = !tabUnlocked('ranking');
+  $('#tbRatio').closest('.tb-kpis > div').hidden = !(s.chapter >= 1 || s.surveillance);
+  $('#tbRank').closest('.tb-kpis > div').hidden = !tabUnlocked('ranking');
   if (ui.tabsKey !== tabsKeyOf(s)) renderTabs();
 }
 
@@ -58,6 +58,7 @@ function renderPanel(force) {
   $('#panel').scrollTop = st;
   drawCharts();
   if (ui.tab === 'plan') { renderPlanSide(); floorStart(); }
+  if (ui.tab === 'dash' && $('#floor')) floorStart();
   ui.dirty = false;
 }
 
