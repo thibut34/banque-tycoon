@@ -910,3 +910,17 @@ html.calm .logo-mark { animation: none; }
 #floorWrap { background: radial-gradient(ellipse at 50% 30%, #3a3580 0%, #221f52 55%, #18163d 100%) !important; border-radius: 20px !important; }
 #main { grid-template-columns: minmax(0, 1fr); } #panel, .page, .scene, .desk { min-width: 0; } .scene canvas { max-width: 100%; }
 @media (max-width: 700px) { .scene-tag .pill { display: none; } .scene-go { font-size: 12.5px; padding: 6px 10px; } .scene { border-radius: 18px; } }
+#coach { left: auto; right: 22px; bottom: 44px; }
+#combo { bottom: auto; top: 78px; }
+@media (max-width: 900px) { #coach { left: 16px; right: 16px; width: auto; } #combo { top: auto; bottom: 50px; } }
+/* Carte du monde aux couleurs du jeu */
+.map { background: radial-gradient(ellipse at 50% 40%, #2a5d9a 0%, #1d3f73 55%, #142a52 100%); border-radius: 18px; }
+.grat line { stroke: rgba(255,255,255,.06); }
+.land path { fill: #3fae7a; stroke: #2a8a5c; stroke-width: 1.5; filter: drop-shadow(0 3px 0 rgba(10,30,60,.35)); }
+.city text { fill: #fff; font: 600 12px Fredoka, Nunito, sans-serif; stroke: rgba(15,30,60,.85); }
+.city circle { stroke: rgba(255,255,255,.7); fill: rgba(255,255,255,.15); }
+.city.open circle { stroke: #ffc83d; fill: rgba(255,200,61,.35); }
+.city.own circle { fill: #ff6b85; stroke: #fff; stroke-width: 2; }
+.city.own circle.halo { fill: rgba(255,107,133,.3); }
+.arcs path { stroke: #ffc83d; opacity: .8; }
+.btn:disabled, .choice:disabled { filter: grayscale(1) brightness(.75); box-shadow: none !important; opacity: .55; }

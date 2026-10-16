@@ -8,9 +8,9 @@ function M(s) {
   if (!s.meta) s.meta = { lvl: 1, xp: 0, perks: {}, stars: 0, chests: 0, streak: 0, best: 0, pendingPerk: 0, login: null, opened: 0 };
   return s.meta;
 }
-const xpFor = l => Math.round(60 * Math.pow(l, 1.55));
+const xpFor = l => Math.round(110 * Math.pow(l, 1.7));
 const perk = (s, k) => (s && s.meta && s.meta.perks[k]) || 0;
-const CHEST_STARS = 15;
+const CHEST_STARS = 24;
 const primeAmt = s => Math.round(Math.max(5000, equity(s) * 0.02) / 500) * 500;
 
 // ---------- Atouts ----------
@@ -64,7 +64,7 @@ function gainXP(s, n) {
 }
 
 // ---------- Combos ----------
-const comboMul = n => 1 + 0.25 * (Math.min(n, 9) - 1);
+const comboMul = n => 1 + 0.125 * (Math.min(n, 9) - 1);
 function bumpCombo(s) {
   const now = Date.now(), c = ui.combo || (ui.combo = { n: 0, until: 0 });
   c.n = now < c.until ? c.n + 1 : 1;

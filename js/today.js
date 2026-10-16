@@ -100,6 +100,7 @@ function vToday() {
   let main;
   if (noStaff) main = `<div class="empty-desk"><div class="ed-ico">🏦</div><h2>Votre agence est encore fermée</h2><p class="muted">Construisez un guichet et recrutez un guichetier dans <b>Ma banque</b> pour ouvrir vos portes.</p><button class="btn primary big" data-act="tab" data-tab="plan">Aller dans Ma banque</button></div>`;
   else if (cur) main = clientCard(s, cur, n, tot) + `<p class="hint">Touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre · enchaînez vite pour faire des combos</p>`;
+  else if (!tot && !y) main = `<div class="empty-desk"><div class="ed-ico">🚪</div><h2>Tout est prêt !</h2><p class="muted">Vos portes ouvrent demain matin. Passez au jour suivant pour accueillir vos premiers clients.</p><button class="btn primary big big-next pulse" data-act="nextDay">Jour suivant ▶</button></div>`;
   else main = `<div class="empty-desk"><div class="ed-ico">✅</div><h2>Journée terminée</h2><p class="muted">${tot ? `Vous avez reçu ${tot} personne${tot > 1 ? 's' : ''}.` : 'Personne n’est venu aujourd’hui.'}${t.lost ? ` <span class="neg">${t.lost} sont repartis faute de personnel.</span>` : ''}</p><button class="btn primary big big-next pulse" data-act="nextDay">Jour suivant ▶</button></div>`;
 
   // Colonne de droite : objectif, étoiles, file d'attente, chiffres

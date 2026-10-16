@@ -144,7 +144,7 @@ const OBJECTIVES = {
   ventes: { txt: n => `Réussir ${n} vente${n > 1 ? 's' : ''} (carte, livret, assurance-vie)`, cur: t => t.m.ventes, ok: (t, s) => s.prod.liv.on || s.prod.carte.on, n: () => rint(1, 2) },
   pret: { txt: () => 'Accorder un prêt', cur: t => t.m.prets, ok: t => t.cards.some(c => c.kind === 'pret' || c.kind === 'pro'), n: () => 1 },
   recl: { txt: () => 'Calmer tous les clients mécontents', cur: t => t.cards.filter(c => c.kind === 'reclam' && !c.done).length ? 0 : 1, ok: t => t.cards.some(c => c.kind === 'reclam'), n: () => 1 },
-  zero: { txt: () => 'Ne perdre aucun visiteur aujourd’hui', cur: t => t.lost ? 0 : 1, ok: t => t.arrived > 0, n: () => 1 },
+  zero: { txt: () => 'Ne perdre aucun visiteur aujourd’hui', cur: t => t.lost ? 0 : 1, ok: t => t.arrived > 0 && !t.lost, n: () => 1 },
 };
 function makeObjective(s, t) {
   const pool = Object.keys(OBJECTIVES).filter(k => OBJECTIVES[k].ok(t, s));

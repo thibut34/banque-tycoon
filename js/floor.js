@@ -63,7 +63,7 @@ function doBuild(k, cand) {
   if (cand) { syncStaff(S); const list = staffOf(b, k); const auto = list[list.length - 1]; delete cand.cand; Object.assign(auto, cand, { since: S.day }); }
   if (MOVABLE.includes(k)) autoPlace(b, k, b[k] - 1);
   SFX.play(k === 'size' ? 'level' : 'build');
-  log(`${k === 'size' ? '🏗️' : ITEMS[k].icon} ${c.name} : ${msg.toLowerCase()} (${money(cost)}).`);
+  log(`${k === 'size' ? '🏗️' : ITEMS[k].icon} ${c.name} : ${cand ? msg : msg.charAt(0).toLowerCase() + msg.slice(1)} (${money(cost)}).`);
   toast(`${k === 'size' ? '🏗️' : ITEMS[k].icon} ${msg}`, 'good');
   // Petite animation de pose sur le plan
   const lay = blay(b), key = k === 'gs' ? 'g' : k === 'bs' ? 'b' : k, arr = lay[key];
@@ -176,13 +176,16 @@ function floorStep(dt, b, lay) {
 // ---------- Interaction ----------
 function slotAt(px, py) {
   const v = floor.view, b = getBranch(S, ui.branch); if (!v || !b || ui.editPlan) return null;
-  const [x, y] = isoUnproject(v, px, py), lay = blay(b);
-  let best = null, bd = 0.9;
+  const lay = blay(b);
+  // On teste le sol, le meuble, le bouton « + » et l'étiquette « Embaucher » : tout est cliquable
+  let best = null, bd = v.s * 0.75;
   for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) {
     lay[kind].forEach((s, i) => {
       if (!slotVisible(b, kind, i)) return;
-      const d = Math.hypot(x - s.x, y - s.y);
-      if (d < bd) { bd = d; best = { kind, i }; }
+      for (const z of [0, 0.5, 1.1, 1.6, 1.9]) {
+        const [sx, sy] = isoP(v, s.x, s.y, z), d = Math.hypot(px - sx, py - sy);
+        if (d < bd) { bd = d; best = { kind, i }; }
+      }
     });
   }
   return best;
