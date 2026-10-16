@@ -255,7 +255,7 @@ const TUTO = [
   { tab: 'dash', txt: 'Tout est prêt ! Ouvrez <b>Aujourd’hui</b> et cliquez sur <b>Jour suivant</b> pour ouvrir vos portes.', done: s => s.today && s.today.cards.length > 0 },
   { tab: 'dash', txt: 'Vos premiers clients sont là ! Ouvrez-leur un <b>compte</b> : leur argent rejoint vos caisses. Attention aux clients louches…', done: s => s.clients >= 3 },
   { tab: 'dash', txt: 'Quand tout le monde est reçu, cliquez sur <b>Jour suivant</b>. Les clients que vous ne recevez pas seront traités par votre équipe, moins bien que vous.', done: s => s.day >= 3 },
-  { tab: 'missions', txt: 'Objectif : <b>50 comptes</b> et <b>200 000 €</b> déposés. Ensuite, vous pourrez prêter cet argent : c’est là que la banque gagne vraiment sa vie.', btn: 'C’est parti' },
+  { tab: 'missions', txt: 'Objectif : <b>25 comptes</b> et <b>50 000 €</b> déposés. Ensuite, vous pourrez prêter cet argent : c’est là que la banque gagne vraiment sa vie.', btn: 'C’est parti' },
 ];
 function updateCoach(force) {
   const s = S, el = $('#coach');

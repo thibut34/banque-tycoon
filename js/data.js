@@ -168,9 +168,9 @@ const RIVALS = [
 const G = (txt, cur, goal, fmt) => ({ txt, cur, goal, fmt });
 const CHAPTERS = [
   { name: 'L’ouverture', desc: 'Votre agence de Montpellier est vide. Installez un guichet, recrutez, et ouvrez vos premiers comptes.', reward: 20e3, goals: [
-    G('Recruter un guichetier', s => staffTotal(s, 'gs'), 1), G('Clients avec un compte', s => s.clients, 50), G('Argent déposé par les clients', s => s.deposits, 200e3, money)] },
+    G('Recruter un guichetier', s => staffTotal(s, 'gs'), 1), G('Clients avec un compte', s => s.clients, 25), G('Argent déposé par les clients', s => s.deposits, 50e3, money)] },
   { name: 'Les premiers crédits', desc: 'Vous avez l’argent des clients : il est temps de prêter. Installez un bureau et recrutez un conseiller.', reward: 60e3, goals: [
-    G('Recruter un conseiller', s => staffTotal(s, 'bs'), 1), G('Prêts accordés', s => s.stats.granted, 10), G('Clients avec un compte', s => s.clients, 300), G('Épargne sur les livrets', s => s.depLiv, 100e3, money)] },
+    G('Recruter un conseiller', s => staffTotal(s, 'bs'), 1), G('Prêts accordés', s => s.stats.granted, 10), G('Clients avec un compte', s => s.clients, 150), G('Épargne sur les livrets', s => s.depLiv, 60e3, money)] },
   { name: 'Banque de quartier', desc: 'Montpellier vous fait confiance. Distributeurs, cartes, et une deuxième agence.', reward: 200e3, goals: [
     G('Clients avec un compte', s => s.clients, 1200), G('Prêts accordés', s => s.stats.granted, 40), G('Installer un distributeur', s => staffTotal(s, 'dab'), 1), G('Posséder 2 agences', s => s.branches.length, 2), G('Fonds propres', s => equity(s), 1.2e6, money)] },
   { name: 'Le réseau régional', desc: 'Couvrez la France et devenez une banque qui compte. À la clé : la licence européenne.', reward: 600e3, goals: [
