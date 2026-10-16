@@ -127,6 +127,11 @@ const actions = {
     ui.dirty = true; renderPanel(true);
   },
   closeModal: () => closeModal(),
+  fiche: el => openFiche(el.dataset.id),
+  clAct: el => clientAction(el.dataset.id, el.dataset.k),
+  clFilter: el => { ui.clFilter = el.dataset.v; ui.clPage = 0; renderPanel(true); },
+  clSort: el => { ui.clSort = el.dataset.v; renderPanel(true); },
+  clPage: el => { ui.clPage = +el.dataset.v; renderPanel(true); $('#panel').scrollTop = 0; },
   nextDay: () => nextDay(),
   delegate: () => { const n = delegateRest(S); if (n) toast(`👥 Votre équipe a reçu ${n} client${n > 1 ? 's' : ''}`, 'good'); renderTop(); renderPanel(true); },
   card: el => {
@@ -314,11 +319,12 @@ document.addEventListener('input', e => {
     const en = card.querySelector('[data-o=endet]');
     if (en) { const e = endet(r); en.textContent = pct(e * 100, 0); en.className = e > 0.35 ? 'neg' : e > 0.3 ? 'warn' : 'pos'; card.querySelector('[data-o=hcsf]').textContent = e > 0.35 ? ' au-delà de 35 % : interdit' : ''; card.querySelector('[data-o=hcsf]').className = 'neg small'; }
   }
+  if (el.dataset.input === 'clSearch') { ui.clSearch = el.value; ui.clPage = 0; clearTimeout(ui.clT); ui.clT = setTimeout(() => { const pos = el.selectionStart; renderPanel(true); const n = $('[data-input=clSearch]'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 250); }
   if (el.dataset.input === 'prod') {
     const k = el.dataset.p, f = el.dataset.f, v = +el.value;
-    if (f === 'rate') S.depositRate = v; else S.prod[k][f] = v;
+    if (f === 'rate') S.depositRate = v; else if (f === 'od') S.prod.cc.od = v; else S.prod[k][f] = v;
     const o = $(`[data-o="${k}-${f}"]`);
-    if (o) o.textContent = f === 'rate' ? pct(v, 2) : k === 'av' ? pct(v) + '/an' : k === 'carte' ? nf0.format(v) + ' €/an' : nf1.format(v) + ' €/mois';
+    if (o) o.textContent = f === 'od' ? Math.round(v * 100) + ' % du salaire' : f === 'agio' ? pct(v) : f === 'rate' ? pct(v, 2) : k === 'av' ? pct(v) + '/an' : k === 'carte' ? nf0.format(v) + ' €/an' : nf1.format(v) + ' €/mois';
   }
 });
 document.addEventListener('pointerdown', () => { ui.pointerDown = true; });

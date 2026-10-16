@@ -520,3 +520,23 @@ details.more[open] summary { margin-bottom: 14px; color: var(--text); }
 .ccard.k-pret { grid-column: span 1; }
 .req.inline { background: none; border: 0; padding: 0; box-shadow: none; }
 @media (max-width: 900px) { .next-top { display: none; } }
+
+/* ---------- Vrais clients ---------- */
+.profile { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--muted); margin: 4px 0 6px; }
+.profile b { color: var(--text); }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent2); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(129,140,248,.4); }
+.cal { margin-top: 12px; font-size: 13px; padding: 8px 12px; border-radius: 10px; background: rgba(96,165,250,.08); border: 1px solid rgba(96,165,250,.2); }
+.flows { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+.flows b { color: var(--text); }
+.flows .neg b { color: var(--red); }
+.cltable td { vertical-align: middle; }
+.clrow { cursor: pointer; }
+.clrow:hover td { background: var(--surface2); }
+.block { display: block; }
+.cl-tools .chips { margin-bottom: 0; }
+.cl-tools input { min-width: 220px; }
+.fiche-h { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
+.fiche-h h2 { text-align: left; margin: 0; }
+.fiche-h p { margin: 2px 0 0; font-size: 13px; }
+.kpis.fk { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.kpis.fk .kpi b { font-size: 17px; }

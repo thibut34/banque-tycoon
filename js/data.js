@@ -3,7 +3,7 @@
    BANQUE TYCOON — données du jeu
    ===================================================================== */
 
-const SAVE_KEY = 'banqueTycoon.save.v3';
+const SAVE_KEY = 'banqueTycoon.save.v4';
 const BEST_KEY = 'banqueTycoon.best.v2';
 const HQ = 'montpellier';
 const START = { cash: 1e6, deposits: 0 }; // 1 M€ de capital et une agence vide, pour tout le monde
@@ -249,7 +249,7 @@ const NEWS = [
 ];
 
 const TABS = [
-  ['dash', 'Aujourd’hui'], ['plan', 'Ma banque'], ['loans', 'Prêts'], ['deposits', 'Produits'], ['world', 'Monde'], ['markets', 'Marchés'],
+  ['dash', 'Aujourd’hui'], ['plan', 'Ma banque'], ['clients', 'Clients'], ['loans', 'Prêts'], ['deposits', 'Produits'], ['world', 'Monde'], ['markets', 'Marchés'],
   ['missions', 'Missions'], ['ranking', 'Classement'], ['cb', 'Banque centrale'], ['upgrades', 'Améliorations'], ['me', 'Patron'], ['achs', 'Succès'],
 ];
 
@@ -257,6 +257,7 @@ const TABS = [
 // Au début, seuls l'essentiel est visible ; le reste apparaît avec la progression.
 const TAB_UNLOCK = {
   dash: () => true, plan: () => true, missions: () => true,
+  clients: s => (s.people || []).length > 0,
   loans: s => s.chapter >= 1,
   deposits: s => staffTotal(s, 'gs') >= 1 || s.chapter >= 1,
   world: s => s.chapter >= 2,
@@ -269,6 +270,7 @@ const TAB_UNLOCK = {
 };
 const TAB_HINT = {
   deposits: 'Comptes, livrets, assurance-vie, cartes : réglez vos produits et vos frais.',
+  clients: 'La fiche de chacun de vos clients : salaire, solde, découvert, prêts.',
   world: 'Ouvrez de nouvelles agences sur la carte.',
   upgrades: 'Achetez des améliorations pour toute la banque.',
   cb: 'Empruntez à la banque centrale si vous manquez de liquidités.',

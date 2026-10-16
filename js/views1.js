@@ -3,7 +3,7 @@
    BANQUE TYCOON — écrans (1/2) : accueil, ma banque, prêts, dépôts, monde
    ===================================================================== */
 
-const TAB_ICON = { dash: 'dash', plan: 'bank', loans: 'loans', deposits: 'deposits', world: 'world', markets: 'markets', missions: 'missions', ranking: 'ranking', cb: 'cb', upgrades: 'upgrades', me: 'me', achs: 'achs' };
+const TAB_ICON = { dash: 'dash', plan: 'bank', clients: 'users', loans: 'loans', deposits: 'deposits', world: 'world', markets: 'markets', missions: 'missions', ranking: 'ranking', cb: 'cb', upgrades: 'upgrades', me: 'me', achs: 'achs' };
 const kpi = (label, val, sub = '', c = '') => `<div class="kpi"><small>${label}</small><b class="${c}">${val}</b>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
 const bar = (p, c = '') => `<div class="bar ${c}"><i style="width:${clamp(p, 0, 100)}%"></i></div>`;
 const card = (title, body, extra = '') => `<section class="card ${extra}">${title ? `<header class="card-h"><h3>${title}</h3></header>` : ''}${body}</section>`;
@@ -51,7 +51,7 @@ function renderPanel(force) {
   if (!S) return;
   if (!force && !canRender()) return;
   if (ui.tab === 'plan' && !force && $('#floor')) { renderPlanSide(); ui.dirty = false; return; }
-  const views = { dash: vToday, plan: vPlan, loans: vLoans, deposits: vProducts, world: vWorld, markets: vMarkets, missions: vMissions, ranking: vRanking, cb: vCB, upgrades: vUpgrades, me: vMe, achs: vAchs };
+  const views = { dash: vToday, plan: vPlan, clients: vClients, loans: vLoans, deposits: vProducts, world: vWorld, markets: vMarkets, missions: vMissions, ranking: vRanking, cb: vCB, upgrades: vUpgrades, me: vMe, achs: vAchs };
   const st = $('#panel').scrollTop;
   const alert = S.surveillance ? `<div class="alert red">${ic('alert')}<div><b>Banque sous surveillance</b> : ratio de solvabilité sous ${minRatio(S)} % (${S.lowCap}/6 mois avant retrait de licence). Nouveaux prêts, achats d’actifs et bonus interdits.</div></div>` : '';
   $('#panel').innerHTML = `<div class="page">${alert}${views[ui.tab]()}</div>`;

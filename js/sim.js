@@ -45,6 +45,11 @@ function grantLoan(s, r) {
   const L = { id: r.id, type: r.type, name: r.name, out: r.amount, amount: r.amount, rate: r.offer, left: r.dur, dur: r.dur, pmt: payment(r.amount, r.offer, r.dur), pdA, grade: reqGrade(r), since: s.day };
   if (souv) { L.rw = RATINGS[r.rating].rw; s.stats.souv++; }
   if (r.fraud) L.fraud = true;
+  if (r.pid) {
+    L.pid = r.pid;
+    const P = findPerson(s, r.pid); // le client adapte son train de vie à sa nouvelle mensualité
+    if (P) P.sp = Math.max(300, Math.min(P.sp, Math.round(pinc(P) - P.r - P.f - personDebt(s, P) - L.pmt - 80)));
+  }
   L.recB = (r.guarantee ? 0.25 : 0) + (r.apport || 0) * 0.5;
   s.loans.push(L);
   s.stats.granted++;
@@ -75,6 +80,7 @@ function tickDay() {
   syncStaff(s);
   updateMarket(s);
   migrateProducts(s); reconcile(s);
+  peopleDay(s);
   if (s.flags.bigCrisisPending && !ui.modal) startBigCrisis(s);
 
   if (s.chapter >= 5 && s.requests.filter(r => r.type === 'souv').length < 2 && chance(1 / 45)) {
@@ -100,7 +106,7 @@ function tickDay() {
     if (s.reputation < 25 && chance(0.02)) bankRun(s, 0.25);
   }
 
-  if (s.day > 20 && !ui.modal && chance(1 / 12)) triggerEvent();
+  if (s.day > 20 && !ui.modal && chance(1 / 25)) triggerEvent();
   updateChallenge(s);
   if (s.day % 30 === 0) monthEnd(s);
   if (!s.over) { checkChapter(s); checkAchievements(s); checkUnlocks(s); }
@@ -135,6 +141,7 @@ function monthEnd(s) {
   const pl = { interest: 0, fees: 0, coupons: 0, reserves: 0, depInt: 0, cbInt: 0, costs: 0, losses: 0, tax: 0 };
   let defaults = 0;
   const rec0 = s.upgrades.recouvrement ? 0.2 : 0;
+  reconcile(s); // intègre les dépôts modifiés depuis le début de la journée
 
   for (const L of s.loans) {
     if (L.fraud && s.day - L.since >= 60) { // l'escroc disparaît avec l'argent
@@ -144,34 +151,55 @@ function monthEnd(s) {
       continue;
     }
     const m = L.type === 'souv' ? Math.pow(econ.pd, 0.6) : econ.pd;
-    const pdm = 1 - Math.pow(1 - clamp(L.pdA * m, 0, 0.95), 1 / 12);
+    const P = L.pid && findPerson(s, L.pid);
+    // pour un particulier, les impayés viennent surtout de sa vraie situation ; il reste les accidents de la vie
+    const pdm = 1 - Math.pow(1 - clamp(L.pdA * m * (P ? 0.25 : 1), 0, 0.95), 1 / 12);
     if (chance(pdm)) {
       const got = L.out * Math.min(0.95, LOAN_TYPES[L.type].rec + rec0 + (L.recB || 0));
       s.cash += got; pl.losses += L.out - got;
-      L.dead = true; defaults++; s.stats.defaults++;
+      L.dead = true; defaults++; s.stats.defaults++; if (P) { P.k = (P.k || 0) + 3; P.q -= 30; }
       log(`💥 ${L.name} ne rembourse plus (${LOAN_TYPES[L.type].label}). Perte : ${money(L.out - got)}.`, 'bad');
       if (L.type === 'souv') toast(`💥 ${esc(L.name)} fait défaut sur sa dette !`, 'bad');
       continue;
     }
     const interest = L.out * L.rate / 1200;
     let pay = Math.min(L.pmt, L.out + interest);
+    if (L.left <= 1) pay = L.out + interest;
+    if (P) {
+      // la mensualité est prélevée sur le compte du client… s'il a de quoi payer
+      if (P.b + P.o < pay) {
+        L.miss = (L.miss || 0) + 1; L.missNew = true; L.out += interest; P.q -= 8; P.k = (P.k || 0) + 0.5;
+        if (L.miss >= 3) {
+          const got = L.out * Math.min(0.95, LOAN_TYPES[L.type].rec + rec0 + (L.recB || 0));
+          s.cash += got; pl.losses += L.out - got; L.dead = true; defaults++; s.stats.defaults++; P.k += 3; P.q -= 30; L.missNew = false;
+          log(`💥 ${L.name} : 3 mensualités impayées, le prêt part au contentieux. Perte : ${money(L.out - got)}.`, 'bad');
+        }
+        continue;
+      }
+      P.b -= pay; L.miss = 0;
+    } else s.cash += pay;
     L.left--;
-    if (L.left <= 0) pay = L.out + interest;
     L.out -= pay - interest;
-    s.cash += pay; pl.interest += interest;
+    pl.interest += interest;
     if (L.left <= 0 || L.out < 1) { L.done = true; L.out = 0; }
   }
   s.loans = s.loans.filter(l => !l.dead && !l.done);
   if (defaults) toast(`💥 ${defaults} défaut${defaults > 1 ? 's' : ''} de paiement ce mois-ci`, 'bad');
 
-  migrateProducts(s); reconcile(s); clientMonth(s);
-  pl.depInt = s.depLiv * s.depositRate / 1200; s.depLiv += pl.depInt; s.deposits = s.depCC + s.depLiv;
+  migrateProducts(s); recomputeAgg(s); reconcile(s);
+  const cm = clientMonth(s);
+  pl.depInt = cm.depInt; pl.agios = cm.agios;
   const penalty = s.flags.penalty > s.day ? 3 : 0;
   pl.cbInt = s.cbDebt * (cbRate(s) + penalty) / 1200; s.cash -= pl.cbInt;
   pl.costs = monthlyCosts(s); s.cash -= pl.costs;
-  const pr = prodRevenue(s); pl.fees = pr.cc + pr.av + pr.carte; pl.prod = pr;
-  for (const b of s.branches) pl.fees += dabIncome(b);
-  s.cash += pl.fees;
+  // frais de compte, cotisations et agios sont prélevés sur les comptes ; l'assurance-vie et les distributeurs rapportent du cash
+  const avFee = s.prod.av.aum * s.prod.av.fee / 1200;
+  let cashFees = avFee; for (const b of s.branches) cashFees += dabIncome(b);
+  s.cash += cashFees;
+  pl.fees = cm.fees + cm.cards + cm.agios + (s.flags.mExtraFees || 0) + cashFees - (s.flags.mGifts || 0);
+  pl.prod = { cc: cm.fees, carte: cm.cards, agios: cm.agios, av: avFee };
+  s.flags.mExtraFees = 0; s.flags.mGifts = 0;
+  if (s.flags.seizeLoss) { pl.losses += s.flags.seizeLoss; s.flags.seizeLoss = 0; }
   pl.coupons = holdingValue(s, 'oat') * (s.policyRate + 0.4) / 1200; s.cash += pl.coupons;
   pl.reserves = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1) / 1200; s.cash += pl.reserves;
 

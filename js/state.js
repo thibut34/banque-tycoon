@@ -21,8 +21,8 @@ function newState(name) {
   }
   return {
     v: 2, name, day: 0, nextEmp: 0,
-    cash: START.cash, deposits: 0, depCC: 0, depLiv: 0, depositRate: 1.5, clients: 0, cards: 0, cardsGold: 0,
-    prod: { cc: { on: true, fee: 5 }, liv: { on: false }, av: { on: false, fee: 1, aum: 0 }, carte: { on: false, fee: 45 } },
+    cash: START.cash, deposits: 0, depCC: 0, depLiv: 0, depX: 0, ovd: 0, depositRate: 1.5, clients: 0, cards: 0, cardsGold: 0, people: [], nextPid: 0, alerts: [],
+    prod: { cc: { on: true, fee: 5, od: 0.25, agio: 14 }, liv: { on: false }, av: { on: false, fee: 1, aum: 0 }, carte: { on: false, fee: 45 } },
     loans: [], requests: [], nextId: 1,
     cbDebt: 0, policyRate: 3, rateHist: [3],
     economy: 'stable', econTimer: rint(8, 14), nextEcon: null,
@@ -96,11 +96,12 @@ function rankOf(s) { const eq = equity(s); return 1 + s.rivals.filter(r => !r.go
 const loansOut = s => s.loans.reduce((a, l) => a + l.out, 0);
 function holdingValue(s, id) { return (s.portfolio[id] || 0) * s.market[id].price; }
 function portfolioValue(s) { let v = 0; for (const id in s.portfolio) v += holdingValue(s, id); return v; }
-const equity = s => s.cash + loansOut(s) + portfolioValue(s) - s.deposits - s.cbDebt;
+const equity = s => s.cash + loansOut(s) + (s.ovd || 0) + portfolioValue(s) - s.deposits - s.cbDebt;
 const loanRW = l => l.rw != null ? l.rw : LOAN_TYPES[l.type].rw;
 function rwa(s) {
   let r = 0;
   for (const l of s.loans) r += l.out * loanRW(l);
+  r += (s.ovd || 0) * 0.75;
   for (const id in s.portfolio) r += holdingValue(s, id) * ASSETS[id].rw;
   return r;
 }
@@ -125,7 +126,7 @@ function loanDemand(s) {
 }
 function annualPD(score, type) { return clamp(0.35 * Math.exp(-(score - 300) / 105) * LOAN_TYPES[type].pd, 0.001, 0.85); }
 // Taux d'endettement : mensualité / revenus. Au-delà de 35 %, la règle du HCSF interdit de prêter.
-const endet = (r, rate = r.offer) => r.income ? payment(r.amount, rate, r.dur) / r.income : 0;
+const endet = (r, rate = r.offer) => r.income ? (payment(r.amount, rate, r.dur) + (r.debt || 0)) / r.income : 0;
 const usure = r => Math.round((S ? S.policyRate : 3) * 10 + LOAN_TYPES[r.type].usure * 10) / 10;
 function reqPD(r, rate = r.offer) {
   if (r.type === 'souv') return RATINGS[r.rating].pd;

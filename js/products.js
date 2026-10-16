@@ -21,21 +21,13 @@ const PROD_UNLOCK = {
 const AVG_BALANCE = 2000; // solde moyen d'un compte courant
 
 function migrateProducts(s) {
-  if (s.clients == null) { s.clients = Math.round((s.depCC || 0) / 2500); s.cards = 0; s.cardsGold = 0; }
+  if (!s.people) { s.people = []; s.depX = s.deposits || 0; }
+  if (s.prod && s.prod.cc.od == null) { s.prod.cc.od = 0.25; s.prod.cc.agio = 14; }
   if (!s.prod) {
     const old = s.deposits || 0;
     s.prod = { cc: { on: old > 0, fee: 3 }, liv: { on: old > 0 }, av: { on: false, fee: 1, aum: 0 }, carte: { on: false, fee: 45 } };
     s.depCC = old * 0.5; s.depLiv = old * 0.5;
   }
-}
-// Les événements et paniques modifient s.deposits : on répartit l'écart entre les deux poches
-function reconcile(s) {
-  const diff = s.deposits - (s.depCC + s.depLiv);
-  if (Math.abs(diff) < 1) return;
-  const tot = s.depCC + s.depLiv;
-  if (tot > 0) { s.depCC += diff * s.depCC / tot; s.depLiv += diff * s.depLiv / tot; }
-  else if (s.prod.liv.on) s.depLiv += diff; else s.depCC += diff;
-  s.depCC = Math.max(0, s.depCC); s.depLiv = Math.max(0, s.depLiv); s.deposits = s.depCC + s.depLiv;
 }
 const ccAtt = fee => clamp(Math.exp(-0.18 * (fee - 5)), 0.3, 1.8);
 const repAtt = s => 0.4 + s.reputation / 80;
@@ -49,7 +41,7 @@ function avTarget(s) {
 }
 function cardHolders(s) { return (s.cards || 0) + (s.cardsGold || 0); }
 function prodRevenue(s) {
-  return { cc: s.prod.cc.on ? clientsOf(s) * s.prod.cc.fee : 0, av: s.prod.av.aum * s.prod.av.fee / 1200, carte: ((s.cards || 0) + (s.cardsGold || 0) * 2.5) * s.prod.carte.fee / 12 };
+  return { cc: clientsOf(s) * s.prod.cc.fee, av: s.prod.av.aum * s.prod.av.fee / 1200, carte: ((s.cards || 0) + (s.cardsGold || 0) * 2.5) * s.prod.carte.fee / 12 };
 }
 function feeRep(s) { if (!s.prod.cc.on) return 0; const f = s.prod.cc.fee; return f > 8 ? -2 : f > 6.5 ? -0.5 : f < 3 ? 0.7 : 0; }
 
@@ -78,9 +70,13 @@ function vProducts() {
   return `<div class="alert blue">${ic('spark')}<div>Vos produits attirent l’argent des clients. Les <b>comptes courants</b> et les <b>livrets</b> remplissent vos caisses : cet argent finance vos prêts. Les frais rapportent, mais trop de frais font fuir les clients.</div></div>
   ${s.prod.liv.on && s.deposits > 0 && s.cash > s.deposits * 0.35 ? `<div class="alert indigo">${ic('alert')}<div>${pct(s.cash / s.deposits * 100, 0)} de l’argent des clients dort dans vos caisses. Il vous coûte des intérêts sans rien rapporter : <b>baissez le taux du livret</b> ou <b>prêtez davantage</b>.</div></div>` : ''}
   <div class="grid two">
-    ${card('cc', `${slider('cc', 'fee', 0, 10, 0.5, s.prod.cc.fee, v => nf1.format(v) + ' €/mois')}
-      <p class="small muted">Prix moyen chez les concurrents : 5 €/mois. Au-dessus, plus de clients ferment leur compte chaque mois.</p>
-      <div class="stats">${stat('Clients', nf0.format(clientsOf(s)))}${stat('Argent sur les comptes', money(s.depCC))}${stat('Frais encaissés', money(rev.cc) + '/mois', 'pos')}</div>`)}
+    ${card('cc', `${slider('cc', 'fee', 0, 12, 0.5, s.prod.cc.fee, v => nf1.format(v) + ' €/mois')}
+      <div class="row"><span class="grow">Découvert autorisé des nouveaux clients</span><b class="big-num" data-o="cc-od">${Math.round((s.prod.cc.od || 0) * 100)} % du salaire</b></div>
+      <input type="range" min="0" max="1" step="0.05" value="${s.prod.cc.od || 0}" data-input="prod" data-p="cc" data-f="od">
+      <div class="row"><span class="grow">Taux des agios (découverts)</span><b class="big-num" data-o="cc-agio">${pct(s.prod.cc.agio || 14)}</b></div>
+      <input type="range" min="6" max="21" step="0.5" value="${s.prod.cc.agio || 14}" data-input="prod" data-p="cc" data-f="agio">
+      <p class="small muted">Prix moyen : 5 €/mois. Au-dessus, plus de clients partent. Un découvert généreux rapporte des agios… mais certains clients ne remontent jamais.</p>
+      <div class="stats">${stat('Clients', nf0.format(clientsOf(s)))}${stat('Sur les comptes', money(s.depCC))}${stat('Découverts', money(s.ovd || 0), s.ovd ? 'neg' : '')}${stat('Frais', money(rev.cc) + '/mois', 'pos')}${s.lastPL && s.lastPL.prod ? stat('Agios le mois dernier', money(s.lastPL.prod.agios || 0), 'pos') : ''}</div>`)}
     ${card('liv', `${slider('liv', 'rate', 0, 8, 0.05, s.depositRate, v => pct(v, 2))}
       <p class="small muted">Au-dessus des concurrents, l’épargne afflue et vos clients acceptent plus souvent le livret ; en dessous, elle s’en va.</p>
       <div class="stats">${stat('Épargne', money(s.depLiv))}${stat('Taux des concurrents', pct(marketDepRate(s), 2))}${stat('Intérêts versés', money(s.depLiv * s.depositRate / 1200) + '/mois', 'neg')}</div>`)}
