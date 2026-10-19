@@ -1093,3 +1093,33 @@ html.calm .logo-mark { animation: none; }
 /* CrazyGames : pas de sélection de texte ni de loupe sur mobile (sauf dans les champs) */
 body { -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-touch-callout: none; }
 input, textarea { -webkit-user-select: text; user-select: text; }
+
+/* ---------- Barre du haut : elle tient toujours dans le cadre du jeu (CrazyGames : environ 1 000 à 1 300 px de large) ---------- */
+body { overflow-x: hidden; }
+#main, #topbar { min-width: 0; }
+#topbar { overflow: hidden; }
+@media (min-width: 901px) and (max-width: 1500px) {
+  #topbar { gap: 12px; padding-left: 16px; padding-right: 16px; }
+  .lvchip .lvtxt { display: none; }
+  .tb-kpis { gap: 8px; }
+  .tb-kpis small { display: none; }
+  .tb-kpis > div { padding: 4px 12px 4px 4px; gap: 7px; }
+}
+@media (min-width: 901px) and (max-width: 1180px) {
+  .tb-kpis > div::before { width: 24px; height: 24px; font-size: 12px; }
+  .tb-kpis > div { padding: 3px 9px 3px 3px; gap: 5px; }
+  .tb-kpis b { font-size: 13.5px; }
+  .tb-date b { font-size: 14px; }
+  .next-top.clock { min-width: 0; font-size: 13.5px !important; padding: 9px 12px !important; }
+  .tb-actions .btn.icon { width: 32px; padding-left: 0; padding-right: 0; }
+  #topbar { gap: 10px; padding-left: 12px; padding-right: 12px; }
+}
+/* Entre 900 et 1 366 px : le menu de gauche ne garde que ses icônes (le nom apparaît au survol) */
+@media (min-width: 901px) and (max-width: 1366px) {
+  #game { grid-template-columns: 72px minmax(0, 1fr); }
+  .brand { justify-content: center; padding: 14px 8px 10px; }
+  .brand-txt, .nav-btn .lbl { display: none; }
+  #tabs { padding-left: 8px; padding-right: 8px; }
+  .nav-btn { justify-content: center; position: relative; padding: 9px 6px; }
+  .nav-btn .badge, .nav-btn .dot { position: absolute; top: 2px; right: 2px; padding: 0 5px; font-size: 10px; }
+}
