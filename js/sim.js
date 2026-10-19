@@ -205,7 +205,8 @@ function monthEnd(s) {
   pl.coupons = holdingValue(s, 'oat') * (s.policyRate + 0.4) / 1200; s.cash += pl.coupons;
   pl.reserves = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1) / 1200; s.cash += pl.reserves;
 
-  const profit = pl.interest + pl.fees + pl.coupons + pl.reserves - pl.depInt - pl.cbInt - pl.costs - pl.losses;
+  pl.amort = (s.fixed || 0) / 60; s.fixed = (s.fixed || 0) - pl.amort; // équipements amortis sur 5 ans
+  const profit = pl.interest + pl.fees + pl.coupons + pl.reserves - pl.depInt - pl.cbInt - pl.costs - pl.losses - pl.amort;
   if (profit > 0) { pl.tax = profit * 0.25; s.cash -= pl.tax; }
   pl.net = profit - pl.tax;
   s.stats.interest += pl.interest;

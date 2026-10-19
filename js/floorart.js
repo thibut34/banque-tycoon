@@ -53,7 +53,7 @@ function drawPerson(c, v, a, role) {
   c.fillStyle = a.skin || '#f1c9a5'; c.beginPath(); c.arc(fx, fy - s * 1.15, s * 0.19, 0, 7); c.fill();
   c.fillStyle = a.hair || '#2b1d14'; c.beginPath(); c.arc(fx, fy - s * 1.18, s * 0.19, Math.PI * 1.05, Math.PI * 1.95); c.fill();
   if (role === 'vig') { c.fillStyle = '#111827'; c.fillRect(fx - s * 0.22, fy - s * 1.36, s * 0.44, s * 0.1); c.fillRect(fx - s * 0.15, fy - s * 1.46, s * 0.3, s * 0.12); }
-  if (a.emp) { // badge de niveau, et étoile si une promotion est possible
+  if (a.emp && ui.tab === 'plan') { // badge de niveau, et étoile si une promotion est possible
     const e = a.emp, bx = fx - s * 0.32, by = fy - s * 1.45, r = s * 0.16;
     c.fillStyle = ui.emp == e.id ? '#6366f1' : '#0f172a'; c.beginPath(); c.arc(bx, by, r, 0, 7); c.fill();
     c.fillStyle = '#fbbf24'; c.font = `800 ${Math.max(8, s * 0.2)}px Inter, system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(e.lvl, bx, by + 0.5);
@@ -65,6 +65,18 @@ function drawPerson(c, v, a, role) {
     c.fillStyle = '#fff'; c.beginPath(); c.roundRect ? c.roundRect(ex - s * 0.28, ey - s * 0.24, s * 0.56, s * 0.42, s * 0.12) : c.rect(ex - s * 0.28, ey - s * 0.24, s * 0.56, s * 0.42); c.fill();
     c.font = `700 ${s * 0.3}px Inter, system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = a.emote === '❤' ? '#e11d48' : '#0f172a'; c.fillText(a.emote, ex, ey - s * 0.02);
+  }
+  // Ce que veut le client, au-dessus de sa tête
+  if (!role && a.intent && !a.emote && a.st !== 'out' && INTENTS[a.intent]) {
+    const ex = fx, ey = fy - s * 1.62;
+    c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.arc(ex, ey, s * 0.24, 0, 7); c.fill();
+    c.font = `${s * 0.28}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(INTENTS[a.intent].ico, ex, ey + s * 0.02);
+    if (a.st === 'serve' && a.serveTot) { // avancement du rendez-vous
+      c.strokeStyle = '#22c55e'; c.lineWidth = Math.max(2, s * 0.07); c.beginPath();
+      c.arc(ex, ey, s * 0.29, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(1 - a.serve / a.serveTot, 0, 1)); c.stroke();
+    }
+    if (a.st === 'queue' && a.wait > a.pat * 0.6) { c.strokeStyle = '#ef4444'; c.lineWidth = Math.max(2, s * 0.06); c.beginPath(); c.arc(ex, ey, s * 0.29, 0, 7); c.stroke(); }
   }
 }
 
@@ -125,8 +137,8 @@ function drawFloor(cv, b, lay) {
   if ((maxY - minY) * s + 16 > maxH) s = (maxH - 16) / (maxY - minY);
   let H = Math.round((maxY - minY) * s + 16);
   let v = floor.view = { s, ox: 8 - minX * s + (W - 16 - (maxX - minX) * s) / 2, oy: 8 - minY * s };
-  if (cv.dataset.mini) { // vignette : on zoome sur l'agence et on remplit le cadre
-    s *= 1.3; H = maxH;
+  if (cv.dataset.mini || cv.dataset.zoom) { // vignette ou écran principal : on zoome sur l'agence et on remplit le cadre
+    s *= cv.dataset.mini ? 1.3 : +cv.dataset.zoom; H = maxH;
     v = floor.view = { s, ox: W / 2 - (minX + maxX) / 2 * s, oy: H / 2 - (minY + maxY) / 2 * s + s * 0.5 };
   }
   if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.height = H + 'px'; }
@@ -231,9 +243,9 @@ function drawFloor(cv, b, lay) {
   for (const p of floor.pops) {
     const [px, py] = isoP(v, p.x, p.y, p.z);
     c.globalAlpha = clamp(p.t, 0, 1);
-    c.font = `800 ${s * (p.big ? 0.75 : 0.5)}px Inter, system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.lineWidth = 3; c.strokeStyle = 'rgba(15,23,42,.6)'; c.strokeText(p.txt, px, py);
-    c.fillStyle = p.txt === '✓' ? '#34d399' : '#fbbf24'; c.fillText(p.txt, px, py);
+    c.font = `700 ${Math.max(13, s * (p.big ? 0.7 : 0.52))}px Fredoka, Inter, system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.lineWidth = 4; c.lineJoin = 'round'; c.strokeStyle = 'rgba(15,10,40,.85)'; c.strokeText(p.txt, px, py);
+    c.fillStyle = p.col || (p.txt === '✓' ? '#34d399' : '#fbbf24'); c.fillText(p.txt, px, py);
     c.globalAlpha = 1;
   }
   // Boutons « + » flottants sur les emplacements libres
@@ -246,6 +258,16 @@ function drawFloor(cv, b, lay) {
   // Guichets fermés : petit panneau « embaucher »
   lay.g.forEach((sl, i) => { if (i < b.g && i >= b.gs) { const [px, py] = isoP(v, sl.x, sl.y, 1.9 + Math.sin(floor.t * 3) * 0.06); c.font = `700 ${Math.max(10, s * 0.32)}px Inter, system-ui`; c.textAlign = 'center'; const t = 'Embaucher'; const tw = c.measureText(t).width + 12; c.fillStyle = '#f59e0b'; c.beginPath(); c.roundRect ? c.roundRect(px - tw / 2, py - s * 0.28, tw, s * 0.5, 6) : c.rect(px - tw / 2, py - s * 0.28, tw, s * 0.5); c.fill(); c.fillStyle = '#1f1300'; c.textBaseline = 'middle'; c.fillText(t, px, py - s * 0.03); } });
   lay.b.forEach((sl, i) => { if (i < b.b && i >= b.bs) { const [px, py] = isoP(v, sl.x, sl.y, 1.6 + Math.sin(floor.t * 3) * 0.06); c.font = `700 ${Math.max(10, s * 0.32)}px Inter, system-ui`; c.textAlign = 'center'; const t = 'Embaucher'; const tw = c.measureText(t).width + 12; c.fillStyle = '#f59e0b'; c.beginPath(); c.roundRect ? c.roundRect(px - tw / 2, py - s * 0.28, tw, s * 0.5, 6) : c.rect(px - tw / 2, py - s * 0.28, tw, s * 0.5); c.fill(); c.fillStyle = '#1f1300'; c.textBaseline = 'middle'; c.fillText(t, px, py - s * 0.03); } });
+
+  // Niveau de chaque poste
+  if (!cv.dataset.mini && !ui.editPlan) for (const k of ['g', 'b', 'dab']) lay[k].forEach((sl, i) => {
+    if (i >= b[k]) return;
+    const lv = stLv(b, k, i), [px, py] = isoP(v, sl.x + (k === 'b' ? 0 : sl.w / 2), sl.y + (k === 'b' ? sl.d / 2 : 0), 1.05);
+    const r = Math.max(8, s * 0.2);
+    c.fillStyle = lv >= ST_MAX ? '#f43f5e' : lv >= 5 ? '#f59e0b' : '#6366f1'; c.beginPath(); c.arc(px, py, r, 0, 7); c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.stroke();
+    c.fillStyle = '#fff'; c.font = `800 ${Math.max(9, s * 0.22)}px Fredoka, Inter, system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(lv, px, py + 0.5);
+  });
 
   // Infobulle
   if (hv) {

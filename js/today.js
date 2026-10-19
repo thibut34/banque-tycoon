@@ -95,15 +95,21 @@ function vToday() {
   if (!s.today) startDay(s);
   const t = s.today, left = t.cards.filter(c => !c.done);
   const noStaff = !hasStaff(s);
-  const cur = left.find(c => c.id === ui.focusCard) || left[0];
-
-  // La scène : votre agence qui vit
+  if (!getBranch(s, ui.branch)) ui.branch = HQ;
   const sb = getBranch(s, ui.branch) || s.branches[0];
-  const lost = Math.round(s.flags.lostAvg || 0);
-  const scene = sb ? `<div class="scene"><div class="scene-tag"><b>${CITIES[sb.id].name}</b><span class="pill">${dateStr(s.day)}</span></div>${t.sd ? `<div class="scene-sd"><b>${t.sd.ico} ${t.sd.name}</b><small>${t.sd.desc}</small></div>` : ''}
-    <button class="btn sm scene-go" data-act="tab" data-tab="plan">Aménager l’agence</button>
-    <canvas id="floor" data-mini="1" data-maxh="${innerWidth < 700 ? 200 : 280}" role="img" aria-label="Votre agence, vue en 3D"></canvas>
-    ${t.arrived ? `<div class="scene-stats"><span>🚶 ${t.arrived} visiteurs par jour</span>${lost ? `<span class="neg">😤 ${lost} repartent faute de place</span>` : ''}</div>` : ''}</div>` : '';
+
+  // L'agence, en grand : c'est ici que tout se passe
+  const chips = s.branches.length > 1 ? `<div class="scene-br">${s.branches.map(b => `<button class="chip ${b.id === sb.id ? 'on' : ''}" data-act="sceneBr" data-id="${b.id}">${CITIES[b.id].name}</button>`).join('')}</div>` : '';
+  const scene = `<div class="scene live"><div class="scene-tag"><b>${CITIES[sb.id].name}</b><span class="pill">${dateStr(s.day)}</span></div>${chips}${t.sd ? `<div class="scene-sd"><b>${t.sd.ico} ${t.sd.name}</b><small>${t.sd.desc}</small></div>` : ''}
+    <button class="btn sm scene-go" data-act="tab" data-tab="plan">⚙ Équipe et décor</button>
+    <canvas id="floor" data-keep="1" data-zoom="1.12" data-maxh="${innerWidth < 700 ? 300 : 470}" role="img" aria-label="Votre agence en direct : clients, guichets et bureaux"></canvas>
+    ${noStaff ? `<div class="scene-help">👆 Cliquez sur le <b>＋</b> pour construire votre premier guichet, puis sur <b>Embaucher</b>.</div>` : `<div class="scene-stats" id="liveStats"></div><div class="scene-tip">Cliquez sur un guichet ou un bureau pour l’améliorer</div>`}</div>`;
+
+  // Les dossiers du PDG
+  const dossiers = left.length ? `<section class="inbox"><h3>📥 Dossiers du PDG <span class="badge">${left.length}</span></h3>${left.map(c => {
+    const [ico, title] = cmeta(s, c), d = Math.max(0, c.exp - s.day);
+    return `<button class="ib-item ${c.esc ? 'esc' : ''}" data-act="openCard" data-id="${c.id}">${cardFace(s, c, 40)}<span class="grow"><small>${c.esc ? 'Remonté par l’équipe · ' : ''}${c.kind === 'story' ? (c.sid === 'direction' ? 'Décision de direction' : c.pid ? 'Histoire de client' : c.sid === 'liquidite' ? 'Alerte' : 'Vie du quartier') : title}</small><b>${esc(cardWho(s, c))}</b>${c.req ? `<em>${money(c.req.amount)} · ${LOAN_TYPES[c.req.type].label}</em>` : ''}</span><span class="ib-exp ${d <= 1 ? 'neg' : ''}">⏳ ${d} j</span></button>`;
+  }).join('')}</section>` : (noStaff ? '' : `<section class="inbox calm"><h3>📥 Dossiers du PDG</h3><p class="muted small">Rien pour l’instant. Les gros prêts, les cas délicats et les décisions importantes arriveront ici, sans arrêter le jeu.</p></section>`);
 
   // Le résultat, en direct
   const E = dailyEstimate(s), dom = s.day % 30 + 1;
@@ -114,31 +120,23 @@ function vToday() {
         <span>Frais, cartes et dossiers</span><b class="pos">+${money(E.fees)}</b>
         ${E.other >= 1 ? `<span>Placements et distributeurs</span><b class="pos">+${money(E.other)}</b>` : ''}
         ${E.livret >= 1 ? `<span>Intérêts des livrets</span><b class="neg">−${money(E.livret)}</b>` : ''}
-        <span>Salaires et loyers</span><b class="neg">−${money(E.costs)}</b>
+        <span>Salaires, loyers, équipements</span><b class="neg">−${money(E.costs)}</b>
         ${E.net > 0 ? `<span>Impôt sur les bénéfices</span><b class="neg">−${money(E.net / 3)}</b>` : ''}
       </div>
-      <small class="muted">${E.net >= 0 ? 'Vous gagnez de l’argent ! ' : 'Vous perdez de l’argent : '}${E.net >= 0 ? 'Prêtez davantage pour gagner plus.' : (loansOpen(s) ? 'les prêts sont votre première source de revenus.' : 'ouvrez des comptes pour pouvoir prêter bientôt.')} Bilan complet dans ${30 - dom + 1} jour${30 - dom + 1 > 1 ? 's' : ''}.</small></section>` : '';
+      <small class="muted">${E.net >= 0 ? 'Vous gagnez de l’argent ! Plus de prêts = plus d’intérêts.' : (loansOpen(s) ? 'Les prêts sont votre première source de revenus : recrutez des conseillers.' : 'Ouvrez des comptes : bientôt, vous pourrez prêter cet argent.')} Bilan dans ${30 - dom + 1} j.</small></section>` : '';
 
-  // Le bureau
-  let main;
-  if (noStaff) main = `<div class="empty-desk"><div class="ed-ico">🏦</div><h2>Votre agence est encore fermée</h2><p class="muted">Construisez un guichet et recrutez un guichetier : le temps démarrera et vos premiers clients arriveront tout seuls.</p><button class="btn primary big" data-act="tab" data-tab="plan">Aller dans Ma banque</button></div>`;
-  else if (cur) main = clientCard(s, cur) + `<p class="hint">Touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre · <kbd>Espace</kbd> pour mettre en pause</p>`;
-  else main = `<div class="empty-desk calm-desk"><div class="ed-ico">☕</div><h2>Aucun dossier sur votre bureau</h2><p class="muted">Votre banque tourne toute seule. Investissez pour la faire grandir : les dossiers importants apparaîtront ici.</p></div>`;
-
-  const queue = left.length > 1 ? `<section class="side-box"><h3>Sur votre bureau <span class="muted">${left.length}</span></h3><div class="queue">${left.filter(c => c !== cur).map(c => `<button class="q-item" data-act="focusCard" data-id="${c.id}">${cardFace(s, c, 28)}<span class="grow"><b>${esc(cardWho(s, c))}</b><small>${c.kind === 'story' ? cmeta(s, c)[1] : CARD_META[c.kind][1]} · ⏳ ${Math.max(0, c.exp - s.day)} j</small></span></button>`).join('')}</div>
-      <button class="btn ghost full small-btn" data-act="delegate">Tout confier à l’équipe</button></section>` : '';
+  const ch = CHAPTERS[s.chapter];
+  const chap = ch ? `<button class="side-box chap" data-act="tab" data-tab="missions"><small>Chapitre ${s.chapter + 1} · ${ch.name}</small><span>${ch.goals.map(g => { const v = g.cur(s); return `${v >= g.goal ? '✅' : '▫️'} ${g.txt} : ${g.fmt ? g.fmt(Math.min(v, g.goal)) : nf0.format(Math.min(v, g.goal))} / ${g.fmt ? g.fmt(g.goal) : nf0.format(g.goal)}`; }).join('<br>')}</span>${ch.reward ? `<em>Récompense : ${money(ch.reward)}</em>` : ''}</button>` : '';
   const tq = avgTeamQ(s), stars = Math.round(tq / 0.9 * 4) + 1;
   const team = s.people.length ? `<section class="side-box gerant"><h3>🧑‍💼 Votre équipe</h3>
       <div class="gr-q"><span>Compétence</span><b><span class="gold-t">${'★'.repeat(stars)}</span><span class="st-off">${'★'.repeat(5 - stars)}</span></b></div>
-      <p class="small muted">Elle ouvre les comptes, vend, gère les découverts${loansOpen(s) ? ` et signe seule les prêts jusqu’à <b>${money(seuil(s))}</b>` : ''}. Plus elle est formée, mieux elle décide.</p>
-      ${s.flags.mTeam ? `<p class="small">Ce mois-ci : <b>${s.flags.mTeam.comptes || 0}</b> comptes ouverts · <b>${s.flags.mTeam.prets || 0}</b> prêts signés${s.flags.mTeam.fraud ? ` · <b>${s.flags.mTeam.fraud}</b> fraudes déjouées` : ''}</p>` : ''}</section>` : '';
-  const figures = s.people.length ? `<section class="side-box"><h3>Vos clients</h3><dl class="figs">
-      <div><dt>Clients</dt><dd>${nf0.format(s.clients)}</dd></div><div><dt>Sur les comptes</dt><dd>${money(s.depCC)}</dd></div>
-      <div><dt>Livrets</dt><dd>${money(s.depLiv)}</dd></div><div><dt>Prêts en cours</dt><dd>${money(loansOut(s))}</dd></div></dl></section>` : '';
+      <p class="small muted">Elle ouvre les comptes, vend et signe seule les prêts jusqu’à <b>${money(seuil(s))}</b>. Formez-la pour qu’elle décide mieux.</p>
+      ${s.flags.mTeam ? `<p class="small">Ce mois-ci : <b>${s.flags.mTeam.comptes || 0}</b> comptes · <b>${s.flags.mTeam.prets || 0}</b> prêts${s.flags.mTeam.fraud ? ` · <b>${s.flags.mTeam.fraud}</b> fraudes déjouées` : ''}</p>` : ''}</section>` : '';
+  const figures = s.people.length ? `<section class="side-box"><h3>Votre banque</h3><dl class="figs">
+      <div><dt>Clients</dt><dd>${nf0.format(s.clients)}</dd></div><div><dt>Dépôts</dt><dd>${money(s.deposits)}</dd></div>
+      <div><dt>Prêts en cours</dt><dd>${money(loansOut(s))}</dd></div><div><dt>Peut prêter</dt><dd>${money(Math.max(0, s.cash - s.deposits * 0.1))}</dd></div></dl></section>` : '';
   const bil = s.flags.bilan ? `<button class="side-box chap bil" data-act="bilan"><small>Dernier bilan mensuel</small><b class="${s.flags.bilan.pl.net >= 0 ? 'pos' : 'neg'}">${s.flags.bilan.pl.net >= 0 ? '+' : '−'}${money(Math.abs(s.flags.bilan.pl.net))}</b><span class="muted">Voir d’où vient l’argent</span></button>` : '';
-  const ch = CHAPTERS[s.chapter];
-  const chap = ch ? `<button class="side-box chap" data-act="tab" data-tab="missions"><small>Chapitre ${s.chapter + 1} · objectif de la campagne</small><b>${ch.name}</b><span class="muted">${ch.goals.map(g => { const v = g.cur(s); return `${v >= g.goal ? '✅' : '▫️'} ${g.txt} : ${g.fmt ? g.fmt(Math.min(v, g.goal)) : nf0.format(Math.min(v, g.goal))} / ${g.fmt ? g.fmt(g.goal) : nf0.format(g.goal)}`; }).join('<br>')}</span></button>` : '';
 
-  return scene + `<div class="desk"><div class="desk-main">${main}${noStaff ? '' : growthHTML(s)}</div><aside class="desk-side">${profit}${chap}${queue}${team}${figures}${bil}</aside></div>
+  return scene + `<div class="desk"><div class="desk-main">${dossiers}${noStaff ? '' : growthHTML(s)}</div><aside class="desk-side">${profit}${chap}${team}${figures}${bil}</aside></div>
     <details class="more dash-more"><summary>Votre banque en détail</summary>${vDash()}</details>`;
 }

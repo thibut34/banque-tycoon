@@ -10,6 +10,17 @@ function showModal(html, noClose) {
   m.hidden = false;
   m.dataset.noclose = noClose ? '1' : '';
 }
+function openCardModal(id) {
+  const c = S.today && S.today.cards.find(x => x.id == id); if (!c || c.done) return;
+  ui.modal = true; ui.focusCard = c.id;
+  showModal(`<div class="dossier">${clientCard(S, c)}</div><p class="hint">Touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre · <kbd>Échap</kbd> pour décider plus tard</p>`);
+  $('#modal .modal-box').classList.add('wide', 'dossier-box');
+}
+// Après une décision : on ferme le dossier s'il est réglé, sinon on le rafraîchit
+function afterCard(c) {
+  if (ui.modal && $('#modal .dossier')) { if (c.done) closeModal(); else openCardModal(c.id); }
+  renderPanel(true);
+}
 function closeModal(force) {
   if (S && S.over && !force) return;
   $('#modal').hidden = true; ui.modal = false;
@@ -68,7 +79,7 @@ const actions = {
     const id = el.dataset.id, c = CITIES[id];
     if (getBranch(S, id) || !regionUnlocked(S, c.region)) return;
     if (S.cash < c.cost) return toast('Liquidités insuffisantes', 'bad');
-    S.cash -= c.cost; S.branches.push(newBranch(id));
+    S.cash -= c.cost; S.fixed = (S.fixed || 0) + c.cost; S.branches.push(newBranch(id));
     SFX.play('level'); confetti();
     log(`🏢 Nouvelle agence ouverte : ${c.name} !`, 'good'); toast(`🏢 Agence de ${c.name} inaugurée ! Équipez-la dans « Ma banque ».`, 'good');
     renderPanel(true);
@@ -144,16 +155,18 @@ const actions = {
     if (bad) shake();
     funCard(S, c, before, el);
     SFX.play('click'); renderTop();
-    if (art && !reduceMotion()) { art.classList.add('gone'); setTimeout(() => renderPanel(true), 230); } else renderPanel(true);
+    if (art && !reduceMotion()) { art.classList.add('gone'); setTimeout(() => afterCard(c), 230); } else afterCard(c);
   },
-  cardLoan: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); const before = c && { ...S.today.tally }; if (c && offerLoanCard(S, c)) { funCard(S, c, before, el); renderTop(); renderPanel(true); } },
-  cardVerify: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; verifyRequest(c.req.id, c.req); if (c.req.fraud && c.req.checked) { c.done = true; S.today.done++; } renderPanel(true); },
-  cardDefer: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; c.req.expires = S.day + 20; S.requests.push(c.req); c.done = true; S.today.done++; toast('📁 Dossier rangé dans l’onglet Prêts (20 jours pour décider)', 'gold'); renderPanel(true); },
+  openCard: el => openCardModal(+el.dataset.id),
+  sceneBr: el => { ui.branch = el.dataset.id; floorReset(ui.branch); renderPanel(true); },
+  cardLoan: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); const before = c && { ...S.today.tally }; if (c && offerLoanCard(S, c)) { funCard(S, c, before, el); renderTop(); afterCard(c); } },
+  cardVerify: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; verifyRequest(c.req.id, c.req); if (c.req.fraud && c.req.checked) { c.done = true; S.today.done++; } afterCard(c); },
+  cardDefer: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; c.req.expires = S.day + 20; S.requests.push(c.req); c.done = true; S.today.done++; toast('📁 Dossier rangé dans l’onglet Prêts (20 jours pour décider)', 'gold'); afterCard(c); },
   spec: el => {
     const b = getBranch(S, ui.branch), v = el.dataset.v; if ((b.spec || 'aucune') === v) return;
     const cost = Math.round(cityOf(b).build * 0.2 / 1e3) * 1e3;
     if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad');
-    S.cash -= cost; b.spec = v; SFX.play('build');
+    S.cash -= cost; S.fixed = (S.fixed || 0) + cost; b.spec = v; SFX.play('build');
     toast(`${SPECS[v].icon} ${CITIES[b.id].name} devient une agence « ${SPECS[v].name} »`, 'good'); log(`${SPECS[v].icon} ${CITIES[b.id].name} se spécialise : ${SPECS[v].name}.`);
     renderPlanSide();
   },
@@ -250,10 +263,10 @@ function confetti(n = 90) {
 
 // ---------- Tutoriel ----------
 const TUTO = [
-  { tab: 'plan', txt: 'Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est vide. Ouvrez <b>Ma banque</b> et construisez un <b>guichet</b>.', done: s => getBranch(s, HQ).g >= 1 },
-  { tab: 'plan', txt: 'Recrutez maintenant un <b>guichetier</b> : c’est lui qui accueillera vos clients. Choisissez bien parmi les candidats.', done: s => getBranch(s, HQ).gs >= 1 },
-  { tab: 'dash', txt: 'Tout est prêt ! Le temps démarre : vos premiers clients arrivent tout seuls. <b>⏸ Pause</b> (ou Espace) arrête le temps.', done: s => s.clients >= 1 },
-  { tab: 'dash', txt: 'Votre guichetier ouvre les comptes de vos premiers clients : leur argent rejoint vos caisses. Vous, vous êtes le <b>PDG</b> : seuls les dossiers importants arrivent sur votre bureau.', done: s => s.clients >= 3 },
+  { tab: 'dash', txt: 'Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est vide. Cliquez sur le <b>＋</b> dans l’agence pour construire un <b>guichet</b>.', done: s => getBranch(s, HQ).g >= 1 },
+  { tab: 'dash', txt: 'Cliquez sur <b>Embaucher</b> au-dessus du guichet pour recruter un <b>guichetier</b>. Choisissez bien parmi les candidats.', done: s => getBranch(s, HQ).gs >= 1 },
+  { tab: 'dash', txt: 'Le temps démarre ! Regardez vos clients entrer, faire la queue et se faire servir. Au-dessus de leur tête : ce qu’ils veulent. <b>⏸ Pause</b> (ou Espace) arrête le temps.', done: s => s.clients >= 3 },
+  { tab: 'dash', txt: 'Si la file s’allonge, des clients repartent fâchés 😤. <b>Cliquez sur votre guichet</b> pour l’améliorer : il servira plus vite et vendra mieux.', done: s => s.branches.some(b => b.lv) },
   { tab: 'dash', txt: 'À droite, <b>votre résultat</b> vous dit combien vous gagnez chaque jour. Pour grandir, utilisez <b>Développer ma banque</b>.', done: s => s.day >= 8 },
   { tab: 'missions', txt: 'Objectif : <b>25 comptes</b> et <b>50 000 €</b> déposés. Ensuite, vous pourrez prêter cet argent : c’est là que la banque gagne vraiment sa vie.', btn: 'C’est parti', done: s => s.chapter >= 1 },
 ];

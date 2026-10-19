@@ -42,7 +42,7 @@ function advisorLoan(s, c, sum, q) {
   const ok = 'ABCDE'.slice(0, 'ABCDE'.indexOf(A.min) + 1);
   const big = r.amount > seuil(s); // trop gros pour l'équipe : elle reste très prudente
   if (s.surveillance || !ok.includes(grade(r.score)) || (big && ('AB'.indexOf(grade(r.score)) < 0 || r.amount > equity(s) * 0.1)) || endet(r) > 0.35 || s.cash - r.amount < s.deposits * 0.1) { sum.refus++; s.stats.refused++; return; }
-  r.offer = Math.round(clamp(fairRate(s, r) + A.margin, 0.5, usure(r)) * 10) / 10;
+  r.offer = Math.round(clamp(fairRate(s, r) + A.margin + 0.1 * ((ui.stLv || 1) - 1), 0.5, usure(r)) * 10) / 10; // un bureau de haut niveau négocie mieux
   if (chance(acceptProb(r))) { grantLoan(s, r); s.today.tally.prets++; sum.prets++; sum.pretAmt += r.amount; }
   else { sum.refus++; s.stats.refused++; }
 }
@@ -95,7 +95,7 @@ function showBilan() {
     return list.filter(([, v]) => Math.abs(v) >= 1).map(([l, v, h]) => `<div class="bl-row"><span class="bl-l">${l}${h ? `<small>${h}</small>` : ''}</span><span class="bl-bar"><i class="${sign}" style="width:${Math.max(3, Math.abs(v) / max * 100)}%"></i></span><b class="${sign === 'in' ? 'pos' : 'neg'}">${sign === 'in' ? '+' : '−'}${money(Math.abs(v))}</b></div>`).join('') || '<p class="muted small">Rien ce mois-ci.</p>';
   };
   const ins = [['Intérêts des prêts', p.interest, 'Ce que vos emprunteurs vous paient'], ['Frais, cartes et agios', p.fees, 'Payés par les clients'], ['Placements', p.coupons + (p.reserves || 0), 'Obligations et réserves']];
-  const outs = [['Salaires et loyers', p.costs, 'Votre équipe et vos agences'], ['Intérêts des livrets', p.depInt, 'Versés à vos épargnants'], ['Banque centrale', p.cbInt], ['Prêts non remboursés', p.losses], ['Impôts', p.tax]];
+  const outs = [['Salaires et loyers', p.costs, 'Votre équipe et vos agences'], ['Intérêts des livrets', p.depInt, 'Versés à vos épargnants'], ['Banque centrale', p.cbInt], ['Prêts non remboursés', p.losses], ['Amortissements', p.amort || 0, 'Vos équipements, étalés sur 5 ans'], ['Impôts', p.tax]];
   max = Math.max(1, ...ins.concat(outs).map(([, v]) => Math.abs(v)));
   ui.modal = true;
   showModal(`<div class="bilan"><small class="eyebrow">Bilan de ${MONTHS[B.month % 12]}</small>

@@ -7,7 +7,7 @@
    sans réponse, votre équipe tranche à votre place.
    ===================================================================== */
 
-const DAY_MS = 4000;
+const DAY_MS = 15000; // une journée = 15 secondes
 const clock = { acc: 0, last: 0 };
 const hasStaff = s => s.branches.some(b => b.gs || b.bs);
 function clockState(s) {
@@ -21,10 +21,12 @@ function clockLoop() {
   const ts = Date.now(), dt = clock.last ? Math.min(250, ts - clock.last) : 0; clock.last = ts;
   const s = S; if (!s || $('#game').hidden) return;
   if (clockState(s) === 'run') {
+    agencyTick(s, dt / 1000);
     clock.acc += dt;
     if (clock.acc >= DAY_MS) { clock.acc -= DAY_MS; advanceDay(); }
   }
   clockUI(s);
+  if (ts - (clock.statsAt || 0) > 400) { clock.statsAt = ts; liveStats(s); }
 }
 setInterval(clockLoop, 50);
 
@@ -41,26 +43,23 @@ function clockUI(s) {
 
 // ---------- Un nouveau jour ----------
 function advanceDay() {
-  const s = S, dep0 = s.deposits, cl0 = s.clients, loans0 = s.stats.granted;
+  const s = S;
+  agencyDayEnd(s);
   tickDay();
   if (s.over) return;
   startDay(s);
   const t = s.today;
   s.flags.lostAvg = (s.flags.lostAvg || 0) * 0.8 + (t.lost || 0) * 0.2;
-  dayFx(s, s.deposits - dep0, s.clients - cl0, s.stats.granted - loans0);
+  if (s.day % 30 === 27) { const sc = $('.scene'); if (sc && ui.tab === 'dash') { const r = sc.getBoundingClientRect(); floatText(r.left + r.width / 2, r.top + r.height * 0.3, '💶 Jour de paie !', 'big'); } }
   if (s.day % 5 === 0) save();
   renderTop();
 }
-// Petites bulles au-dessus de l'agence : on voit la banque vivre
-function dayFx(s, dDep, dCl, dLoans) {
-  const sc = $('.scene'); if (!sc || ui.tab !== 'dash') return;
-  const r = sc.getBoundingClientRect(), fx = [];
-  if (dCl > 0) fx.push([`+${dCl} client${dCl > 1 ? 's' : ''} 🙋`, 'big']);
-  if (dLoans > 0 && s.today.auto && s.today.auto.pretAmt) fx.push([`🤝 Prêt signé : ${money(s.today.auto.pretAmt)}`, 'big']);
-  else if (dDep > 500) fx.push([`💰 +${money(dDep)} déposés`, 'xp']);
-  if (s.day % 30 === 27) fx.push(['💶 Jour de paie !', 'big']);
-  fx.slice(0, 2).forEach(([txt, cls], i) => setTimeout(() => floatText(r.left + r.width * (0.35 + Math.random() * 0.3), r.top + r.height * (0.45 - i * 0.12), txt, cls), i * 400));
-  if (dLoans > 0) SFX.play('coin');
+// Compteurs en direct sous l'agence
+function liveStats(s) {
+  const el = $('#liveStats'); if (!el || !s.today) return;
+  const b = getBranch(s, ui.branch) || s.branches[0], A = b && ag(b), t = s.today;
+  const q = A ? A.agents.filter(a => a.st === 'queue').length : 0;
+  el.innerHTML = `<span>🚶 <b>${t.arrived}</b> aujourd’hui</span><span>✅ <b>${t.served || 0}</b> servis</span>${t.lost ? `<span class="neg">😤 <b>${t.lost}</b> partis</span>` : ''}${q ? `<span>⏳ <b>${q}</b> dans la file</span>` : ''}`;
 }
 
 // ---------- Le bureau : les dossiers attendent quelques jours ----------
@@ -94,7 +93,7 @@ function dailyEstimate(s) {
   let other = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1) / 1200 + holdingValue(s, 'oat') * (s.policyRate + 0.4) / 1200;
   for (const b of s.branches) other += dabIncome(b);
   const livret = (s.depLiv || 0) * s.depositRate / 1200;
-  const costs = monthlyCosts(s) + s.cbDebt * cbRate(s) / 1200;
+  const costs = monthlyCosts(s) + s.cbDebt * cbRate(s) / 1200 + (s.fixed || 0) / 60;
   const f = fees + dossier;
   return { interest: interest / 30, fees: f / 30, other: other / 30, livret: livret / 30, costs: costs / 30, net: (n => n > 0 ? n * 0.75 : n)((interest + f + other - livret - costs) / 30) }; // après impôt (25 %)
 }
@@ -110,13 +109,17 @@ function growthOptions(s) {
     else if (b.b < lim.b && itemUnlocked('b')) out.push({ k: 'b', ico: '🗂️', name: 'Bureau de conseil', fx: 'Pour recevoir les demandes de prêt', cost: itemCost(b, 'b') });
   }
   for (const k of ['liv', 'carte', 'av']) if (!s.prod[k].on && PROD_UNLOCK[k](s)) out.push({ launch: k, ico: PRODUCTS[k].icon, name: `Lancer : ${PRODUCTS[k].name}`, fx: PRODUCTS[k].desc.split('.')[0], cost: 0, hot: true });
+  // les améliorations de postes les moins chères
+  const ups = [];
+  for (const k of ['g', 'b', 'dab']) for (let i = 0; i < (k === 'dab' ? b.dab : b[k + 's']); i++) { const lv = stLv(b, k, i); if (lv < ST_MAX) ups.push({ st: [k, i], ico: '⬆️', name: `${ST_NAME[k]} ${i + 1} : niveau ${lv + 1}`, fx: k === 'g' ? 'Plus rapide, vend plus' : k === 'b' ? 'Plus rapide, meilleure marge' : 'Plus rapide', cost: stCost(b, k, lv), hot: lost > 0.5 }); }
+  ups.sort((x, y) => x.cost - y.cost).slice(0, 2).forEach(u => out.push(u));
   if (!(s.flags.sponsorUntil > s.day) && s.clients >= 5) out.push({ pub: 1, ico: '📣', name: 'Campagne de publicité', fx: '+15 % de visiteurs pendant 30 jours', cost: 8000 });
   const emp = s.branches.flatMap(x => (x.staff || []).map(e => [x, e])).filter(([, e]) => canTrain(s, e)).sort((a, c) => a[1].lvl - c[1].lvl)[0];
   if (emp) out.push({ train: emp[1].id, ico: '🎓', name: `Former ${emp[1].name.split(' ')[0]}`, fx: 'Votre équipe décidera mieux à votre place', cost: trainCost(s, emp[0], emp[1]) });
   if (itemUnlocked('dab') && b.dab < lim.dab) out.push({ k: 'dab', ico: '🏧', name: 'Distributeur de billets', fx: 'Des revenus chaque mois', cost: itemCost(b, 'dab') });
   if (b.g >= lim.g && b.b >= lim.b && b.size < 3) out.push({ k: 'size', ico: '🏗️', name: 'Agrandir l’agence', fx: 'Plus de guichets et de bureaux', cost: sizeUpCost(b) });
   if (tabUnlocked('world')) out.push({ world: 1, ico: '🌍', name: 'Ouvrir une nouvelle agence', fx: 'Conquérir d’autres villes', cost: null });
-  return out.slice(0, 5);
+  return out.slice(0, 6);
 }
 function growthHTML(s) {
   const o = growthOptions(s); if (!o.length) return '';
@@ -135,6 +138,7 @@ Object.assign(actions, {
     else if (g.launch) actions.launch({ dataset: { p: g.launch } });
     else if (g.pub) { if (S.cash < 8000) return; S.cash -= 8000; S.flags.sponsorUntil = S.day + 30; toast('📣 Campagne lancée : plus de visiteurs pendant 30 jours !', 'good'); }
     else if (g.train) trainEmp(g.train);
+    else if (g.st) upgradeStation(getBranch(S, HQ), g.st[0], g.st[1]);
     else if (g.world) return actions.tab({ dataset: { tab: 'world' } });
     renderTop(); renderPanel(true);
   },

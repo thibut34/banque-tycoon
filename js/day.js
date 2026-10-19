@@ -115,23 +115,7 @@ function startDay(s) {
   for (const L of s.loans.filter(l => l.missNew)) { L.missNew = false; t.cards.push(makeTask(s, 'impaye', { loan: L.id, name: L.name, amt: Math.round(L.pmt), miss: L.miss })); }
   const holders = s.cards + s.cardsGold;
   if (holders && chance(Math.min(0.8, holders * 0.0015 * sdMod(s, 'fraud')))) { const p = pick(s.people.filter(p => p.c)); if (p) t.cards.push(makeTask(s, 'fraudecb', { pid: p.i, name: pname(p) })); }
-  // Les visiteurs du jour
-  for (const b of s.branches) {
-    const A = dayArrivals(s, b); if (!A) continue;
-    const mine = branchPeople(s, b.id);
-    const capG = Math.round(staffEff(b, 'gs') * 6 * (focusOn(s, 'accueil') ? 1.2 : 1)), capB = Math.round(staffEff(b, 'bs') * 3 * (focusOn(s, 'accueil') ? 1.2 : 1));
-    let usedG = 0, usedB = 0, served = 0, lost = 0;
-    for (let i = 0; i < A; i++) {
-      const kind = pickKind(s, b, mine.length), need = NEEDS[kind];
-      if (need === 'g' ? usedG < capG : usedB < capB) {
-        const c = makeCard(s, b, kind, mine); if (!c) continue;
-        need === 'g' ? usedG++ : usedB++; served++; t.cards.push(c);
-      } else lost++;
-    }
-    b.svc = (b.svc == null ? 1 : b.svc) * 0.85 + 0.15 * (A ? served / A : 1);
-    b.mServed = (b.mServed || 0) + served; b.mLost = (b.mLost || 0) + lost;
-    t.arrived += A; t.lost += lost;
-  }
+  // Les visiteurs arrivent en direct dans l'agence (agency.js)
   // Tâches de bureau
   if (s.day % 7 === 1 && s.day > 1 && s.branches.some(b => b.gs || b.bs)) t.cards.unshift({ id: ++ui.cardSeq, kind: 'reunion', task: true });
   if (s.clients > 20 && chance(0.2)) t.cards.push(makeTask(s, 'facture'));
@@ -167,7 +151,7 @@ function checkObjective(s) {
 }
 
 // ---------- Traitement d'une carte ----------
-function upsellChance(s, manual) { return 0.35 * (1 + 0.12 * perk(s, 'vendeur')) * (focusOn(s, 'ventes') ? 1.35 : 1) * (sk(manual, 1, 0.5)) * (0.7 + s.reputation / 170); }
+function upsellChance(s, manual) { return 0.35 * (ui.stBonus || 1) * (1 + 0.12 * perk(s, 'vendeur')) * (focusOn(s, 'ventes') ? 1.35 : 1) * (sk(manual, 1, 0.5)) * (0.7 + s.reputation / 170); }
 function livChance(s) { return clamp(0.5 + (s.depositRate - marketDepRate(s)) * 0.45, 0.1, 0.95); }
 const sale = s => { s.today.tally.ventes++; };
 // Découvert au-delà de l'autorisation : ce que fait l'équipe par défaut

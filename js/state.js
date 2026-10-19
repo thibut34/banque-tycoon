@@ -33,7 +33,7 @@ function newState(name) {
     history: [], lastPL: null, log: [],
     achievements: {}, flags: {},
     chapter: 0, challenge: null, nextChallenge: 150, tut: 0,
-    auto: { on: false, min: 'B', margin: 0.5 },
+    auto: { on: false, min: 'C', margin: 0.5 },
     rivals: RIVALS.map(r => ({ id: r.id, eq: r.eq, hist: [r.eq] })),
     stats: { granted: 0, defaults: 0, refused: 0, crises: 0, interest: 0, bonus: 0, events: 0, souv: 0, challenges: 0, profit: 0, promos: 0 },
     over: false,
@@ -96,7 +96,7 @@ function rankOf(s) { const eq = equity(s); return 1 + s.rivals.filter(r => !r.go
 const loansOut = s => s.loans.reduce((a, l) => a + l.out, 0);
 function holdingValue(s, id) { return (s.portfolio[id] || 0) * s.market[id].price; }
 function portfolioValue(s) { let v = 0; for (const id in s.portfolio) v += holdingValue(s, id); return v; }
-const equity = s => s.cash + loansOut(s) + (s.ovd || 0) + portfolioValue(s) - s.deposits - s.cbDebt;
+const equity = s => s.cash + loansOut(s) + (s.ovd || 0) + portfolioValue(s) + (s.fixed || 0) - s.deposits - s.cbDebt; // fixed : agences et équipements (amortis)
 const loanRW = l => l.rw != null ? l.rw : LOAN_TYPES[l.type].rw;
 function rwa(s) {
   let r = 0;

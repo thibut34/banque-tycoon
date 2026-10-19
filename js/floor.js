@@ -59,6 +59,7 @@ function doBuild(k, cand) {
   if (cand) { cost = hireCost(b, cand); msg = `${cand.name} rejoint l’équipe`; }
   if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad'), false;
   S.cash -= cost;
+  if (!cand && !STAFF_KEYS.includes(k)) S.fixed = (S.fixed || 0) + cost; // un équipement : il garde sa valeur (amortie)
   if (k === 'size') b.size++; else b[k]++;
   if (cand) { syncStaff(S); const list = staffOf(b, k); const auto = list[list.length - 1]; delete cand.cand; Object.assign(auto, cand, { since: S.day }); }
   if (MOVABLE.includes(k)) autoPlace(b, k, b[k] - 1);
@@ -88,89 +89,26 @@ function slotAction(b, kind, i) {
 // Un emplacement est visible s'il est construit, ou si c'est le prochain à construire
 const slotVisible = (b, kind, i) => i <= b[kind] && i < SIZES[b.size][kind] && itemUnlocked(kind);
 
-// ---------- Simulation des clients (purement visuelle) ----------
-function freeSlot(b, kind) {
-  const n = kind === 'g' ? b.gs : kind === 'b' ? b.bs : b.dab;
-  for (let i = 0; i < n; i++) if (!floor.busy[kind + i]) return i;
-  return -1;
-}
-function sendTo(a, b, lay) {
-  const pref = weighted({ g: 6, b: b.bs ? 2.5 : 0.01, dab: b.dab ? 1.5 : 0.01 });
-  for (const kind of [pref, 'g', 'b', 'dab']) {
-    const i = freeSlot(b, kind);
-    if (i >= 0) {
-      const [tx, ty] = lay[kind][i].cli;
-      floor.busy[kind + i] = a; a.slot = kind + i; a.kind = kind; a.idx = i;
-      a.path = [[lay.mid, ty + (kind === 'b' ? 0 : 0.15)], [tx, ty]]; a.st = 'go';
-      a.serve = rnd(2.5, 5.5) * (kind === 'b' ? 1.7 : kind === 'dab' ? 0.45 : 1);
-      return true;
-    }
-  }
-  return false;
-}
-function leave(a, lay, angry) {
-  a.st = 'out'; a.angry = angry;
-  if (angry) { a.emote = '💢'; a.emoteT = 2.5; }
-  a.path = [[lay.mid, a.y], lay.entry.slice(), lay.porch.slice(), [chance(0.5) ? -2 : lay.W + 2, lay.D + 1.7]];
-}
 function newPerson(o) {
   return Object.assign({ col: pick(CLIENT_COLORS), skin: pick(SKINS), hair: pick(HAIRS), sp: rnd(1.7, 2.3), wait: 0, walk: rnd(0, 6), bag: chance(0.3) }, o);
 }
 
-function floorStep(dt, b, lay) {
+// Ce qui est purement décoratif : les passants sur le trottoir. Les clients, eux, viennent de agency.js
+function visualStep(dt, b, lay) {
   floor.t += dt;
-  // Passants sur le trottoir
   floor.walkAcc += dt * 0.35;
   if (floor.walkAcc >= 1) {
     floor.walkAcc = 0;
     const l = chance(0.5);
     if (floor.walkers.length < 6) floor.walkers.push(newPerson({ x: l ? -2 : lay.W + 2, y: lay.D + rnd(1.9, 2.5), path: [[l ? lay.W + 2 : -2, lay.D + rnd(1.9, 2.5)]], st: 'pass' }));
   }
-  // Clients
-  const T = branchTraffic(S, b), lam = clamp((T.acc + T.loan) / 22, 0.15, 1.3);
-  floor.spawnAcc += dt * lam * (b.gs || b.bs || b.dab ? 1 : 0);
-  if (floor.spawnAcc >= 1) {
-    floor.spawnAcc = 0;
-    if (floor.agents.length < 18) {
-      const l = chance(0.5);
-      floor.agents.push(newPerson({ x: l ? -1.5 : lay.W + 1.5, y: lay.D + 1.8, path: [lay.porch.slice(), lay.entry.slice()], st: 'in' }));
-    }
-  }
-  // File d'attente : premier arrivé, premier servi
-  const queue = floor.agents.filter(a => a.st === 'queue');
-  queue.forEach((a, k) => { a.wait += dt; a.path = [lay.queue[Math.min(k, lay.queue.length - 1)].slice()]; if (a.wait > 6 && !a.emote) { a.emote = '…'; a.emoteT = 99; } });
-  for (const a of queue) { if (sendTo(a, b, lay)) { if (a.emote === '…') a.emote = null; break; } if (a.wait > 14) leave(a, lay, true); }
-
-  const move = a => {
-    if (!a.path.length) return true;
+  for (const a of floor.walkers) {
     const [tx, ty] = a.path[0], dx = tx - a.x, dy = ty - a.y, d = Math.hypot(dx, dy), step = a.sp * dt;
     a.walk += step * 2.2;
-    if (d <= step) { a.x = tx; a.y = ty; a.path.shift(); } else { a.x += dx / d * step; a.y += dy / d * step; }
-    return !a.path.length;
-  };
-  for (const a of floor.walkers) if (move(a)) a.gone = true;
-  floor.walkers = floor.walkers.filter(a => !a.gone);
-
-  for (const a of floor.agents) {
-    if (a.emoteT) { a.emoteT -= dt; if (a.emoteT <= 0) { a.emote = null; a.emoteT = 0; } }
-    if (!move(a)) continue;
-    if (a.st === 'in') { if (!b.gs && !b.bs && !b.dab) leave(a, lay, true); else if (!sendTo(a, b, lay)) { a.st = 'queue'; a.wait = 0; } }
-    else if (a.st === 'go') a.st = 'serve';
-    else if (a.st === 'serve') {
-      a.serve -= dt;
-      if (a.serve <= 0) {
-        delete floor.busy[a.slot];
-        const s = lay[a.kind][a.idx];
-        floor.pops.push({ x: s.x, y: s.y, z: 1.9, t: 1.2, txt: a.kind === 'b' ? '✓' : '+€' });
-        if (chance(0.25 + b.deco * 0.08)) { a.emote = '❤'; a.emoteT = 1.6; }
-        leave(a, lay, false);
-      }
-    } else if (a.st === 'out') a.gone = true;
+    if (d <= step) a.gone = true; else { a.x += dx / d * step; a.y += dy / d * step; }
   }
-  floor.agents = floor.agents.filter(a => !a.gone);
-  for (const k in floor.busy) if (!floor.agents.includes(floor.busy[k])) delete floor.busy[k];
-  floor.pops.forEach(p => { p.t -= dt; p.z += dt * 0.8; });
-  floor.pops = floor.pops.filter(p => p.t > 0);
+  floor.walkers = floor.walkers.filter(a => !a.gone);
+  const A = ag(b); floor.agents = A.agents; floor.busy = A.busy; floor.pops = A.pops;
 }
 
 // ---------- Interaction ----------
@@ -206,9 +144,10 @@ function floorMount() {
     if (ui.editPlan) return;
     const r = cv.getBoundingClientRect(), h = slotAt(e.clientX - r.left, e.clientY - r.top);
     if (!h) return;
-    const act = slotAction(getBranch(S, ui.branch), h.kind, h.i);
-    if (act.emp) { ui.emp = act.emp; renderPlanSide(); const el = $(`[data-emp="${act.emp}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
-    if (act.k && doBuild(act.k)) { renderTop(); renderPlanSide(); }
+    const bb = getBranch(S, ui.branch), act = slotAction(bb, h.kind, h.i);
+    if (['g', 'b', 'dab'].includes(h.kind) && h.i < bb[h.kind]) { showStPop(bb, h.kind, h.i, e.clientX, e.clientY); if (act.emp && ui.tab === 'plan') { ui.emp = act.emp; renderPlanSide(); } return; }
+    if (act.emp && ui.tab === 'plan') { ui.emp = act.emp; renderPlanSide(); const el = $(`[data-emp="${act.emp}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (act.k && doBuild(act.k)) { renderTop(); if (ui.tab === 'plan') renderPlanSide(); else ui.dirty = true; }
   });
 }
 function floorLoop(ts) {
@@ -221,7 +160,7 @@ function floorLoop(ts) {
   const lay = blay(b, floor.drag);
   cv.style.touchAction = ui.editPlan ? 'none' : 'manipulation';
   const dt = Math.min(0.25, (ts - (floor.last || ts)) / 1000); floor.last = ts;
-  if (!ui.modal) floorStep(dt, b, lay);
+  visualStep(ui.modal ? 0 : dt, b, lay);
   drawFloor(cv, b, lay);
   floor.raf = requestAnimationFrame(floorLoop);
 }
