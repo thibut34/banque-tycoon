@@ -173,6 +173,6 @@ function floatMoney(amount, x, y) {
 }
 
 // ---------- Sauvegarde ----------
-function save() { if (!S || S.over) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
-function loadSave() { try { const j = localStorage.getItem(SAVE_KEY); return j ? JSON.parse(j) : null; } catch (e) { return null; } }
-function loadBest() { try { return JSON.parse(localStorage.getItem(BEST_KEY)) || []; } catch (e) { return []; } }
+function save() { if (!S || S.over) return; try { CG.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
+function loadSave() { try { const j = CG.getItem(SAVE_KEY); return j ? JSON.parse(j) : null; } catch (e) { return null; } }
+function loadBest() { try { return JSON.parse(CG.getItem(BEST_KEY)) || []; } catch (e) { return []; } }

@@ -90,6 +90,8 @@ function clientCard(s, c, n, tot) {
     <div class="cc-body">${body}</div><div class="cc-actions">${actions}</div></article>`;
 }
 
+// Hauteur de l'agence : elle doit tenir dans l'écran (iframe 16:9 de CrazyGames)
+const dashSceneH = () => innerWidth < 1000 ? (innerWidth < 700 ? 280 : 360) : Math.max(320, Math.min(620, innerHeight - 150));
 function vToday() {
   const s = S;
   if (!s.today) startDay(s);
@@ -102,8 +104,8 @@ function vToday() {
   const chips = s.branches.length > 1 ? `<div class="scene-br">${s.branches.map(b => `<button class="chip ${b.id === sb.id ? 'on' : ''}" data-act="sceneBr" data-id="${b.id}">${CITIES[b.id].name}</button>`).join('')}</div>` : '';
   const scene = `<div class="scene live"><div class="scene-tag"><b>${CITIES[sb.id].name}</b><span class="pill">${dateStr(s.day)}</span></div>${chips}${t.sd ? `<div class="scene-sd"><b>${t.sd.ico} ${t.sd.name}</b><small>${t.sd.desc}</small></div>` : ''}
     <button class="btn sm scene-go" data-act="tab" data-tab="plan">⚙ Équipe et décor</button>
-    <canvas id="floor" data-keep="1" data-zoom="1.12" data-maxh="${innerWidth < 700 ? 300 : 470}" role="img" aria-label="Votre agence en direct : clients, guichets et bureaux"></canvas>
-    ${noStaff ? `<div class="scene-help">👆 Cliquez sur le <b>＋</b> pour construire votre premier guichet, puis sur <b>Embaucher</b>.</div>` : `<div class="scene-stats" id="liveStats"></div><div class="scene-tip">Cliquez sur un guichet ou un bureau pour l’améliorer</div>`}</div>`;
+    <canvas id="floor" data-keep="1" data-zoom="1.12" data-maxh="${dashSceneH()}" role="img" aria-label="Votre agence en direct : clients, guichets et bureaux"></canvas>
+    ${noStaff && !tutStep(s) ? `<div class="scene-help">👆 Cliquez sur le <b>＋</b> pour construire votre premier guichet, puis sur <b>Embaucher</b>.</div>` : `<div class="scene-stats" id="liveStats"></div>${s.day < 20 ? `<div class="scene-legend"><span>🙋 compte</span><span>💬 opération</span><span>🏠 crédit</span><span>🏧 retrait</span><span>…/🔴 attend trop</span></div>` : `<div class="scene-tip">Cliquez sur un guichet ou un bureau pour l’améliorer</div>`}`}</div>`;
 
   // Les dossiers du PDG
   const dossiers = left.length ? `<section class="inbox"><h3>📥 Dossiers du PDG <span class="badge">${left.length}</span></h3>${left.map(c => {
@@ -137,6 +139,6 @@ function vToday() {
       <div><dt>Prêts en cours</dt><dd>${money(loansOut(s))}</dd></div><div><dt>Peut prêter</dt><dd>${money(Math.max(0, s.cash - s.deposits * 0.1))}</dd></div></dl></section>` : '';
   const bil = s.flags.bilan ? `<button class="side-box chap bil" data-act="bilan"><small>Dernier bilan mensuel</small><b class="${s.flags.bilan.pl.net >= 0 ? 'pos' : 'neg'}">${s.flags.bilan.pl.net >= 0 ? '+' : '−'}${money(Math.abs(s.flags.bilan.pl.net))}</b><span class="muted">Voir d’où vient l’argent</span></button>` : '';
 
-  return scene + `<div class="desk"><div class="desk-main">${dossiers}${noStaff ? '' : growthHTML(s)}</div><aside class="desk-side">${profit}${chap}${team}${figures}${bil}</aside></div>
+  return `<div class="dash-grid"><div class="dash-left">${scene}</div><aside class="dash-right">${dossiers}${profit}${noStaff ? '' : growthHTML(s)}${chap}${team}${figures}${bil}</aside></div>
     <details class="more dash-more"><summary>Votre banque en détail</summary>${vDash()}</details>`;
 }

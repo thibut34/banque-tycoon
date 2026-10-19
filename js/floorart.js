@@ -280,6 +280,16 @@ function drawFloor(cv, b, lay) {
   lay.b.forEach((sl, i) => { if (i < b.b && i >= b.bs) { const [px, py] = isoP(v, sl.x, sl.y, 1.6 + Math.sin(floor.t * 3) * 0.06); c.font = `700 ${Math.max(10, s * 0.32)}px Inter, system-ui`; c.textAlign = 'center'; const t = 'Embaucher'; const tw = c.measureText(t).width + 12; c.fillStyle = '#f59e0b'; c.beginPath(); c.roundRect ? c.roundRect(px - tw / 2, py - s * 0.28, tw, s * 0.5, 6) : c.rect(px - tw / 2, py - s * 0.28, tw, s * 0.5); c.fill(); c.fillStyle = '#1f1300'; c.textBaseline = 'middle'; c.fillText(t, px, py - s * 0.03); } });
 
   // Niveau de chaque poste
+  // Le tutoriel montre du doigt l'endroit où cliquer
+  const tt = !cv.dataset.mini && tutTarget();
+  if (tt && lay[tt[0]] && lay[tt[0]][tt[1]]) {
+    const sl = lay[tt[0]][tt[1]], pulse = (Math.sin(floor.t * 5) + 1) / 2;
+    const [gx, gy] = isoP(v, sl.x, sl.y, 0);
+    c.strokeStyle = `rgba(255,200,61,${0.5 + pulse * 0.5})`; c.lineWidth = 3 + pulse * 3;
+    c.beginPath(); c.ellipse(gx, gy, s * (1 + pulse * 0.25), s * 0.5 * (1 + pulse * 0.25), 0, 0, 7); c.stroke();
+    const [ax, ay] = isoP(v, sl.x, sl.y, 2.6 + pulse * 0.4);
+    c.font = `${s * 0.9}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('👇', ax, ay);
+  }
   // Le nom des salles spéciales
   if (!ui.editPlan) for (const k of ROOM_KINDS) lay[k].forEach((sl, i) => {
     if (i >= (b[k] || 0)) return;

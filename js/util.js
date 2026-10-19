@@ -72,7 +72,7 @@ const SFX = (() => {
     chest: () => { [0, 0.12, 0.24, 0.36, 0.48].forEach((t, i) => tone(200 + i * 40, t, 0.08, 'square', 0.05)); tone(523, 0.75, 0.15, 'triangle', 0.1); tone(1047, 0.85, 0.5, 'sine', 0.1); },
     level: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.11, 0.3, 'triangle', 0.1)); tone(1319, 0.5, 0.6, 'sine', 0.08); },
   };
-  return { play(n, a) { if (prefs.mute || !sounds[n]) return; try { sounds[n](a); } catch (e) { } } };
+  return { play(n, a) { if (prefs.mute || !sounds[n] || (window.CG && (CG.muted || CG.adOn))) return; try { sounds[n](a); } catch (e) { } } };
 })();
 
 // ---------- Icônes (SVG au trait) ----------

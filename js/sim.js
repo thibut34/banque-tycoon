@@ -329,6 +329,7 @@ function checkChapter(s) {
   const unl = Object.values(REGIONS).filter(r => r.unlock === s.chapter).map(r => r.name);
   const next = CHAPTERS[s.chapter];
   SFX.play('level'); confetti(140);
+  CG.happy(); // un vrai moment fort : on le fête aussi côté CrazyGames
   eventModal('🏁', `Chapitre ${s.chapter} terminé !`, `<p class="center"><b>${ch.name}</b> : mission accomplie.</p>
     ${ch.reward ? `<div class="reward">Récompense <b>+${money(ch.reward)}</b></div>` : ''}
     ${unl.length ? `<p class="center">🌍 Nouvelle${unl.length > 1 ? 's' : ''} région${unl.length > 1 ? 's' : ''} ouverte${unl.length > 1 ? 's' : ''} : <b>${unl.join(', ')}</b></p>` : ''}
@@ -384,7 +385,7 @@ function gameOver(reason) {
   const best = loadBest();
   best.push({ name: s.name, score: sc, months: Math.floor(s.day / 30), reason: title, chapter: s.chapter, date: new Date().toLocaleDateString('fr-FR') });
   best.sort((a, b) => b.score - a.score);
-  try { localStorage.setItem(BEST_KEY, JSON.stringify(best.slice(0, 8))); localStorage.removeItem(SAVE_KEY); } catch (e) { }
+  try { CG.setItem(BEST_KEY, JSON.stringify(best.slice(0, 8))); CG.removeItem(SAVE_KEY); } catch (e) { }
   ui.modal = true;
   SFX.play(reason === 'faillite' || reason === 'licence' ? 'bad' : 'level');
   showModal(`<div class="m-ico">${icon}</div><h2>${title}</h2><p class="center">${text}</p>

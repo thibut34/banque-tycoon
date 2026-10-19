@@ -244,11 +244,11 @@ function showLogin() {
   ui.modal = true;
   showModal(`<div class="m-ico">📅</div><h2>Bonus de connexion</h2><p class="center muted">Revenez chaque jour : la récompense grandit jusqu’au 7ᵉ jour.</p>
     <div class="login-days">${[1, 2, 3, 4, 5, 6, 7].map(d => `<div class="ld ${d < ((n - 1) % 7) + 1 ? 'past' : d === ((n - 1) % 7) + 1 ? 'now' : ''}"><small>Jour ${d}</small><b>${d === 7 ? '🎁' : '💰'}</b><span>${money(loginAmt(s, d))}</span></div>`).join('')}</div>
-    <div class="choices"><button class="btn gold big" data-act="claimLogin">Récupérer ${money(amt)}${((n - 1) % 7) + 1 === 7 ? ' + un coffre' : ''}</button></div>`, true);
+    <div class="choices"><button class="btn gold big" data-act="claimLogin">Récupérer ${money(amt)}${((n - 1) % 7) + 1 === 7 ? ' + un coffre' : ''}</button>${CG.canAd() ? `<button class="btn primary" data-act="claimLogin2">📺 Doubler avec une publicité : ${money(amt * 2)}</button>` : ''}</div>`, true);
 }
 const loginAmt = (s, n) => Math.round(Math.max(1000, Math.max(5e5, equity(s)) * 0.001) * (((n - 1) % 7) + 1) / 100) * 100;
-function claimLogin() {
-  const s = S, m = M(s), n = m.login.n, amt = loginAmt(s, n);
+function claimLogin(mult = 1) {
+  const s = S, m = M(s), n = m.login.n, amt = loginAmt(s, n) * mult;
   if (m.login.claimed) return closeModal();
   m.login.claimed = true; s.cash += amt;
   if (((n - 1) % 7) + 1 === 7) m.chests++;
@@ -276,6 +276,7 @@ Object.assign(actions, {
   myPerks: () => showMyPerks(),
   openChest: () => openChest(),
   claimLogin: () => claimLogin(),
+  claimLogin2: () => CG.rewarded(() => claimLogin(2)),
 });
 
 // Touches 1 à 5 : choisir une réponse sur la première carte

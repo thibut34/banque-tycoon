@@ -1038,3 +1038,35 @@ html.calm .logo-mark { animation: none; }
 @media (max-width: 700px) { .scene-tip { display: none; } .scene-br { top: 44px; } }
 .scene-help { animation: helppulse 1.6s ease-in-out infinite; }
 @keyframes helppulse { 50% { transform: translateX(-50%) scale(1.04); } }
+
+/* Tutoriel guidé */
+.coach-rw { font-family: var(--fd); font-weight: 600; font-size: 13px; color: #4a2c00; background: linear-gradient(180deg, #ffe07a, #ffb81f); padding: 3px 10px; border-radius: 99px; white-space: nowrap; }
+.coach-bar { height: 6px; border-radius: 6px; background: rgba(0,0,0,.3); margin: 10px 0 2px; overflow: hidden; }
+.coach-bar i { display: block; height: 100%; background: linear-gradient(90deg, #18c486, #4ef0b4); transition: width .4s; }
+#coach { border: 1.5px solid rgba(255,200,61,.55); box-shadow: 0 20px 50px -15px rgba(0,0,0,.8), 0 0 0 4px rgba(255,200,61,.12); }
+#coach p { font-size: 14px; line-height: 1.5; }
+.tut-glow { position: relative; z-index: 1; animation: tutglow 1.3s ease-in-out infinite !important; border-radius: 18px; }
+@keyframes tutglow { 50% { box-shadow: 0 0 0 4px rgba(255,200,61,.9), 0 0 30px rgba(255,200,61,.6); } }
+.scene-legend { position: absolute; right: 14px; bottom: 14px; z-index: 2; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 55%; pointer-events: none; }
+.scene-legend span { background: rgba(10,8,30,.65); border-radius: 99px; padding: 3px 9px; font-size: 11.5px; font-weight: 700; }
+@media (max-width: 700px) { .scene-legend { display: none; } }
+
+/* ---------- Disposition « jeu » : l'agence à gauche, le tableau de bord à droite ---------- */
+.dash-grid { max-width: 1500px; margin: 0 auto; }
+.dash-right > * { margin-bottom: 12px; }
+.dash-right .grow-box { margin-top: 4px; }
+.dash-right .grow-list { grid-template-columns: 1fr; gap: 8px; }
+.dash-right .grow-item { padding: 9px 12px; }
+.dash-right .gi-ico { width: 38px; height: 38px; font-size: 22px; }
+@media (min-width: 1000px) {
+  .dash-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+  .dash-left .scene { margin-bottom: 0; }
+  .dash-right { max-height: calc(100vh - 118px); overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
+  #panel:has(.dash-grid) { padding: 16px; }
+}
+@media (max-height: 560px) {
+  #coach { padding: 10px 12px; width: min(330px, calc(100vw - 24px)); }
+  #coach p { font-size: 12.5px; margin: 6px 0 8px; }
+  #coach .coach-av { display: none; }
+  #topbar { padding: 6px 14px; }
+}

@@ -223,7 +223,7 @@ const actions = {
     setTimeout(() => { ui.modal = true; showModal(WELCOME()); }, 200);
   },
   randName: () => { $('#bankName').value = randomBankName(); },
-  tutNext: () => { S.tut++; updateCoach(true); },
+  tutNext: () => { const st = tutStep(S); if (st) tutReward(S, st); S.tut++; updateCoach(true); },
   tutSkip: () => { S.tut = -1; updateCoach(true); },
   tutRestart: () => { S.tut = 0; closeModal(); updateCoach(true); },
 };
@@ -263,22 +263,39 @@ function confetti(n = 90) {
 
 // ---------- Tutoriel ----------
 const TUTO = [
-  { tab: 'dash', txt: 'Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est vide. Cliquez sur le <b>＋</b> dans l’agence pour construire un <b>guichet</b>.', done: s => getBranch(s, HQ).g >= 1 },
-  { tab: 'dash', txt: 'Cliquez sur <b>Embaucher</b> au-dessus du guichet pour recruter un <b>guichetier</b>. Choisissez bien parmi les candidats.', done: s => getBranch(s, HQ).gs >= 1 },
-  { tab: 'dash', txt: 'Le temps démarre ! Regardez vos clients entrer, faire la queue et se faire servir. Au-dessus de leur tête : ce qu’ils veulent. <b>⏸ Pause</b> (ou Espace) arrête le temps.', done: s => s.clients >= 3 },
-  { tab: 'dash', txt: 'Si la file s’allonge, des clients repartent fâchés 😤. <b>Cliquez sur votre guichet</b> pour l’améliorer : il servira plus vite et vendra mieux.', done: s => s.branches.some(b => b.lv) },
-  { tab: 'dash', txt: 'À droite, <b>votre résultat</b> vous dit combien vous gagnez chaque jour. Pour grandir, utilisez <b>Développer ma banque</b>.', done: s => s.day >= 8 },
-  { tab: 'missions', txt: 'Objectif : <b>25 comptes</b> et <b>50 000 €</b> déposés. Ensuite, vous pourrez prêter cet argent : c’est là que la banque gagne vraiment sa vie.', btn: 'C’est parti', done: s => s.chapter >= 1 },
+  { tab: 'dash', target: ['g', 0], txt: 'Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est vide. Cliquez sur le <b>＋</b> qui clignote pour construire votre premier <b>guichet</b>.', done: s => getBranch(s, HQ).g >= 1 },
+  { tab: 'dash', target: ['g', 0], txt: 'Il faut quelqu’un derrière ! Cliquez sur le guichet, puis sur <b>Embaucher</b>, et choisissez un <b>guichetier</b> parmi les candidats.', done: s => getBranch(s, HQ).gs >= 1 },
+  { tab: 'dash', reward: 2000, txt: 'Les portes sont ouvertes ! Au-dessus de chaque client, ce qu’il veut : <b>🙋 ouvrir un compte</b>, <b>💬 une opération</b>, <b>🏧 retirer</b>. Regardez votre guichetier en servir quelques-uns.', done: s => (s.today && s.today.served >= 3) || s.clients >= 3 },
+  { tab: 'dash', target: ['g', 0], reward: 3000, txt: 'Plus votre guichet est rapide, moins les clients attendent. <b>Cliquez sur votre guichet</b> et passez-le au <b>niveau 2</b>.', done: s => s.branches.some(b => b.lv && b.lv.g && b.lv.g.some(x => x >= 2)) },
+  { tab: 'dash', target: ['g', 1], reward: 5000, txt: 'Un seul guichet, c’est peu : construisez un <b>2ᵉ guichet</b> (le ＋ qui clignote) et embauchez quelqu’un. Deux fois plus de clients servis !', done: s => getBranch(s, HQ).gs >= 2 },
+  { tab: 'dash', el: '.profit', btn: 'Compris !', txt: 'À droite, <b>votre résultat</b> : pour l’instant, la banque dépense plus qu’elle ne gagne. C’est normal ! Il faut d’abord des clients et leur argent avant de pouvoir <b>prêter</b>.' },
+  { tab: 'dash', el: '.side-box.chap', txt: 'Votre premier objectif est à droite : <b>25 clients</b> et <b>50 000 €</b> déposés. Laissez tourner, et faites une pause avec <b>⏸</b> (ou Espace) quand vous voulez.', done: s => s.chapter >= 1 },
+  { tab: 'dash', target: ['b', 0], reward: 5000, txt: '🎉 Les <b>prêts</b> sont débloqués : c’est là que la banque gagne vraiment sa vie ! Construisez un <b>bureau de crédit</b> (le ＋ à gauche) et recrutez un <b>conseiller</b>.', done: s => getBranch(s, HQ).bs >= 1 },
+  { tab: 'dash', el: '.grow-box', reward: 3000, txt: 'Lancez le <b>livret d’épargne</b> dans <b>« Développer ma banque »</b> : il attire l’argent des épargnants, que vous pourrez prêter.', done: s => s.prod.liv.on },
+  { tab: 'dash', el: '.inbox', reward: 5000, txt: 'Vos conseillers signent seuls les petits prêts. Les <b>gros dossiers</b> arrivent dans <b>« Dossiers du PDG »</b> : ouvrez-les et décidez. Objectif : <b>3 prêts signés</b>.', done: s => s.stats.granted >= 3 },
+  { tab: 'dash', reward: 10000, btn: 'Merci Gisèle !', txt: 'Bravo, vous savez tout ! Suivez les <b>chapitres</b> à droite pour faire grandir votre banque : coffres, salon VIP, nouvelles villes… et un jour, la Lune. 🚀' },
 ];
+function tutStep(s) { return s && s.tut >= 0 && s.tut < TUTO.length ? TUTO[s.tut] : null; }
+// L'emplacement du plan à montrer du doigt (flèche animée)
+function tutTarget() { const st = tutStep(S); return st && st.target && ui.tab === st.tab && (ui.branch === HQ || !ui.branch) ? st.target : null; }
+function tutReward(s, st) {
+  if (!st.reward) return;
+  s.cash += st.reward; gainXP(s, 30);
+  toast(`✅ Étape réussie : <b>+${money(st.reward)}</b>`, 'good'); SFX.play('good'); confetti(30);
+}
 function updateCoach(force) {
   const s = S, el = $('#coach');
-  if (!s || s.tut < 0 || s.tut >= TUTO.length) { el.hidden = true; if (ui.coachTab) { ui.coachTab = null; renderTabs(); } return; }
+  if (!s || s.tut < 0 || s.tut >= TUTO.length) { $$('.tut-glow').forEach(x => x.classList.remove('tut-glow')); el.hidden = true; if (ui.coachTab) { ui.coachTab = null; renderTabs(); } return; }
   const st = TUTO[s.tut];
-  if (st.done && st.done(s)) { s.tut++; SFX.play('click'); return updateCoach(true); }
+  if (st.done && st.done(s)) { if (el.dataset.step == s.tut) tutReward(s, st); s.tut++; SFX.play('click'); return updateCoach(true); }
   if (ui.coachTab !== st.tab) { ui.coachTab = st.tab; renderTabs(); }
+  const want = st.el && ui.tab === st.tab ? $$(st.el) : []; // on ne relance pas l'animation à chaque image
+  $$('.tut-glow').forEach(x => { if (!want.includes(x)) x.classList.remove('tut-glow'); });
+  want.forEach(x => x.classList.add('tut-glow'));
   if (!force && el.dataset.step == s.tut && !el.hidden) return;
   el.dataset.step = s.tut; el.hidden = false;
-  el.innerHTML = `<div class="coach-h"><span class="coach-av">🧑‍💼</span><div><b>Gisèle, votre directrice adjointe</b><small>Étape ${s.tut + 1} / ${TUTO.length}</small></div></div>
+  el.innerHTML = `<div class="coach-h"><span class="coach-av">🧑‍💼</span><div class="grow"><b>Gisèle, votre directrice adjointe</b><small>Étape ${s.tut + 1} / ${TUTO.length}</small></div>${st.reward ? `<span class="coach-rw">🎁 ${money(st.reward)}</span>` : ''}</div>
+    <div class="coach-bar"><i style="width:${s.tut / TUTO.length * 100}%"></i></div>
     <p>${st.txt}</p><div class="row">${st.btn ? `<button class="btn sm primary" data-act="tutNext">${st.btn}</button>` : ''}<button class="btn sm ghost" data-act="tutSkip">Passer le tutoriel</button></div>`;
 }
 
@@ -369,4 +386,12 @@ setInterval(() => {
   if (ui.dirty && now - lastRender > 500) { lastRender = now; renderPanel(); }
 }, 100);
 
-showStart();
+(async () => {
+  CG.loadingStart();
+  await Promise.race([CG.init(), new Promise(r => setTimeout(r, 4000))]);
+  CG.loadingStop();
+  if (CG.live) { // CrazyGames demande d'atterrir tout de suite dans le jeu
+    if (loadSave()) actions.continue();
+    else { $('#bankName').value = randomBankName(); actions.newGameForce(); }
+  } else showStart();
+})();

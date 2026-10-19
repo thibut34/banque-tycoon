@@ -14,12 +14,13 @@ function clockState(s) {
   if (!s || s.over) return 'stop';
   if (!hasStaff(s)) return 'staff';
   if (s.flags.paused) return 'pause';
-  if (ui.modal || document.hidden) return 'wait';
+  if (ui.modal || document.hidden || CG.adOn) return 'wait';
   return 'run';
 }
 function clockLoop() {
   const ts = Date.now(), dt = clock.last ? Math.min(250, ts - clock.last) : 0; clock.last = ts;
-  const s = S; if (!s || $('#game').hidden) return;
+  const s = S; if (!s || $('#game').hidden) { CG.gameplay(false); return; }
+  CG.gameplay(clockState(s) === 'run');
   if (clockState(s) === 'run') {
     agencyTick(s, dt / 1000);
     clock.acc += dt;
@@ -52,6 +53,7 @@ function advanceDay() {
   s.flags.lostAvg = (s.flags.lostAvg || 0) * 0.8 + (t.lost || 0) * 0.2;
   if (s.day % 30 === 27) { const sc = $('.scene'); if (sc && ui.tab === 'dash') { const r = sc.getBoundingClientRect(); floatText(r.left + r.width / 2, r.top + r.height * 0.3, '💶 Jour de paie !', 'big'); } }
   if (s.day % 5 === 0) save();
+  if (s.day % 30 === 1 && s.day > 30) CG.midgame(); // une pub entre deux mois, pendant le bilan
   renderTop();
 }
 // Compteurs en direct sous l'agence
@@ -98,10 +100,12 @@ function dailyEstimate(s) {
   return { interest: interest / 30, fees: f / 30, other: other / 30, livret: livret / 30, costs: costs / 30, net: (n => n > 0 ? n * 0.75 : n)((interest + f + other - livret - costs) / 30) }; // après impôt (25 %)
 }
 
+const adBonus = s => Math.round(Math.max(5000, equity(s) * 0.01) / 500) * 500;
 // ---------- Développer ma banque : quoi acheter maintenant ----------
 function growthOptions(s) {
   const b = getBranch(s, HQ) || s.branches[0]; if (!b) return [];
   const lim = SIZES[b.size], out = [], lost = s.flags.lostAvg || 0;
+  if (CG.rewardReady() && hasStaff(s)) out.push({ ad: 1, ico: '📺', name: 'Coup de pouce gratuit', fx: `Regardez une publicité : +${money(adBonus(s))}`, cost: 0, hot: true });
   if (b.g > b.gs) out.push({ k: 'gs', ico: '🧑‍💼', name: 'Embaucher un guichetier', fx: '+6 clients servis par jour', cost: itemCost(b, 'gs'), hot: true });
   else if (b.g < lim.g) out.push({ k: 'g', ico: '🪟', name: 'Nouveau guichet', fx: lost > 0.5 ? `${Math.round(lost)} clients repartent chaque jour faute de place` : 'Accueillir plus de clients', cost: itemCost(b, 'g'), hot: lost > 0.5 });
   if (loansOpen(s) || staffTotal(s, 'gs') >= 1) {
@@ -126,7 +130,7 @@ function growthHTML(s) {
   const o = growthOptions(s); if (!o.length) return '';
   return `<section class="grow-box"><h3>🚀 Développer ma banque</h3><div class="grow-list">${o.map((g, i) => {
     const poor = g.cost && s.cash < g.cost;
-    return `<button class="grow-item ${g.hot ? 'hot' : ''}" data-act="grow" data-i="${i}" ${poor ? 'disabled' : ''}><span class="gi-ico">${g.ico}</span><span class="grow"><b>${g.name}</b><small>${g.fx}</small></span><span class="gi-cost">${g.cost === null ? '→' : g.cost ? money(g.cost) : 'Gratuit'}</span></button>`;
+    return `<button class="grow-item ${g.hot ? 'hot' : ''}" data-act="grow" data-i="${i}" ${poor ? 'disabled' : ''}><span class="gi-ico">${g.ico}</span><span class="grow"><b>${g.name}</b><small>${g.fx}</small></span><span class="gi-cost">${g.ad ? '▶ Pub' : g.cost === null ? '→' : g.cost ? money(g.cost) : 'Gratuit'}</span></button>`;
   }).join('')}</div></section>`;
 }
 
@@ -141,6 +145,7 @@ Object.assign(actions, {
     else if (g.train) trainEmp(g.train);
     else if (g.st) upgradeStation(getBranch(S, HQ), g.st[0], g.st[1]);
     else if (g.world) return actions.tab({ dataset: { tab: 'world' } });
+    else if (g.ad) return CG.rewarded(() => { const v = adBonus(S); S.cash += v; toast(`📺 Merci ! <b>+${money(v)}</b>`, 'good'); const r = el.getBoundingClientRect(); coinBurst(r.left + r.width / 2, r.top, 12); renderTop(); renderPanel(true); });
     renderTop(); renderPanel(true);
   },
 });
