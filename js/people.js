@@ -11,10 +11,10 @@
 
 // [métier, salaire net min, max, stabilité de l'emploi]
 const JOBS = [
-  ['Étudiant', 550, 900, 0.75], ['Caissier', 1400, 1600, 0.9], ['Infirmière', 1900, 2500, 0.99], ['Professeur', 2000, 2800, 0.995],
-  ['Ingénieur', 3000, 5000, 0.97], ['Artisan', 1600, 3500, 0.88], ['Retraité', 1100, 2600, 1], ['Commercial', 2000, 4200, 0.9],
-  ['Médecin', 5000, 9500, 0.995], ['Chauffeur', 1700, 2200, 0.9], ['Développeur', 2800, 4800, 0.94], ['Serveur', 1400, 1800, 0.82],
-  ['Chef d’entreprise', 2500, 9000, 0.85], ['Agriculteur', 1200, 2400, 0.9], ['Fonctionnaire', 1800, 3000, 1], ['Intérimaire', 1300, 1900, 0.75],
+  [_t('Étudiant'), 550, 900, 0.75], [_t('Caissier'), 1400, 1600, 0.9], [_t('Infirmière'), 1900, 2500, 0.99], [_t('Professeur'), 2000, 2800, 0.995],
+  [_t('Ingénieur'), 3000, 5000, 0.97], [_t('Artisan'), 1600, 3500, 0.88], [_t('Retraité'), 1100, 2600, 1], [_t('Commercial'), 2000, 4200, 0.9],
+  [_t('Médecin'), 5000, 9500, 0.995], [_t('Chauffeur'), 1700, 2200, 0.9], [_t('Développeur'), 2800, 4800, 0.94], [_t('Serveur'), 1400, 1800, 0.82],
+  [_t('Chef d’entreprise'), 2500, 9000, 0.85], [_t('Agriculteur'), 1200, 2400, 0.9], [_t('Fonctionnaire'), 1800, 3000, 1], [_t('Intérimaire'), 1300, 1900, 0.75],
 ];
 const JOB_W = [6, 8, 6, 6, 5, 5, 10, 5, 1.5, 5, 4, 5, 2, 2, 7, 4];
 const MAX_PEOPLE = 6000; // au-delà, chaque fiche représente plusieurs clients semblables

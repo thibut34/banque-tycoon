@@ -12,7 +12,7 @@ function makeEmployee(role, lvl = 1, trait) {
   const female = chance(0.5);
   return {
     id: S.nextEmp = (S.nextEmp || 0) + 1, role, lvl, xp: 0,
-    name: pick(female ? ['Sophie', 'Chloé', 'Léa', 'Inès', 'Manon', 'Camille', 'Fatou', 'Nadia', 'Clémence', 'Josiane', 'Brigitte', 'Aïcha', 'Emma', 'Lina', 'Yasmine', 'Mei'] : ['Gérard', 'Kevin', 'Mohamed', 'Jean-Michel', 'Patrick', 'Thierry', 'Rachid', 'Hugo', 'Yannick', 'Bernard', 'Lucas', 'Gaston', 'Karim', 'Théo', 'Paolo', 'Kenji']) + ' ' + pick(LAST),
+    name: pick(female ? [_t('Sophie'), _t('Chloé'), _t('Léa'), _t('Inès'), _t('Manon'), _t('Camille'), _t('Fatou'), _t('Nadia'), _t('Clémence'), _t('Josiane'), _t('Brigitte'), _t('Aïcha'), _t('Emma'), _t('Lina'), _t('Yasmine'), _t('Mei')] : [_t('Gérard'), _t('Kevin'), _t('Mohamed'), _t('Jean-Michel'), _t('Patrick'), _t('Thierry'), _t('Rachid'), _t('Hugo'), _t('Yannick'), _t('Bernard'), _t('Lucas'), _t('Gaston'), _t('Karim'), _t('Théo'), _t('Paolo'), _t('Kenji')]) + ' ' + pick(LAST),
     trait: trait || weighted({ souriant: 3, rapide: 3, ambitieux: 3, fidele: 2, bavard: 2, raleur: 1.5 }),
     face: { female, skin: pick(SKINS), hair: pick(HAIRS), style: rint(0, 3), bg: pick(AV_BG) },
     since: S.day, ready: 0, trained: -99,
@@ -44,12 +44,12 @@ function staffMonth(s) {
     if (e.lvl >= MAX_LVL) continue;
     e.xp = Math.min(xpNeed(e.lvl), e.xp + Math.round(rint(12, 20) * (e.trait === 'ambitieux' ? 1.5 : 1) * (s.upgrades.rh ? 1.3 : 1)));
     if (e.xp >= xpNeed(e.lvl)) {
-      if (!e.ready) { e.ready = s.day; toast(`⭐ <b>${esc(e.name)}</b> (${CITIES[b.id].name}) mérite une promotion !`, 'gold', 'promo' + e.id); }
-      else if (s.day - e.ready > 90 && !e.warned && e.trait !== 'fidele') { e.warned = true; toast(`😠 <b>${esc(e.name)}</b> (${CITIES[b.id].name}) menace de démissionner sans promotion !`, 'bad'); }
+      if (!e.ready) { e.ready = s.day; toast(_l`⭐ <b>${esc(e.name)}</b> (${CITIES[b.id].name}) mérite une promotion !`, 'gold', 'promo' + e.id); }
+      else if (s.day - e.ready > 90 && !e.warned && e.trait !== 'fidele') { e.warned = true; toast(_l`😠 <b>${esc(e.name)}</b> (${CITIES[b.id].name}) menace de démissionner sans promotion !`, 'bad'); }
       else if (s.day - e.ready > 150 && e.trait !== 'fidele' && chance(0.15)) {
         b.staff = b.staff.filter(x => x !== e); b[e.role]--;
-        log(`🚪 ${e.name} démissionne : promotion refusée trop longtemps (${CITIES[b.id].name}).`, 'bad');
-        toast(`🚪 <b>${esc(e.name)}</b> démissionne, faute de promotion !`, 'bad');
+        log(_l`🚪 ${e.name} démissionne : promotion refusée trop longtemps (${CITIES[b.id].name}).`, 'bad');
+        toast(_l`🚪 <b>${esc(e.name)}</b> démissionne, faute de promotion !`, 'bad');
       }
     }
   }
@@ -59,25 +59,25 @@ function findEmp(id) { for (const b of S.branches) { const e = (b.staff || []).f
 function promoteEmp(id) {
   const [b, e] = findEmp(id); if (!e || e.xp < xpNeed(e.lvl) || e.lvl >= MAX_LVL) return;
   const cost = promoCost(S, b, e);
-  if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad');
+  if (S.cash < cost) return toast(_t('Liquidités insuffisantes'), 'bad');
   S.cash -= cost; e.lvl++; e.xp = 0; e.ready = 0; e.warned = false; S.stats.promos = (S.stats.promos || 0) + 1;
   SFX.play('level'); confetti(50);
-  log(`⭐ ${e.name} est promu(e) ${empTitle(e)} (${CITIES[b.id].name}).`, 'good');
-  toast(`⭐ <b>${esc(e.name)}</b> devient <b>${empTitle(e)}</b> !`, 'good');
+  log(_l`⭐ ${e.name} est promu(e) ${empTitle(e)} (${CITIES[b.id].name}).`, 'good');
+  toast(_l`⭐ <b>${esc(e.name)}</b> devient <b>${empTitle(e)}</b> !`, 'good');
 }
 function trainEmp(id) {
   const [b, e] = findEmp(id); if (!e || !canTrain(S, e)) return;
   const cost = trainCost(S, b, e);
-  if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad');
+  if (S.cash < cost) return toast(_t('Liquidités insuffisantes'), 'bad');
   S.cash -= cost; e.trained = S.day; e.xp = Math.min(xpNeed(e.lvl), e.xp + 40 * (e.trait === 'ambitieux' ? 1.5 : 1));
   if (e.xp >= xpNeed(e.lvl) && !e.ready) e.ready = S.day;
-  SFX.play('coin'); toast(`🎓 ${esc(e.name)} suit une formation (+XP)`, 'good');
+  SFX.play('coin'); toast(_l`🎓 ${esc(e.name)} suit une formation (+XP)`, 'good');
 }
 function fireEmp(id) {
   const [b, e] = findEmp(id); if (!e) return;
   b.staff = b.staff.filter(x => x !== e); b[e.role]--;
   S.reputation = clamp(S.reputation - 1, 0, 100);
-  log(`📦 ${e.name} quitte la banque (${CITIES[b.id].name}).`);
+  log(_l`📦 ${e.name} quitte la banque (${CITIES[b.id].name}).`);
 }
 
 // Trois candidats à chaque recrutement
@@ -110,4 +110,4 @@ function avatar(e, size = 48) {
     <path d="M27.5 35.5q4.5 ${e.trait === 'raleur' ? '-2' : '4'} 9 0" stroke="#7c2d12" stroke-width="1.6" fill="none" stroke-linecap="round"/>
   </svg>`;
 }
-const stars = lvl => '★'.repeat(lvl) + '<span class="off">' + '★'.repeat(MAX_LVL - lvl) + '</span>';
+const stars = lvl => '★'.repeat(lvl) + _t('<span class="off">') + '★'.repeat(MAX_LVL - lvl) + '</span>';

@@ -18,8 +18,8 @@ function renderTabs() {
   $('#tabs').innerHTML = TABS.filter(([id]) => tabUnlocked(id)).map(([id, lb]) => {
     let badge = '';
     if (id === 'loans' && s.requests.length) badge = `<span class="badge">${s.requests.length}</span>`;
-    if (id === 'missions' && s.challenge) badge = '<span class="dot"></span>';
-    if ((s.newTabs || []).includes(id)) badge = '<span class="dot new" title="Nouveau"></span>';
+    if (id === 'missions' && s.challenge) badge = _t('<span class="dot"></span>');
+    if ((s.newTabs || []).includes(id)) badge = _t('<span class="dot new" title="Nouveau"></span>');
     const pulse = ui.coachTab === id ? 'pulse' : '';
     return `<button class="nav-btn ${ui.tab === id ? 'on' : ''} ${pulse}" data-act="tab" data-tab="${id}">${ic(TAB_ICON[id])}<span class="lbl">${lb}</span>${badge}</button>`;
   }).join('');
@@ -36,7 +36,7 @@ function renderTop() {
   $('#tbRatio').textContent = r === Infinity || r > 500 ? '> 500 %' : pct(r); $('#tbRatio').className = r < minRatio(s) ? 'neg' : r < minRatio(s) + 3 ? 'warn' : 'pos';
   $('#tbRep').textContent = Math.round(s.reputation) + '/100'; $('#tbRep').className = s.reputation < 30 ? 'neg' : s.reputation > 70 ? 'pos' : '';
   $('#tbRank').textContent = rankOf(s) + 'ᵉ / ' + (s.rivals.length + 1);
-  $('#chapterPill').textContent = s.chapter < CHAPTERS.length ? `Chapitre ${s.chapter + 1} · ${CHAPTERS[s.chapter].name}` : 'Campagne terminée';
+  $('#chapterPill').textContent = s.chapter < CHAPTERS.length ? _l`Chapitre ${s.chapter + 1} · ${CHAPTERS[s.chapter].name}` : _t('Campagne terminée');
   $('#tbRatio').closest('.tb-kpis > div').hidden = !(s.chapter >= 1 || s.surveillance);
   $('#tbRank').closest('.tb-kpis > div').hidden = !tabUnlocked('ranking');
   if (ui.tabsKey !== tabsKeyOf(s)) renderTabs();
@@ -53,7 +53,7 @@ function renderPanel(force) {
   if (ui.tab === 'plan' && !force && $('#floor')) { renderPlanSide(); ui.dirty = false; return; }
   const views = { dash: vToday, plan: vPlan, clients: vClients, loans: vLoans, deposits: vProducts, world: vWorld, markets: vMarkets, missions: vMissions, ranking: vRanking, cb: vCB, upgrades: vUpgrades, me: vMe, achs: vAchs };
   const st = $('#panel').scrollTop;
-  const alert = S.surveillance ? `<div class="alert red">${ic('alert')}<div><b>Banque sous surveillance</b> : ratio de solvabilité sous ${minRatio(S)} % (${S.lowCap}/6 mois avant retrait de licence). Nouveaux prêts, achats d’actifs et bonus interdits.</div></div>` : '';
+  const alert = S.surveillance ? _l`<div class="alert red">${ic('alert')}<div><b>Banque sous surveillance</b> : ratio de solvabilité sous ${minRatio(S)} % (${S.lowCap}/6 mois avant retrait de licence). Nouveaux prêts, achats d’actifs et bonus interdits.</div></div>` : '';
   const keep = ui.tab === 'dash' && $('#floor[data-keep]');
   $('#panel').innerHTML = `<div class="page">${alert}${views[ui.tab]()}</div>`;
   if (keep) { const ph = $('#floor[data-keep]'); if (ph && ph.dataset.maxh === keep.dataset.maxh) ph.replaceWith(keep); }
@@ -67,35 +67,35 @@ function renderPanel(force) {
 // ---------- Accueil ----------
 function vDash() {
   const s = S, eq = equity(s), E = ECON[s.economy], pl = s.lastPL, lo = loansOut(s), pv = portfolioValue(s), ch = CHAPTERS[s.chapter];
-  const nextE = s.upgrades.quantique && s.nextEcon ? `<p>⚛️ Prédiction quantique : <b>${ECON[s.nextEcon].label}</b> dans ${s.econTimer} mois.</p>` : '';
+  const nextE = s.upgrades.quantique && s.nextEcon ? _l`<p>⚛️ Prédiction quantique : <b>${ECON[s.nextEcon].label}</b> dans ${s.econTimer} mois.</p>` : '';
   const plRows = pl ? [
-    ['Intérêts des prêts', pl.interest], ['Frais et commissions', pl.fees], ['Coupons obligataires', pl.coupons], ['Rémunération des réserves', pl.reserves || 0],
-    ['Intérêts versés aux épargnants', -pl.depInt], ['Intérêts banque centrale', -pl.cbInt], ['Loyers & salaires', -pl.costs],
-    ['Pertes sur défauts', -pl.losses], ['Impôt sur les sociétés', -pl.tax],
-  ].filter(([, v]) => v).map(([l, v]) => `<tr><td>${l}</td><td class="r ${cls(v)}">${money(v)}</td></tr>`).join('') + `<tr class="total"><td>Résultat net</td><td class="r ${cls(pl.net)}">${money(pl.net)}</td></tr>` : '<tr><td class="muted">Disponible à la fin du premier mois.</td></tr>';
-  const mission = ch ? `<section class="card mission-card">
+    [_t('Intérêts des prêts'), pl.interest], [_t('Frais et commissions'), pl.fees], [_t('Coupons obligataires'), pl.coupons], [_t('Rémunération des réserves'), pl.reserves || 0],
+    [_t('Intérêts versés aux épargnants'), -pl.depInt], [_t('Intérêts banque centrale'), -pl.cbInt], [_t('Loyers & salaires'), -pl.costs],
+    [_t('Pertes sur défauts'), -pl.losses], [_t('Impôt sur les sociétés'), -pl.tax],
+  ].filter(([, v]) => v).map(([l, v]) => `<tr><td>${l}</td><td class="r ${cls(v)}">${money(v)}</td></tr>`).join('') + _l`<tr class="total"><td>Résultat net</td><td class="r ${cls(pl.net)}">${money(pl.net)}</td></tr>` : _t('<tr><td class="muted">Disponible à la fin du premier mois.</td></tr>');
+  const mission = ch ? _l`<section class="card mission-card">
       <div class="mc-head"><div><small class="eyebrow">Chapitre ${s.chapter + 1} sur ${CHAPTERS.length}</small><h2>${ch.name}</h2><p class="muted">${ch.desc}</p></div>
-      ${ch.reward ? `<div class="mc-reward"><small>Récompense</small><b>${money(ch.reward)}</b></div>` : ''}</div>
+      ${ch.reward ? _l`<div class="mc-reward"><small>Récompense</small><b>${money(ch.reward)}</b></div>` : ''}</div>
       <div class="goals">${ch.goals.map(g => goalRow(s, g)).join('')}</div></section>`
-    : card('', '<h2>🏆 Campagne terminée</h2><p class="muted">Vous êtes une légende. Continuez à grandir, ou prenez votre retraite pour enregistrer votre score.</p>', 'mission-card');
-  const c = s.challenge, chal = c ? `<div class="alert indigo">${ic('clock')}<div class="grow"><b>Défi : ${CHALLENGES[c.tpl].txt(c)}</b> · encore ${c.until - s.day} j · récompense ${money(c.reward)}${bar(CHALLENGES[c.tpl].cur(s, c) / c.goal * 100)}</div></div>` : '';
-  return `${mission}${chal}
+    : card('', _t('<h2>🏆 Campagne terminée</h2><p class="muted">Vous êtes une légende. Continuez à grandir, ou prenez votre retraite pour enregistrer votre score.</p>'), 'mission-card');
+  const c = s.challenge, chal = c ? _l`<div class="alert indigo">${ic('clock')}<div class="grow"><b>Défi : ${CHALLENGES[c.tpl].txt(c)}</b> · encore ${c.until - s.day} j · récompense ${money(c.reward)}${bar(CHALLENGES[c.tpl].cur(s, c) / c.goal * 100)}</div></div>` : '';
+  return _l`${mission}${chal}
   <div class="grid kpis four">
-    ${kpi('Fonds propres ' + tip('equity'), money(eq), 'Ce que vaut votre banque', eq < 0 ? 'neg' : '')}
-    ${kpi('Liquidités ' + tip('cash'), money(s.cash), `${pct(s.deposits ? s.cash / s.deposits * 100 : 100)} des dépôts`)}
-    ${kpi('Résultat du mois', pl ? money(pl.net) : '—', 'Après impôts', pl ? cls(pl.net) : '')}
-    ${kpi('Clients satisfaits', Math.round(avgSat(s)) + '/100', `${s.branches.length} agence${s.branches.length > 1 ? 's' : ''}`, avgSat(s) < 40 ? 'neg' : avgSat(s) > 65 ? 'pos' : '')}
+    ${kpi(_t('Fonds propres ') + tip('equity'), money(eq), _t('Ce que vaut votre banque'), eq < 0 ? 'neg' : '')}
+    ${kpi(_t('Liquidités ') + tip('cash'), money(s.cash), _l`${pct(s.deposits ? s.cash / s.deposits * 100 : 100)} des dépôts`)}
+    ${kpi(_t('Résultat du mois'), pl ? money(pl.net) : '—', _t('Après impôts'), pl ? cls(pl.net) : '')}
+    ${kpi(_t('Clients satisfaits'), Math.round(avgSat(s)) + '/100', `${s.branches.length} agence${s.branches.length > 1 ? 's' : ''}`, avgSat(s) < 40 ? 'neg' : avgSat(s) > 65 ? 'pos' : '')}
   </div>
   <div class="grid two">
-    ${card('Évolution des fonds propres', '<canvas class="chart" data-chart="equity"></canvas>')}
-    ${card('Journal', `<ul class="log">${s.log.slice(0, 30).map(l => `<li class="${l.type}"><small>${dateStr(l.d)}</small>${esc(l.msg)}</li>`).join('') || '<li class="muted">Rien pour l’instant.</li>'}</ul>`)}
+    ${card(_t('Évolution des fonds propres'), _t('<canvas class="chart" data-chart="equity"></canvas>'))}
+    ${card(_t('Journal'), `<ul class="log">${s.log.slice(0, 30).map(l => `<li class="${l.type}"><small>${dateStr(l.d)}</small>${esc(l.msg)}</li>`).join('') || _t('<li class="muted">Rien pour l’instant.</li>')}</ul>`)}
   </div>
   <details class="card more"${ui.openMore ? ' open' : ''}><summary data-act="toggleMore">Comptes détaillés et conjoncture</summary>
     <div class="grid kpis">
-      ${kpi('Dépôts clients', money(s.deposits), `Rémunérés à ${pct(s.depositRate, 2)}`)}
-      ${kpi('Encours de prêts', money(lo), `${s.loans.length} prêts actifs`)}
-      ${kpi('Titres financiers', money(pv))}
-      ${kpi('Ratio de solvabilité', capRatio(s) === Infinity ? '∞' : pct(capRatio(s)), `Minimum ${minRatio(s)} %`, capRatio(s) < minRatio(s) ? 'neg' : 'pos')}
+      ${kpi(_t('Dépôts clients'), money(s.deposits), _l`Rémunérés à ${pct(s.depositRate, 2)}`)}
+      ${kpi(_t('Encours de prêts'), money(lo), _l`${s.loans.length} prêts actifs`)}
+      ${kpi(_t('Titres financiers'), money(pv))}
+      ${kpi(_t('Ratio de solvabilité'), capRatio(s) === Infinity ? '∞' : pct(capRatio(s)), _l`Minimum ${minRatio(s)} %`, capRatio(s) < minRatio(s) ? 'neg' : 'pos')}
     </div>
     <div class="grid two">
       <div><h3 class="sec">Conjoncture : <span style="color:${E.color}">${E.label}</span></h3><p class="small muted">Taux directeur <b>${pct(s.policyRate, 2)}</b> · Défauts ×${E.pd} · Demande de crédit ×${E.demand}</p>${nextE}<canvas class="chart sm" data-chart="rate"></canvas></div>
@@ -110,9 +110,9 @@ function vPlan() {
   if (!getBranch(s, ui.branch)) ui.branch = HQ;
   const b = getBranch(s, ui.branch), c = cityOf(b);
   const chips = s.branches.length > 1 ? `<div class="chips">${s.branches.map(x => `<button class="chip ${x.id === ui.branch ? 'on' : ''}" data-act="selBranch" data-id="${x.id}"><span class="cc">${CITIES[x.id].cc}</span>${CITIES[x.id].name}</button>`).join('')}</div>` : '';
-  return `${chips}
+  return _l`${chips}
   <section class="card floor-card">
-    <header class="floor-h"><div><h2>${c.name} ${b.id === HQ ? '<span class="pill">Siège</span>' : ''}</h2><small class="muted">${SIZES[b.size].name} · niveau ${b.size}/3</small></div><div id="planStats"></div><button class="btn ${ui.editPlan ? 'primary' : ''}" data-act="editPlan">🎨 ${ui.editPlan ? 'Terminer' : 'Personnaliser'}</button></header>
+    <header class="floor-h"><div><h2>${c.name} ${b.id === HQ ? _t('<span class="pill">Siège</span>') : ''}</h2><small class="muted">${SIZES[b.size].name} · niveau ${b.size}/3</small></div><div id="planStats"></div><button class="btn ${ui.editPlan ? 'primary' : ''}" data-act="editPlan">🎨 ${ui.editPlan ? _t('Terminer') : _t('Personnaliser')}</button></header>
     <div id="floorWrap"><canvas id="floor" role="img" aria-label="Plan de l’agence de ${c.name} vu en 3D, avec ses guichets, bureaux, distributeurs et clients"></canvas></div>
     <div id="planSide"></div>
   </section>`;
@@ -120,7 +120,7 @@ function vPlan() {
 function renderPlanSide() {
   const s = S, b = getBranch(s, ui.branch), el = $('#planSide'); if (!el || !b) return;
   const sat = Math.round(b.sat), need = branchNeed(b);
-  $('#planStats').innerHTML = `<div class="stat"><small>Satisfaction</small><b class="${sat < 40 ? 'neg' : sat > 65 ? 'pos' : ''}">${sat}/100</b></div>
+  $('#planStats').innerHTML = _l`<div class="stat"><small>Satisfaction</small><b class="${sat < 40 ? 'neg' : sat > 65 ? 'pos' : ''}">${sat}/100</b></div>
     <div class="stat"><small>Clients servis / perdus ${tip('service')}</small><b>${b.lastServed == null ? '—' : `<span class="pos">${nf0.format(b.lastServed)}</span> / <span class="${b.lastLost ? 'neg' : 'muted'}">${nf0.format(b.lastLost)}</span>`}</b></div>
     <div class="stat"><small>Épargne possible</small><b>${money(branchCap(b))}</b></div>
     <div class="stat"><small>Charges</small><b class="neg">${money(branchCosts(s, b))}/mois</b></div>`;
@@ -128,76 +128,76 @@ function renderPlanSide() {
   el.dataset.mode = '';
   const lim = SIZES[b.size], w = wageMult(s, b);
   const tools = [
-    ['g', b.g, lim.g, b.g >= lim.g, 'Accueille l’épargne'],
-    ['gs', b.gs, b.g, b.gs >= b.g, `${money(ITEMS.gs.wage * w)}/mois`],
-    ['b', b.b, lim.b, b.b >= lim.b, 'Reçoit les emprunteurs'],
-    ['bs', b.bs, b.b, b.bs >= b.b, `${money(ITEMS.bs.wage * w)}/mois`],
-    ['dab', b.dab, lim.dab, b.dab >= lim.dab, `+${money(cityOf(b).traffic * 1500)}/mois`],
-    ['vig', b.vig, lim.vig, b.vig >= lim.vig, 'Anti-braquage'],
-    ['deco', b.deco, lim.deco, b.deco >= lim.deco, '+ satisfaction'],
-    ['cof', b.cof || 0, lim.cof, (b.cof || 0) >= lim.cof, `${money(ITEMS.cof.maint)}/mois`],
-    ['ent', b.ent || 0, lim.ent, (b.ent || 0) >= lim.ent, lim.ent ? `${money(ITEMS.ent.maint)}/mois` : 'Agence plus grande'],
-    ['vip', b.vip || 0, lim.vip, (b.vip || 0) >= lim.vip, lim.vip ? `${money(ITEMS.vip.maint)}/mois` : 'Agrandissez l’agence'],
+    ['g', b.g, lim.g, b.g >= lim.g, _t('Accueille l’épargne')],
+    ['gs', b.gs, b.g, b.gs >= b.g, _l`${money(ITEMS.gs.wage * w)}/mois`],
+    ['b', b.b, lim.b, b.b >= lim.b, _t('Reçoit les emprunteurs')],
+    ['bs', b.bs, b.b, b.bs >= b.b, _l`${money(ITEMS.bs.wage * w)}/mois`],
+    ['dab', b.dab, lim.dab, b.dab >= lim.dab, _l`+${money(cityOf(b).traffic * 1500)}/mois`],
+    ['vig', b.vig, lim.vig, b.vig >= lim.vig, _t('Anti-braquage')],
+    ['deco', b.deco, lim.deco, b.deco >= lim.deco, _t('+ satisfaction')],
+    ['cof', b.cof || 0, lim.cof, (b.cof || 0) >= lim.cof, _l`${money(ITEMS.cof.maint)}/mois`],
+    ['ent', b.ent || 0, lim.ent, (b.ent || 0) >= lim.ent, lim.ent ? _l`${money(ITEMS.ent.maint)}/mois` : _t('Agence plus grande')],
+    ['vip', b.vip || 0, lim.vip, (b.vip || 0) >= lim.vip, lim.vip ? _l`${money(ITEMS.vip.maint)}/mois` : _t('Agrandissez l’agence')],
   ].filter(([k]) => itemUnlocked(k)).map(([k, n, max, full, sub]) => {
     const cost = itemCost(b, k), dis = full || s.cash < cost;
     const staffFull = (k === 'gs' || k === 'bs') && full && n >= SIZES[b.size][k[0]];
     return `<button class="tool ${full ? 'full' : ''}" data-act="build" data-k="${k}" ${dis ? 'disabled' : ''} title="${esc(ITEMS[k].desc)}">
-      <span class="t-ico">${ITEMS[k].icon}</span><span class="t-name">${ITEMS[k].name}</span><span class="t-sub">${full ? ((k === 'gs' || k === 'bs') && !staffFull ? 'Construisez un poste' : 'Complet') : sub}</span>
+      <span class="t-ico">${ITEMS[k].icon}</span><span class="t-name">${ITEMS[k].name}</span><span class="t-sub">${full ? ((k === 'gs' || k === 'bs') && !staffFull ? _t('Construisez un poste') : _t('Complet')) : sub}</span>
       <span class="t-foot"><span class="t-count">${n}/${max}</span><b>${full ? '—' : money(cost)}</b></span></button>`;
   }).join('');
-  const up = itemUnlocked('size') && SIZES[b.size + 1] ? `<button class="tool gold" data-act="build" data-k="size" ${s.cash < sizeUpCost(b) ? 'disabled' : ''}><span class="t-ico">🏗️</span><span class="t-name">Agrandir</span><span class="t-sub">${SIZES[b.size + 1].name}</span><span class="t-foot"><span class="t-count">niv. ${b.size + 1}</span><b>${money(sizeUpCost(b))}</b></span></button>` : '';
-  const ls = lostShare(b), rivalTxt = b.rivalUntil > s.day ? `<p class="hint">${ic('alert')} Un concurrent s’est installé en face : -20 % de clients encore ${Math.ceil((b.rivalUntil - s.day) / 30)} mois.</p>` : '';
-  const hint = (ls > 0.08 ? `<p class="hint">${ic('alert')} <span><b>${Math.round(ls * 100)} % des clients repartent</b> sans être servis : ${b.gs || b.dab ? 'ajoutez des guichetiers ou un distributeur' : ''}${(b.gs || b.dab) && b.bs ? ', ou ' : ''}${b.bs && branchTraffic(s, b).loan > branchCapacity(b).loan ? 'un conseiller' : ''}.</span></p>` : '') + rivalTxt;
+  const up = itemUnlocked('size') && SIZES[b.size + 1] ? _l`<button class="tool gold" data-act="build" data-k="size" ${s.cash < sizeUpCost(b) ? 'disabled' : ''}><span class="t-ico">🏗️</span><span class="t-name">Agrandir</span><span class="t-sub">${SIZES[b.size + 1].name}</span><span class="t-foot"><span class="t-count">niv. ${b.size + 1}</span><b>${money(sizeUpCost(b))}</b></span></button>` : '';
+  const ls = lostShare(b), rivalTxt = b.rivalUntil > s.day ? _l`<p class="hint">${ic('alert')} Un concurrent s’est installé en face : -20 % de clients encore ${Math.ceil((b.rivalUntil - s.day) / 30)} mois.</p>` : '';
+  const hint = (ls > 0.08 ? _l`<p class="hint">${ic('alert')} <span><b>${Math.round(ls * 100)} % des clients repartent</b> sans être servis : ${b.gs || b.dab ? _t('ajoutez des guichetiers ou un distributeur') : ''}${(b.gs || b.dab) && b.bs ? _t(', ou ') : ''}${b.bs && branchTraffic(s, b).loan > branchCapacity(b).loan ? _t('un conseiller') : ''}.</span></p>` : '') + rivalTxt;
   const team = (b.staff || []).slice().sort((x, y) => STAFF_KEYS.indexOf(x.role) - STAFF_KEYS.indexOf(y.role)).map(e => {
     const T = TRAITS[e.trait], max = e.lvl >= MAX_LVL, ready = !max && e.xp >= xpNeed(e.lvl), sel = ui.emp == e.id;
     const tc = trainCost(s, b, e), pc = promoCost(s, b, e);
     return `<div class="emp ${sel ? 'sel' : ''} ${ready ? 'ready' : ''}" data-emp="${e.id}">
-      <div class="emp-h" data-act="selEmp" data-id="${e.id}">${avatar(e, 46)}<div class="grow"><b>${esc(e.name)}</b><small>${empTitle(e)}</small><span class="stars">${stars(e.lvl)}</span></div>${ready ? '<span class="pill gold">Promotion !</span>' : ''}</div>
-      <div class="row"><small class="muted grow">${max ? 'Niveau maximum' : `Expérience ${Math.floor(e.xp)}/${xpNeed(e.lvl)}`}</small><span class="trait" title="${esc(T.desc)}">${T.icon} ${T.name}</span></div>
+      <div class="emp-h" data-act="selEmp" data-id="${e.id}">${avatar(e, 46)}<div class="grow"><b>${esc(e.name)}</b><small>${empTitle(e)}</small><span class="stars">${stars(e.lvl)}</span></div>${ready ? _t('<span class="pill gold">Promotion !</span>') : ''}</div>
+      <div class="row"><small class="muted grow">${max ? _t('Niveau maximum') : _l`Expérience ${Math.floor(e.xp)}/${xpNeed(e.lvl)}`}</small><span class="trait" title="${esc(T.desc)}">${T.icon} ${T.name}</span></div>
       ${max ? '' : bar(e.xp / xpNeed(e.lvl) * 100, ready ? 'ok' : '')}
-      ${sel ? `<p class="small muted">${T.desc} · efficacité ×${nf2.format(empEff(e))} · salaire ${money(empWage(s, b, e))}/mois · ${Math.max(0, Math.floor((s.day - e.since) / 30))} mois d’ancienneté</p>
-      <div class="row wrap">${ready ? `<button class="btn sm gold" data-act="promote" data-id="${e.id}" ${s.cash < pc ? 'disabled' : ''}>Promouvoir — ${money(pc)}</button>` : ''}
-      ${!max ? `<button class="btn sm" data-act="train" data-id="${e.id}" ${!canTrain(s, e) || s.cash < tc ? 'disabled' : ''}>${canTrain(s, e) ? `Former — ${money(tc)}` : 'Formé ce mois-ci'}</button>` : ''}
-      <button class="btn sm ghost" data-act="fire" data-id="${e.id}">Licencier</button></div>` : '<small class="muted tap">Cliquez pour former ou promouvoir</small>'}
+      ${sel ? _l`<p class="small muted">${T.desc} · efficacité ×${nf2.format(empEff(e))} · salaire ${money(empWage(s, b, e))}/mois · ${Math.max(0, Math.floor((s.day - e.since) / 30))} mois d’ancienneté</p>
+      <div class="row wrap">${ready ? _l`<button class="btn sm gold" data-act="promote" data-id="${e.id}" ${s.cash < pc ? 'disabled' : ''}>Promouvoir — ${money(pc)}</button>` : ''}
+      ${!max ? `<button class="btn sm" data-act="train" data-id="${e.id}" ${!canTrain(s, e) || s.cash < tc ? 'disabled' : ''}>${canTrain(s, e) ? _l`Former — ${money(tc)}` : _t('Formé ce mois-ci')}</button>` : ''}
+      <button class="btn sm ghost" data-act="fire" data-id="${e.id}">Licencier</button></div>` : _t('<small class="muted tap">Cliquez pour former ou promouvoir</small>')}
     </div>`;
   }).join('');
   const specCost = Math.round(cityOf(b).build * 0.2 / 1e3) * 1e3;
-  const spec = specUnlocked(s, b) ? `<h3 class="sec">Spécialité de l’agence <span class="muted small">(changer coûte ${money(specCost)})</span></h3><div class="specs">${Object.entries(SPECS).map(([k, p]) => `<button class="spec ${(b.spec || 'aucune') === k ? 'on' : ''}" data-act="spec" data-v="${k}" ${(b.spec || 'aucune') !== k && s.cash < specCost ? 'disabled' : ''}><span>${p.icon}</span><b>${p.name}</b><small>${p.desc}</small></button>`).join('')}</div>` : (s.chapter >= 2 ? `<p class="hint">${ic('lock')} Agrandissez l’agence au niveau 2 pour lui choisir une spécialité.</p>` : '');
+  const spec = specUnlocked(s, b) ? _l`<h3 class="sec">Spécialité de l’agence <span class="muted small">(changer coûte ${money(specCost)})</span></h3><div class="specs">${Object.entries(SPECS).map(([k, p]) => `<button class="spec ${(b.spec || 'aucune') === k ? 'on' : ''}" data-act="spec" data-v="${k}" ${(b.spec || 'aucune') !== k && s.cash < specCost ? 'disabled' : ''}><span>${p.icon}</span><b>${p.name}</b><small>${p.desc}</small></button>`).join('')}</div>` : (s.chapter >= 2 ? _l`<p class="hint">${ic('lock')} Agrandissez l’agence au niveau 2 pour lui choisir une spécialité.</p>` : '');
   const readyN = (b.staff || []).filter(e => e.lvl < MAX_LVL && e.xp >= xpNeed(e.lvl)).length;
   el.innerHTML = `<div class="tools">${tools}${up}</div>${hint}${spec}
-    ${team ? `<h3 class="sec">Équipe (${b.staff.length})${readyN ? ` <span class="pill gold">${readyN} promotion${readyN > 1 ? 's' : ''} possible${readyN > 1 ? 's' : ''}</span>` : ''}</h3><div class="team">${team}</div>` : ''}${b.id !== HQ ? `<button class="btn ghost sm" data-act="closeBranch" data-id="${b.id}">Fermer cette agence</button>` : ''}`;
+    ${team ? _l`<h3 class="sec">Équipe (${b.staff.length})${readyN ? _l` <span class="pill gold">${readyN} promotion${readyN > 1 ? 's' : ''} possible${readyN > 1 ? 's' : ''}</span>` : ''}</h3><div class="team">${team}</div>` : ''}${b.id !== HQ ? _l`<button class="btn ghost sm" data-act="closeBranch" data-id="${b.id}">Fermer cette agence</button>` : ''}`;
 }
 
 // ---------- Prêts ----------
 function endetHTML(r) {
   const e = endet(r), c = e > 0.35 ? 'neg' : e > 0.3 ? 'warn' : 'pos';
-  return `Endettement ${tip('endet')} <b data-o="endet" class="${c}">${pct(e * 100, 0)}</b>${e > 0.35 ? ' <span class="neg small" data-o="hcsf">au-delà de 35 % : interdit</span>' : '<span data-o="hcsf"></span>'}`;
+  return _l`Endettement ${tip('endet')} <b data-o="endet" class="${c}">${pct(e * 100, 0)}</b>${e > 0.35 ? _t(' <span class="neg small" data-o="hcsf">au-delà de 35 % : interdit</span>') : _t('<span data-o="hcsf"></span>')}`;
 }
 function dossier(r) {
   const parts = [];
-  if (r.income) parts.push(`Revenus <b>${money(r.income)}/mois</b>`, endetHTML(r));
-  if (r.apport != null) parts.push(`Apport ${tip('apport')} <b>${Math.round(r.apport * 100)} %</b>`);
-  if (r.guarantee != null) parts.push(r.guarantee ? 'Garantie <b class="pos">oui</b>' : 'Garantie <b class="neg">aucune</b>');
+  if (r.income) parts.push(_l`Revenus <b>${money(r.income)}/mois</b>`, endetHTML(r));
+  if (r.apport != null) parts.push(_l`Apport ${tip('apport')} <b>${Math.round(r.apport * 100)} %</b>`);
+  if (r.guarantee != null) parts.push(r.guarantee ? _t('Garantie <b class="pos">oui</b>') : _t('Garantie <b class="neg">aucune</b>'));
   return parts.length ? `<div class="req-info dossier">${parts.join(' · ')}</div>` : '';
 }
 function reqCard(s, r) {
   const souv = r.type === 'souv', left = r.expires - s.day;
   const isNew = !ui.seen.has(r.id); ui.seen.add(r.id);
-  return `<div class="req ${isNew ? 'new' : ''} ${souv ? 'souv' : ''}">${reqInner(s, r)}
+  return _l`<div class="req ${isNew ? 'new' : ''} ${souv ? 'souv' : ''}">${reqInner(s, r)}
     <div class="row"><button class="btn success grow" data-act="offer" data-id="${r.id}">Proposer</button><button class="btn ghost" data-act="reject" data-id="${r.id}">Refuser</button></div>
-    <div class="row req-foot">${!souv && !r.checked ? `<button class="btn sm ghost" data-act="verify" data-id="${r.id}" title="Faire vérifier le dossier pour repérer les escrocs">🔎 Vérifier · ${money(verifyCost(r))}</button>` : '<span></span>'}<span class="expire grow ${left < 5 ? 'neg' : 'muted'}">${ic('clock')} encore ${left} j</span></div>
+    <div class="row req-foot">${!souv && !r.checked ? _l`<button class="btn sm ghost" data-act="verify" data-id="${r.id}" title="Faire vérifier le dossier pour repérer les escrocs">🔎 Vérifier · ${money(verifyCost(r))}</button>` : '<span></span>'}<span class="expire grow ${left < 5 ? 'neg' : 'muted'}">${ic('clock')} encore ${left} j</span></div>
   </div>`;
 }
 function reqInner(s, r) {
   const T = LOAN_TYPES[r.type], souv = r.type === 'souv', g = reqGrade(r), p = acceptProb(r);
   const pd = reqPD(r) * (s.upgrades.ia && !souv ? 0.75 : 1);
   const gcls = souv ? 'g-' + (g.startsWith('A') ? 'A' : g === 'BBB' ? 'C' : g === 'BB' ? 'D' : 'E') : 'g-' + g;
-  const big = !souv && r.amount > equity(s) * 0.15 ? `<div class="fraud">${ic('alert')} Gros risque : ${Math.round(r.amount / Math.max(1, equity(s)) * 100)} % de vos fonds propres sur un seul client</div>` : '';
-  const fraudTxt = big + (r.flagged && !r.checked ? `<div class="fraud">${ic('alert')} Dossier suspect : ${esc(r.clue)}</div>` : r.verified ? '<div class="verified">✅ Dossier vérifié</div>' : '');
-  const info = souv ? `Note <b>${g}</b> · Défaut <b>${pct(pd * 100)}/an</b> · Récupération 45 %`
-    : s.upgrades.analyste ? `Score <b>${r.score}</b> · Défaut <b>${pct(pd * 100)}/an</b> · Récupération ${Math.round(T.rec * 100)} %` : '🔍 Embauchez un analyste pour voir le score exact.';
-  return `
-    <div class="req-h"><span class="ico">${T.icon}</span><div><b>${esc(r.name)}</b><small>${souv ? 'Emprunt d’État pour ' : T.label + ' pour '}${esc(r.reason)}</small></div><span class="grade ${gcls}" title="Note de crédit">${g}</span></div>
+  const big = !souv && r.amount > equity(s) * 0.15 ? _l`<div class="fraud">${ic('alert')} Gros risque : ${Math.round(r.amount / Math.max(1, equity(s)) * 100)} % de vos fonds propres sur un seul client</div>` : '';
+  const fraudTxt = big + (r.flagged && !r.checked ? _l`<div class="fraud">${ic('alert')} Dossier suspect : ${esc(r.clue)}</div>` : r.verified ? _t('<div class="verified">✅ Dossier vérifié</div>') : '');
+  const info = souv ? _l`Note <b>${g}</b> · Défaut <b>${pct(pd * 100)}/an</b> · Récupération 45 %`
+    : s.upgrades.analyste ? _l`Score <b>${r.score}</b> · Défaut <b>${pct(pd * 100)}/an</b> · Récupération ${Math.round(T.rec * 100)} %` : _t('🔍 Embauchez un analyste pour voir le score exact.');
+  return _l`
+    <div class="req-h"><span class="ico">${T.icon}</span><div><b>${esc(r.name)}</b><small>${souv ? _t('Emprunt d’État pour ') : T.label + ' pour '}${esc(r.reason)}</small></div><span class="grade ${gcls}" title="Note de crédit">${g}</span></div>
     <div class="req-info">Montant <b>${money(r.amount)}</b> · Durée <b>${fmtDur(r.dur)}</b></div>
     ${dossier(r)}
     <div class="req-info">${info}</div>${fraudTxt}
@@ -214,23 +214,23 @@ function vLoans() {
   const avg = lo ? s.loans.reduce((a, l) => a + l.rate * l.out, 0) / lo : 0;
   const expLoss = s.loans.reduce((a, l) => a + l.out * l.pdA * ECON[s.economy].pd * (1 - LOAN_TYPES[l.type].rec), 0);
   const list = [...s.loans].sort((a, b) => b.out - a.out).slice(0, 60).map(l => `<tr><td>${LOAN_TYPES[l.type].icon} ${esc(l.name)}</td><td><span class="grade sm">${l.grade}</span></td><td class="r">${money(l.out)}</td><td class="r">${pct(l.rate)}</td><td class="r">${l.left} m</td></tr>`).join('');
-  const auto = s.chapter >= 2 ? card('Pilote automatique', `<p class="muted small">Vos conseillers acceptent seuls les dossiers, au taux juste + votre marge, tant qu’il reste au moins 10 % des dépôts en liquidités et que le ratio de solvabilité reste au-dessus du minimum + 4 points.</p>
+  const auto = s.chapter >= 2 ? card(_t('Pilote automatique'), _l`<p class="muted small">Vos conseillers acceptent seuls les dossiers, au taux juste + votre marge, tant qu’il reste au moins 10 % des dépôts en liquidités et que le ratio de solvabilité reste au-dessus du minimum + 4 points.</p>
     <div class="row wrap"><div class="seg"><button data-act="auto" data-v="off" class="${!A.on ? 'on' : ''}">Désactivé</button><button data-act="auto" data-v="on" class="${A.on ? 'on' : ''}">Activé</button></div>
     <span class="muted small">Notes acceptées</span><div class="seg">${'ABCD'.split('').map(g => `<button data-act="autoMin" data-v="${g}" class="${A.min === g ? 'on' : ''}">≥ ${g}</button>`).join('')}</div>
     <span class="muted small">Marge</span><div class="seg">${[0, 0.5, 1, 2].map(m => `<button data-act="autoMargin" data-v="${m}" class="${A.margin === m ? 'on' : ''}">+${nf1.format(m)}</button>`).join('')}</div></div>`)
-    : `<div class="alert indigo">${ic('lock')}<div>Le <b>pilote automatique</b> se débloque au chapitre 3.</div></div>`;
-  return `<div class="alert blue">${ic('spark')}<div>Plus le taux ${tip('rate')} est élevé, plus vous gagnez… mais moins le client accepte, et plus il risque de faire défaut. La note ${tip('grade')} (A → E) indique la fiabilité de l’emprunteur. Méfiez-vous des escrocs ${tip('fraud')}.</div></div>
+    : _l`<div class="alert indigo">${ic('lock')}<div>Le <b>pilote automatique</b> se débloque au chapitre 3.</div></div>`;
+  return _l`<div class="alert blue">${ic('spark')}<div>Plus le taux ${tip('rate')} est élevé, plus vous gagnez… mais moins le client accepte, et plus il risque de faire défaut. La note ${tip('grade')} (A → E) indique la fiabilité de l’emprunteur. Méfiez-vous des escrocs ${tip('fraud')}.</div></div>
   ${auto}
-  ${souv.length ? `<h3 class="sec">Demandes des États (${souv.length})</h3><div class="grid cards">${souv.map(r => reqCard(s, r)).join('')}</div>` : ''}
+  ${souv.length ? _l`<h3 class="sec">Demandes des États (${souv.length})</h3><div class="grid cards">${souv.map(r => reqCard(s, r)).join('')}</div>` : ''}
   <h3 class="sec">Demandes en attente (${retail.length})</h3>
-  ${retail.length ? `<div class="grid cards">${retail.map(r => reqCard(s, r)).join('')}</div>` : '<div class="card muted">Aucune demande pour l’instant. Embauchez des conseillers, ouvrez des agences ou soignez votre réputation pour en recevoir plus.</div>'}
+  ${retail.length ? `<div class="grid cards">${retail.map(r => reqCard(s, r)).join('')}</div>` : _t('<div class="card muted">Aucune demande pour l’instant. Embauchez des conseillers, ouvrez des agences ou soignez votre réputation pour en recevoir plus.</div>')}
   <div class="grid kpis">
-    ${kpi('Encours total', money(lo), `${s.loans.length} prêts`)}
-    ${kpi('Taux moyen', pct(avg, 2))}
-    ${kpi('Pertes attendues / an', money(expLoss), 'Selon la conjoncture', 'neg')}
-    ${kpi('Défauts historiques', s.stats.defaults, `sur ${s.stats.granted} prêts`)}
+    ${kpi(_t('Encours total'), money(lo), _l`${s.loans.length} prêts`)}
+    ${kpi(_t('Taux moyen'), pct(avg, 2))}
+    ${kpi(_t('Pertes attendues / an'), money(expLoss), _t('Selon la conjoncture'), 'neg')}
+    ${kpi(_t('Défauts historiques'), s.stats.defaults, _l`sur ${s.stats.granted} prêts`)}
   </div>
-  ${card('Portefeuille de prêts', `<div class="scroll"><table><tr><th>Client</th><th>Note</th><th class="r">Restant dû</th><th class="r">Taux</th><th class="r">Reste</th></tr>${list || '<tr><td class="muted" colspan="5">Aucun prêt actif.</td></tr>'}</table></div>`)}`;
+  ${card(_t('Portefeuille de prêts'), _l`<div class="scroll"><table><tr><th>Client</th><th>Note</th><th class="r">Restant dû</th><th class="r">Taux</th><th class="r">Reste</th></tr>${list || _t('<tr><td class="muted" colspan="5">Aucun prêt actif.</td></tr>')}</table></div>`)}`;
 }
 
 // ---------- Monde ----------
@@ -279,25 +279,25 @@ function worldMap(s, rid) {
 function cityCard(s, id) {
   const c = CITIES[id], own = getBranch(s, id), open = regionUnlocked(s, c.region);
   const T = TIERS[c.tier];
-  return `<div class="item ${own ? 'owned' : ''} ${ui.city === id ? 'sel' : ''}"><div class="row"><span class="cc big">${c.cc}</span><div class="grow"><b>${c.name}</b><br><small class="muted">${c.desc || (T ? T.label : '')}</small></div></div>
+  return _l`<div class="item ${own ? 'owned' : ''} ${ui.city === id ? 'sel' : ''}"><div class="row"><span class="cc big">${c.cc}</span><div class="grow"><b>${c.name}</b><br><small class="muted">${c.desc || (T ? T.label : '')}</small></div></div>
     <div class="meta">Dépôts potentiels : <b>jusqu’à ${money(c.cap * 1.5)}</b><br>Demandes de prêt : <b>×${c.loans}</b><br>Loyer : <b>${money(c.rent)}/mois</b></div>
-    ${own ? `<button class="btn sm" data-act="goBranch" data-id="${id}">Voir l’agence ${ic('arrow')}</button>`
-      : !open ? `<button class="btn" disabled>${ic('lock')} Chapitre ${REGIONS[c.region].unlock + 1}</button>`
-        : `<button class="btn gold" data-act="branch" data-id="${id}" ${s.cash < c.cost ? 'disabled' : ''}>Ouvrir — ${money(c.cost)}</button>`}</div>`;
+    ${own ? _l`<button class="btn sm" data-act="goBranch" data-id="${id}">Voir l’agence ${ic('arrow')}</button>`
+      : !open ? _l`<button class="btn" disabled>${ic('lock')} Chapitre ${REGIONS[c.region].unlock + 1}</button>`
+        : _l`<button class="btn gold" data-act="branch" data-id="${id}" ${s.cash < c.cost ? 'disabled' : ''}>Ouvrir — ${money(c.cost)}</button>`}</div>`;
 }
 function vWorld() {
   const s = S, rid = ui.region;
-  const tabs = [['all', 'Monde'], ...Object.entries(REGIONS).map(([k, r]) => [k, r.name])].map(([k, n]) => {
+  const tabs = [['all', _t('Monde')], ...Object.entries(REGIONS).map(([k, r]) => [k, r.name])].map(([k, n]) => {
     const lock = k !== 'all' && !regionUnlocked(s, k), cnt = k === 'all' ? s.branches.length : regionCount(s, k);
     return `<button class="chip ${rid === k ? 'on' : ''} ${lock ? 'locked' : ''}" data-act="region" data-v="${k}">${lock ? ic('lock') : ''}${n}${cnt ? ` <small>${cnt}</small>` : ''}</button>`;
   }).join('');
   const total = Object.keys(CITIES).length;
   const list = Object.keys(CITIES).filter(id => rid === 'all' ? getBranch(s, id) : CITIES[id].region === rid);
   const R = REGIONS[rid];
-  const lockMsg = rid !== 'all' && !regionUnlocked(s, rid) ? `<div class="alert indigo">${ic('lock')}<div>Région verrouillée : terminez le <b>chapitre ${R.unlock}</b> (« ${CHAPTERS[R.unlock - 1].name} ») pour obtenir la licence.</div></div>` : '';
+  const lockMsg = rid !== 'all' && !regionUnlocked(s, rid) ? _l`<div class="alert indigo">${ic('lock')}<div>Région verrouillée : terminez le <b>chapitre ${R.unlock}</b> (« ${CHAPTERS[R.unlock - 1].name} ») pour obtenir la licence.</div></div>` : '';
   return `<div class="chips">${tabs}</div>
   ${lockMsg}
-  ${rid === 'espace' ? '' : card(`${rid === 'all' ? 'Votre réseau mondial' : R.name} <small class="muted">· ${s.branches.length}/${total} agences dans le monde</small>`, worldMap(s, rid), 'map-card')}
-  <h3 class="sec">${rid === 'all' ? 'Vos agences' : 'Villes'}</h3>
-  <div class="grid cards">${list.map(id => cityCard(s, id)).join('') || '<div class="card muted">Aucune agence.</div>'}</div>`;
+  ${rid === 'espace' ? '' : card(_l`${rid === 'all' ? _t('Votre réseau mondial') : R.name} <small class="muted">· ${s.branches.length}/${total} agences dans le monde</small>`, worldMap(s, rid), 'map-card')}
+  <h3 class="sec">${rid === 'all' ? _t('Vos agences') : _t('Villes')}</h3>
+  <div class="grid cards">${list.map(id => cityCard(s, id)).join('') || _t('<div class="card muted">Aucune agence.</div>')}</div>`;
 }

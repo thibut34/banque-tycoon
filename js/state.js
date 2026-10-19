@@ -78,14 +78,14 @@ function checkUnlocks(s, silent) {
   for (const [id, lb] of TABS) {
     if (s.unlocked.includes(id) || !TAB_UNLOCK[id](s)) continue;
     s.unlocked.push(id);
-    if (!silent) { s.newTabs = [...(s.newTabs || []), id]; toast(`🔓 Nouvel onglet : <b>${lb}</b><br><small>${TAB_HINT[id] || ''}</small>`, 'gold'); }
+    if (!silent) { s.newTabs = [...(s.newTabs || []), id]; toast(_l`🔓 Nouvel onglet : <b>${lb}</b><br><small>${TAB_HINT[id] || ''}</small>`, 'gold'); }
     ui.tabsKey = null;
   }
   if (!s.unlockedItems) { s.unlockedItems = Object.keys(ITEM_UNLOCK).filter(k => ITEM_UNLOCK[k](s)); return; }
   for (const k in ITEM_UNLOCK) {
     if (s.unlockedItems.includes(k) || !ITEM_UNLOCK[k](s)) continue;
     s.unlockedItems.push(k);
-    toast(`🔓 Nouveau dans « Ma banque » : <b>${k === 'size' ? 'agrandir vos agences' : ITEMS[k].name}</b>`, 'gold');
+    toast(_l`🔓 Nouveau dans « Ma banque » : <b>${k === 'size' ? _t('agrandir vos agences') : ITEMS[k].name}</b>`, 'gold');
   }
 }
 

@@ -1070,3 +1070,9 @@ html.calm .logo-mark { animation: none; }
   #coach .coach-av { display: none; }
   #topbar { padding: 6px 14px; }
 }
+
+.scene-tip { top: 52px; bottom: auto; }
+
+/* CrazyGames : pas de sélection de texte ni de loupe sur mobile (sauf dans les champs) */
+body { -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea { -webkit-user-select: text; user-select: text; }

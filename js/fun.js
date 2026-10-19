@@ -15,16 +15,16 @@ const primeAmt = s => Math.round(Math.max(5000, equity(s) * 0.02) / 500) * 500;
 
 // ---------- Atouts ----------
 const PERKS = {
-  vendeur: { ico: '💼', name: 'Vendeur né', txt: () => '+12 % de chances de vendre une carte, un livret ou la Gold', max: 5 },
-  aimant: { ico: '🧲', name: 'Bouche-à-oreille', txt: () => '+1 visiteur par jour dans chaque agence', max: 5 },
-  chasseur: { ico: '🎯', name: 'Chasseur de primes', txt: () => 'Objectif du jour : récompense +50 %', max: 4 },
-  negociateur: { ico: '🤝', name: 'Négociateur', txt: () => 'Les emprunteurs acceptent un taux 0,2 point plus haut', max: 4 },
-  fidelite: { ico: '💞', name: 'Clients fidèles', txt: () => '15 % de départs en moins chaque mois', max: 4 },
-  sangfroid: { ico: '⏱️', name: 'Sang-froid', txt: () => 'Vos combos durent 3 secondes de plus', max: 3 },
-  etoile: { ico: '🌟', name: 'Chouchou du siège', txt: () => '+1 étoile bonus pour chaque journée parfaite', max: 2 },
-  prime: { ico: '💰', name: 'Prime du siège', txt: s => `${money(primeAmt(s))} tout de suite`, max: 99, once: true },
-  tele: { ico: '📺', name: 'Passage au JT', txt: () => '+6 de réputation tout de suite', max: 99, once: true },
-  mentor: { ico: '🎓', name: 'Mentor', txt: () => 'Toute votre équipe gagne 40 points d’expérience', max: 99, once: true },
+  vendeur: { ico: '💼', name: _t('Vendeur né'), txt: () => _t('+12 % de chances de vendre une carte, un livret ou la Gold'), max: 5 },
+  aimant: { ico: '🧲', name: _t('Bouche-à-oreille'), txt: () => _t('+1 visiteur par jour dans chaque agence'), max: 5 },
+  chasseur: { ico: '🎯', name: _t('Chasseur de primes'), txt: () => _t('Objectif du jour : récompense +50 %'), max: 4 },
+  negociateur: { ico: '🤝', name: _t('Négociateur'), txt: () => _t('Les emprunteurs acceptent un taux 0,2 point plus haut'), max: 4 },
+  fidelite: { ico: '💞', name: _t('Clients fidèles'), txt: () => _t('15 % de départs en moins chaque mois'), max: 4 },
+  sangfroid: { ico: '⏱️', name: _t('Sang-froid'), txt: () => _t('Vos combos durent 3 secondes de plus'), max: 3 },
+  etoile: { ico: '🌟', name: _t('Chouchou du siège'), txt: () => _t('+1 étoile bonus pour chaque journée parfaite'), max: 2 },
+  prime: { ico: '💰', name: _t('Prime du siège'), txt: s => _l`${money(primeAmt(s))} tout de suite`, max: 99, once: true },
+  tele: { ico: '📺', name: _t('Passage au JT'), txt: () => _t('+6 de réputation tout de suite'), max: 99, once: true },
+  mentor: { ico: '🎓', name: _t('Mentor'), txt: () => _t('Toute votre équipe gagne 40 points d’expérience'), max: 99, once: true },
 };
 function applyPerk(s, k) {
   const m = M(s);
@@ -42,17 +42,17 @@ function perkChoices(s) {
 function showPerkModal() {
   const s = S, m = M(s);
   ui.perkChoices = perkChoices(s); ui.modal = true;
-  showModal(`<div class="lvup"><div class="lvup-badge">${m.lvl}</div><h2>Niveau ${m.lvl} !</h2><p class="center muted">Choisissez un atout. Il reste pour toute la partie.</p>
+  showModal(_l`<div class="lvup"><div class="lvup-badge">${m.lvl}</div><h2>Niveau ${m.lvl} !</h2><p class="center muted">Choisissez un atout. Il reste pour toute la partie.</p>
     <div class="perks">${ui.perkChoices.map(k => { const P = PERKS[k], l = perk(s, k); return `<button class="perk" data-act="perk" data-k="${k}"><span class="pk-ico">${P.ico}</span><b>${P.name}</b><small>${P.txt(s)}</small>${!P.once ? `<span class="pk-lv">${'●'.repeat(l)}${'○'.repeat(Math.min(5, P.max) - l)}</span>` : ''}</button>`; }).join('')}</div></div>`, true);
   SFX.play('level'); confetti(80);
 }
 function showMyPerks() {
   const s = S, m = M(s), own = Object.keys(m.perks).filter(k => !PERKS[k].once);
   ui.modal = true;
-  showModal(`<div class="m-ico">🏅</div><h2>Banquier niveau ${m.lvl}</h2>
+  showModal(_l`<div class="m-ico">🏅</div><h2>Banquier niveau ${m.lvl}</h2>
     <div class="xpbar big"><i style="width:${Math.min(100, m.xp / xpFor(m.lvl) * 100)}%"></i></div><p class="center small muted">${nf0.format(m.xp)} / ${nf0.format(xpFor(m.lvl))} XP · traitez les clients vous-même et enchaînez les combos pour progresser</p>
-    <div class="kpis fk">${[['⭐ Étoiles', nf0.format(m.stars % CHEST_STARS) + ' / ' + CHEST_STARS], ['🎁 Coffres ouverts', m.opened], ['🔥 Série', m.streak + ' j'], ['🏆 Meilleur combo', 'x' + (m.best || 0)]].map(([a, b]) => `<div class="kpi"><small>${a}</small><b>${b}</b></div>`).join('')}</div>
-    <h3 class="sec">Vos atouts</h3>${own.length ? `<div class="perks small">${own.map(k => `<div class="perk owned"><span class="pk-ico">${PERKS[k].ico}</span><b>${PERKS[k].name} ${m.perks[k] > 1 ? '×' + m.perks[k] : ''}</b><small>${PERKS[k].txt(s)}</small></div>`).join('')}</div>` : '<p class="muted center">Aucun pour l’instant : gagnez un niveau pour en choisir un.</p>'}
+    <div class="kpis fk">${[[_t('⭐ Étoiles'), nf0.format(m.stars % CHEST_STARS) + ' / ' + CHEST_STARS], [_t('🎁 Coffres ouverts'), m.opened], [_t('🔥 Série'), m.streak + ' j'], [_t('🏆 Meilleur combo'), 'x' + (m.best || 0)]].map(([a, b]) => `<div class="kpi"><small>${a}</small><b>${b}</b></div>`).join('')}</div>
+    <h3 class="sec">Vos atouts</h3>${own.length ? `<div class="perks small">${own.map(k => `<div class="perk owned"><span class="pk-ico">${PERKS[k].ico}</span><b>${PERKS[k].name} ${m.perks[k] > 1 ? '×' + m.perks[k] : ''}</b><small>${PERKS[k].txt(s)}</small></div>`).join('')}</div>` : _t('<p class="muted center">Aucun pour l’instant : gagnez un niveau pour en choisir un.</p>')}
     <div class="choices"><button class="btn primary" data-act="closeModal">Fermer</button></div>`);
 }
 
@@ -82,7 +82,7 @@ function renderCombo(dur) {
   if (n < 2) { el.hidden = true; return; }
   el.hidden = false;
   el.className = n >= 8 ? 'hot3' : n >= 5 ? 'hot2' : 'hot1';
-  el.innerHTML = `<b>COMBO x${Math.min(n, 99)}${n > 99 ? '+' : ''}</b><small>XP ×${nf2.format(comboMul(n)).replace(',00', '')}</small><i style="animation-duration:${dur}ms"></i>`;
+  el.innerHTML = _l`<b>COMBO x${Math.min(n, 99)}${n > 99 ? '+' : ''}</b><small>XP ×${nf2.format(comboMul(n)).replace(',00', '')}</small><i style="animation-duration:${dur}ms"></i>`;
   el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
   clearTimeout(ui.comboT); ui.comboT = setTimeout(() => { el.hidden = true; }, dur);
 }
@@ -105,9 +105,9 @@ function coinBurst(x, y, n = 8, target = '#tbCash') {
     document.body.appendChild(el);
     const dx = rnd(-60, 60), dy = rnd(-70, -20), delay = i * 40;
     el.animate([
-      { transform: 'translate(0,0) scale(.6)', opacity: 1 },
-      { transform: `translate(${dx}px,${dy}px) scale(1.1)`, opacity: 1, offset: 0.35 },
-      { transform: `translate(${r.left + r.width / 2 - x}px,${r.top + r.height / 2 - y}px) scale(.5)`, opacity: 0.9 },
+      { transform: _t('translate(0,0) scale(.6)'), opacity: 1 },
+      { transform: _l`translate(${dx}px,${dy}px) scale(1.1)`, opacity: 1, offset: 0.35 },
+      { transform: _l`translate(${r.left + r.width / 2 - x}px,${r.top + r.height / 2 - y}px) scale(.5)`, opacity: 0.9 },
     ], { duration: 750, delay, easing: 'cubic-bezier(.5,0,.6,1)', fill: 'forwards' });
     setTimeout(() => { el.remove(); if (i === n - 1) { t.classList.remove('bump'); void t.offsetWidth; t.classList.add('bump'); SFX.play('coin'); } }, 760 + delay);
   }
@@ -143,15 +143,15 @@ function funCard(s, c, before, el) {
   const x = r.left + r.width / 2, y = r.top;
   const lv = m.lvl;
   gainXP(s, xp);
-  floatText(x, y - 10, `+${xp} XP`, 'xp');
+  floatText(x, y - 10, _l`+${xp} XP`, 'xp');
   const tags = [];
-  if (dComptes) tags.push('+1 client 🙋');
-  if (dVentes) tags.push('Vente ! 💳');
-  if (dPrets) tags.push('Prêt signé ! 🤝');
+  if (dComptes) tags.push(_t('+1 client 🙋'));
+  if (dVentes) tags.push(_t('Vente ! 💳'));
+  if (dPrets) tags.push(_t('Prêt signé ! 🤝'));
   tags.forEach((txt, i) => setTimeout(() => floatText(x, y - 40, txt, 'big'), 120 + i * 220));
   if (dVentes || dPrets) coinBurst(x, y, dPrets ? 14 : 8);
   else if (dComptes) coinBurst(x, y, 4);
-  if (m.lvl > lv) floatText(innerWidth / 2, innerHeight / 3, `NIVEAU ${m.lvl} !`, 'huge');
+  if (m.lvl > lv) floatText(innerWidth / 2, innerHeight / 3, _l`NIVEAU ${m.lvl} !`, 'huge');
   funHUD();
 }
 
@@ -159,9 +159,9 @@ function funCard(s, c, before, el) {
 function starRules(s, t) {
   const tot = t.total || t.cards.length, man = t.manual || 0;
   return [
-    ['Décider vous-même de tous les dossiers de votre bureau', man >= tot],
-    ['Réussir l’objectif du jour', !!(t.obj && t.obj.done)],
-    ['Assez de personnel : aucun visiteur reparti', t.arrived > 0 && !t.lost],
+    [_t('Décider vous-même de tous les dossiers de votre bureau'), man >= tot],
+    [_t('Réussir l’objectif du jour'), !!(t.obj && t.obj.done)],
+    [_t('Assez de personnel : aucun visiteur reparti'), t.arrived > 0 && !t.lost],
   ];
 }
 function funEndDay(s, t) {
@@ -179,9 +179,9 @@ function funEndDay(s, t) {
 }
 function dayBanner(st, xp, streak) {
   const el = document.createElement('div'); el.className = 'daybanner';
-  el.innerHTML = `<div class="db-stars">${[0, 1, 2].map(i => `<span class="${i < st ? 'on' : ''}" style="animation-delay:${0.15 + i * 0.22}s">★</span>`).join('')}${st > 3 ? '<span class="on bonus">★</span>' : ''}</div>
-    <b>${st >= 3 ? 'Journée parfaite !' : st === 2 ? 'Belle journée !' : st === 1 ? 'Journée correcte' : 'Journée ratée…'}</b>
-    <small>${xp ? `+${xp} XP` : 'Aucune étoile : traitez vous-même vos clients'}${streak >= 2 ? ` · 🔥 série de ${streak} jours` : ''}</small>`;
+  el.innerHTML = `<div class="db-stars">${[0, 1, 2].map(i => `<span class="${i < st ? 'on' : ''}" style="animation-delay:${0.15 + i * 0.22}s">★</span>`).join('')}${st > 3 ? _t('<span class="on bonus">★</span>') : ''}</div>
+    <b>${st >= 3 ? _t('Journée parfaite !') : st === 2 ? _t('Belle journée !') : st === 1 ? _t('Journée correcte') : _t('Journée ratée…')}</b>
+    <small>${xp ? _l`+${xp} XP` : _t('Aucune étoile : traitez vous-même vos clients')}${streak >= 2 ? _l` · 🔥 série de ${streak} jours` : ''}</small>`;
   document.body.appendChild(el); ui.bannerUntil = Date.now() + 2600;
   for (let i = 0; i < st; i++) setTimeout(() => SFX.play('star', i), 150 + i * 220);
   setTimeout(() => el.classList.add('out'), 2200); setTimeout(() => el.remove(), 2700);
@@ -189,28 +189,28 @@ function dayBanner(st, xp, streak) {
 
 // ---------- Coffres ----------
 const RARITY = [
-  ['commun', 'Commun', 0.6, '#94a3b8'], ['rare', 'Rare', 0.28, '#60a5fa'], ['epique', 'Épique', 0.1, '#c084fc'], ['legend', 'Légendaire', 0.02, '#fbbf24'],
+  ['commun', _t('Commun'), 0.6, '#94a3b8'], ['rare', _t('Rare'), 0.28, '#60a5fa'], ['epique', _t('Épique'), 0.1, '#c084fc'], ['legend', _t('Légendaire'), 0.02, '#fbbf24'],
 ];
 function rollChest(s) {
   let r = Math.random(), k = 0;
   for (; k < RARITY.length - 1; k++) { r -= RARITY[k][2]; if (r < 0) break; }
   const eq = Math.max(5e5, equity(s)), lines = [];
   const cash = f => { const v = Math.round(eq * f / 100) * 100; s.cash += v; lines.push(`💰 ${money(v)}`); };
-  if (k === 0) { const o = rint(0, 2); if (o === 0) cash(0.002); else if (o === 1) { s.reputation = clamp(s.reputation + 2, 0, 100); lines.push('⭐ +2 réputation'); } else { gainXP(s, 60); lines.push('✨ +60 XP'); } }
-  if (k === 1) { cash(0.005); s.reputation = clamp(s.reputation + 2, 0, 100); lines.push('⭐ +2 réputation'); }
+  if (k === 0) { const o = rint(0, 2); if (o === 0) cash(0.002); else if (o === 1) { s.reputation = clamp(s.reputation + 2, 0, 100); lines.push(_t('⭐ +2 réputation')); } else { gainXP(s, 60); lines.push(_t('✨ +60 XP')); } }
+  if (k === 1) { cash(0.005); s.reputation = clamp(s.reputation + 2, 0, 100); lines.push(_t('⭐ +2 réputation')); }
   if (k === 2) { cash(0.01); vipClient(s, lines); }
-  if (k === 3) { cash(0.03); vipClient(s, lines); M(s).pendingPerk++; lines.push('🏅 Un atout gratuit'); }
+  if (k === 3) { cash(0.03); vipClient(s, lines); M(s).pendingPerk++; lines.push(_t('🏅 Un atout gratuit')); }
   return { k, lines };
 }
 function vipClient(s, lines) {
   const b = s.branches[0]; if (!b) return;
   const p = newPersonFor(s, b); p.j = 8; p.s = rint(8, 14) * 1000; p.sp = Math.round(p.s * 0.45); p.b = p.s * rint(2, 5); p.save0 = p.s * rint(5, 15); p.q = 90;
   openPersonAccount(s, p, { card: true, livret: true }); p.c = 2; recomputeAgg(s);
-  lines.push(`🤵 Client VIP : ${esc(pname(p))} (${money(p.b + (p.l || 0))} déposés)`);
+  lines.push(_l`🤵 Client VIP : ${esc(pname(p))} (${money(p.b + (p.l || 0))} déposés)`);
 }
 function showChest() {
   ui.modal = true;
-  showModal(`<div class="chest-wrap"><div class="chest">🎁</div><h2>Coffre gagné !</h2><p class="center muted">${CHEST_STARS} étoiles réunies. Qu’y a-t-il dedans ?</p>
+  showModal(_l`<div class="chest-wrap"><div class="chest">🎁</div><h2>Coffre gagné !</h2><p class="center muted">${CHEST_STARS} étoiles réunies. Qu’y a-t-il dedans ?</p>
     <div class="choices"><button class="btn gold big" data-act="openChest">Ouvrir le coffre</button></div></div>`, true);
   SFX.play('notify');
 }
@@ -221,7 +221,7 @@ function openChest() {
   const box = $('#modal .chest'); if (box) box.classList.add('open');
   SFX.play('chest');
   setTimeout(() => {
-    $('#modal .modal-box').innerHTML = `<div class="chest-wrap" style="--rar:${col}"><div class="chest done">${k >= 2 ? '💎' : k === 1 ? '🎉' : '✨'}</div><div class="rarity">${name}</div>
+    $('#modal .modal-box').innerHTML = _l`<div class="chest-wrap" style="--rar:${col}"><div class="chest done">${k >= 2 ? '💎' : k === 1 ? '🎉' : '✨'}</div><div class="rarity">${name}</div>
       <ul class="loot">${lines.map(l => `<li>${l}</li>`).join('')}</ul>
       <div class="choices"><button class="btn primary" data-act="closeModal">Super !</button></div></div>`;
     $('#modal').dataset.noclose = '';
@@ -242,9 +242,9 @@ function checkLogin(s) {
 function showLogin() {
   const s = S, m = M(s), n = m.login.n, amt = loginAmt(s, n);
   ui.modal = true;
-  showModal(`<div class="m-ico">📅</div><h2>Bonus de connexion</h2><p class="center muted">Revenez chaque jour : la récompense grandit jusqu’au 7ᵉ jour.</p>
-    <div class="login-days">${[1, 2, 3, 4, 5, 6, 7].map(d => `<div class="ld ${d < ((n - 1) % 7) + 1 ? 'past' : d === ((n - 1) % 7) + 1 ? 'now' : ''}"><small>Jour ${d}</small><b>${d === 7 ? '🎁' : '💰'}</b><span>${money(loginAmt(s, d))}</span></div>`).join('')}</div>
-    <div class="choices"><button class="btn gold big" data-act="claimLogin">Récupérer ${money(amt)}${((n - 1) % 7) + 1 === 7 ? ' + un coffre' : ''}</button>${CG.canAd() ? `<button class="btn primary" data-act="claimLogin2">📺 Doubler avec une publicité : ${money(amt * 2)}</button>` : ''}</div>`, true);
+  showModal(_l`<div class="m-ico">📅</div><h2>Bonus de connexion</h2><p class="center muted">Revenez chaque jour : la récompense grandit jusqu’au 7ᵉ jour.</p>
+    <div class="login-days">${[1, 2, 3, 4, 5, 6, 7].map(d => _l`<div class="ld ${d < ((n - 1) % 7) + 1 ? 'past' : d === ((n - 1) % 7) + 1 ? 'now' : ''}"><small>Jour ${d}</small><b>${d === 7 ? '🎁' : '💰'}</b><span>${money(loginAmt(s, d))}</span></div>`).join('')}</div>
+    <div class="choices"><button class="btn gold big" data-act="claimLogin">Récupérer ${money(amt)}${((n - 1) % 7) + 1 === 7 ? _t(' + un coffre') : ''}</button>${CG.canAd() ? _l`<button class="btn primary" data-act="claimLogin2">📺 Doubler avec une publicité : ${money(amt * 2)}</button>` : ''}</div>`, true);
 }
 const loginAmt = (s, n) => Math.round(Math.max(1000, Math.max(5e5, equity(s)) * 0.001) * (((n - 1) % 7) + 1) / 100) * 100;
 function claimLogin(mult = 1) {
@@ -264,15 +264,15 @@ function funHUD() {
   const m = M(S);
   let el = $('#lvchip');
   if (!el) {
-    el = document.createElement('button'); el.id = 'lvchip'; el.className = 'lvchip'; el.dataset.act = 'myPerks'; el.title = 'Votre niveau, vos atouts et vos étoiles';
+    el = document.createElement('button'); el.id = 'lvchip'; el.className = 'lvchip'; el.dataset.act = 'myPerks'; el.title = _t('Votre niveau, vos atouts et vos étoiles');
     $('.tb-date').after(el);
   }
   const key = [m.lvl, m.xp, m.stars, m.chests].join('|'); if (el._k === key) return; el._k = key;
-  el.innerHTML = `<span class="lv">${m.lvl}</span><span class="lvtxt"><small>Banquier niv. ${m.lvl}</small><span class="xpbar"><i style="width:${Math.min(100, m.xp / xpFor(m.lvl) * 100)}%"></i></span></span><span class="chestp" title="Étoiles avant le prochain coffre">⭐ ${m.stars % CHEST_STARS}/${CHEST_STARS}</span>`;
+  el.innerHTML = _l`<span class="lv">${m.lvl}</span><span class="lvtxt"><small>Banquier niv. ${m.lvl}</small><span class="xpbar"><i style="width:${Math.min(100, m.xp / xpFor(m.lvl) * 100)}%"></i></span></span><span class="chestp" title="Étoiles avant le prochain coffre">⭐ ${m.stars % CHEST_STARS}/${CHEST_STARS}</span>`;
 }
 
 Object.assign(actions, {
-  perk: el => { const k = el.dataset.k; if (!ui.perkChoices || !ui.perkChoices.includes(k)) return; applyPerk(S, k); M(S).pendingPerk--; ui.perkChoices = null; closeModal(); toast(`${PERKS[k].ico} Atout obtenu : <b>${PERKS[k].name}</b>`, 'good'); renderTop(); renderPanel(true); funHUD(); save(); },
+  perk: el => { const k = el.dataset.k; if (!ui.perkChoices || !ui.perkChoices.includes(k)) return; applyPerk(S, k); M(S).pendingPerk--; ui.perkChoices = null; closeModal(); toast(_l`${PERKS[k].ico} Atout obtenu : <b>${PERKS[k].name}</b>`, 'good'); renderTop(); renderPanel(true); funHUD(); save(); },
   myPerks: () => showMyPerks(),
   openChest: () => openChest(),
   claimLogin: () => claimLogin(),

@@ -13,7 +13,7 @@ function showModal(html, noClose) {
 function openCardModal(id) {
   const c = S.today && S.today.cards.find(x => x.id == id); if (!c || c.done) return;
   ui.modal = true; ui.focusCard = c.id;
-  showModal(`<div class="dossier">${clientCard(S, c)}</div><p class="hint">Touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre · <kbd>Échap</kbd> pour décider plus tard</p>`);
+  showModal(_l`<div class="dossier">${clientCard(S, c)}</div><p class="hint">Touches <kbd>1</kbd> à <kbd>5</kbd> pour répondre · <kbd>Échap</kbd> pour décider plus tard</p>`);
   $('#modal .modal-box').classList.add('wide', 'dossier-box');
 }
 // Après une décision : on ferme le dossier s'il est réglé, sinon on le rafraîchit
@@ -32,18 +32,18 @@ const actions = {
   tab: el => { ui.tab = el.dataset.tab; if (S.newTabs) S.newTabs = S.newTabs.filter(t => t !== ui.tab); renderTabs(); renderPanel(true); $('#panel').scrollTop = 0; },
   offer: (el, ev) => {
     const r = S.requests.find(x => x.id == el.dataset.id); if (!r) return;
-    if (S.surveillance) return toast('⚠️ Sous surveillance : prêts interdits', 'bad');
-    if (S.cash < r.amount) return toast('Liquidités insuffisantes ! Empruntez à la banque centrale ou attirez des dépôts.', 'bad');
-    if (endet(r) > 0.35) return toast('🚫 Endettement au-delà de 35 % : la règle du HCSF vous interdit ce prêt. Baissez le taux ou refusez le dossier.', 'bad');
+    if (S.surveillance) return toast(_t('⚠️ Sous surveillance : prêts interdits'), 'bad');
+    if (S.cash < r.amount) return toast(_t('Liquidités insuffisantes ! Empruntez à la banque centrale ou attirez des dépôts.'), 'bad');
+    if (endet(r) > 0.35) return toast(_t('🚫 Endettement au-delà de 35 % : la règle du HCSF vous interdit ce prêt. Baissez le taux ou refusez le dossier.'), 'bad');
     S.requests = S.requests.filter(x => x !== r); S.flags.offered = true;
-    if (chance(acceptProb(r))) { grantLoan(S, r); toast(`✅ ${esc(r.name)} accepte votre offre à ${pct(r.offer)} !`, 'good'); floatMoney(-r.amount, ev.clientX, ev.clientY); }
-    else { S.stats.refused++; toast(`❌ ${esc(r.name)} trouve votre taux trop élevé et part chez le concurrent.`, 'bad'); log(`❌ ${r.name} refuse votre offre à ${pct(r.offer)}.`); }
+    if (chance(acceptProb(r))) { grantLoan(S, r); toast(_l`✅ ${esc(r.name)} accepte votre offre à ${pct(r.offer)} !`, 'good'); floatMoney(-r.amount, ev.clientX, ev.clientY); }
+    else { S.stats.refused++; toast(_l`❌ ${esc(r.name)} trouve votre taux trop élevé et part chez le concurrent.`, 'bad'); log(_l`❌ ${r.name} refuse votre offre à ${pct(r.offer)}.`); }
     renderPanel(true);
   },
   reject: el => { S.requests = S.requests.filter(x => x.id != el.dataset.id); S.stats.refused++; renderPanel(true); },
   launch: el => {
     const k = el.dataset.p; migrateProducts(S); S.prod[k].on = true;
-    SFX.play('level'); confetti(40); toast(`${PRODUCTS[k].icon} <b>${PRODUCTS[k].name}</b> lancé !`, 'good'); log(`${PRODUCTS[k].icon} Lancement : ${PRODUCTS[k].name}.`, 'good');
+    SFX.play('level'); confetti(40); toast(_l`${PRODUCTS[k].icon} <b>${PRODUCTS[k].name}</b> lancé !`, 'good'); log(_l`${PRODUCTS[k].icon} Lancement : ${PRODUCTS[k].name}.`, 'good');
     renderPanel(true);
   },
   auto: el => { S.auto.on = el.dataset.v === 'on'; renderPanel(true); },
@@ -53,10 +53,10 @@ const actions = {
   tradeAmt: el => { ui.tradeAmt = +el.dataset.v; renderPanel(true); },
   buy: (el, ev) => {
     const id = ui.market, a = ASSETS[id];
-    if (a.need && !S.upgrades[a.need]) return toast('Nécessite la salle des marchés', 'bad');
-    if (S.surveillance) return toast('⚠️ Sous surveillance : achats interdits', 'bad');
+    if (a.need && !S.upgrades[a.need]) return toast(_t('Nécessite la salle des marchés'), 'bad');
+    if (S.surveillance) return toast(_t('⚠️ Sous surveillance : achats interdits'), 'bad');
     const amt = ui.tradeAmt, fee = amt * tradeFee();
-    if (S.cash < amt + fee) return toast('Liquidités insuffisantes', 'bad');
+    if (S.cash < amt + fee) return toast(_t('Liquidités insuffisantes'), 'bad');
     S.cost[id] = (S.cost[id] || 0) + amt + fee;
     S.portfolio[id] = (S.portfolio[id] || 0) + amt / S.market[id].price;
     S.cash -= amt + fee; SFX.play('coin');
@@ -78,32 +78,32 @@ const actions = {
   branch: el => {
     const id = el.dataset.id, c = CITIES[id];
     if (getBranch(S, id) || !regionUnlocked(S, c.region)) return;
-    if (S.cash < c.cost) return toast('Liquidités insuffisantes', 'bad');
+    if (S.cash < c.cost) return toast(_t('Liquidités insuffisantes'), 'bad');
     S.cash -= c.cost; S.fixed = (S.fixed || 0) + c.cost; S.branches.push(newBranch(id));
     SFX.play('level'); confetti();
-    log(`🏢 Nouvelle agence ouverte : ${c.name} !`, 'good'); toast(`🏢 Agence de ${c.name} inaugurée ! Équipez-la dans « Ma banque ».`, 'good');
+    log(_l`🏢 Nouvelle agence ouverte : ${c.name} !`, 'good'); toast(_l`🏢 Agence de ${c.name} inaugurée ! Équipez-la dans « Ma banque ».`, 'good');
     renderPanel(true);
   },
   goBranch: el => { ui.branch = el.dataset.id; ui.tab = 'plan'; renderTabs(); renderPanel(true); },
   selBranch: el => { ui.branch = el.dataset.id; floor.drag = null; renderPanel(true); },
   build: el => { if (doBuild(el.dataset.k)) renderPlanSide(); },
-  closeBranch: el => confirmBox('🔒', `Fermer ${CITIES[el.dataset.id].name} ?`, 'Les clients partiront chez vos concurrents (-3 réputation) et l’aménagement sera perdu.', 'doCloseBranch', 'Fermer l’agence', el.dataset.id),
+  closeBranch: el => confirmBox('🔒', _l`Fermer ${CITIES[el.dataset.id].name} ?`, _t('Les clients partiront chez vos concurrents (-3 réputation) et l’aménagement sera perdu.'), 'doCloseBranch', _t('Fermer l’agence'), el.dataset.id),
   doCloseBranch: el => {
     const id = el.dataset.id; S.branches = S.branches.filter(b => b.id !== id);
     S.reputation = clamp(S.reputation - 3, 0, 100); ui.branch = HQ;
-    log(`🔒 Agence de ${CITIES[id].name} fermée.`); closeModal(); renderPanel(true);
+    log(_l`🔒 Agence de ${CITIES[id].name} fermée.`); closeModal(); renderPanel(true);
   },
   upgrade: el => {
     const u = UPGRADES[el.dataset.id];
-    if (S.cash < u.cost) return toast('Liquidités insuffisantes', 'bad');
+    if (S.cash < u.cost) return toast(_t('Liquidités insuffisantes'), 'bad');
     S.cash -= u.cost; S.upgrades[el.dataset.id] = true; SFX.play('build');
-    log(`${u.icon} ${u.name} installé(e).`, 'good'); toast(`${u.icon} ${u.name} : c’est parti !`, 'good');
+    log(_l`${u.icon} ${u.name} installé(e).`, 'good'); toast(_l`${u.icon} ${u.name} : c’est parti !`, 'good');
     renderPanel(true);
   },
-  cancelUp: el => { delete S.upgrades[el.dataset.id]; log(`${UPGRADES[el.dataset.id].icon} ${UPGRADES[el.dataset.id].name} résilié(e).`); renderPanel(true); },
+  cancelUp: el => { delete S.upgrades[el.dataset.id]; log(_l`${UPGRADES[el.dataset.id].icon} ${UPGRADES[el.dataset.id].name} résilié(e).`); renderPanel(true); },
   borrow: el => {
     const amt = Math.min(+el.dataset.v, cbLimit(S) - S.cbDebt);
-    if (amt <= 0) return toast('Plafond de garanties atteint', 'bad');
+    if (amt <= 0) return toast(_t('Plafond de garanties atteint'), 'bad');
     S.cbDebt += amt; S.cash += amt; SFX.play('coin'); renderPanel(true);
   },
   repay: el => {
@@ -113,22 +113,22 @@ const actions = {
   },
   bonus: el => {
     const amt = equity(S) * +el.dataset.f;
-    if (S.surveillance) return toast('⚠️ Interdit sous surveillance du régulateur', 'bad');
-    if (amt <= 0 || S.cash < amt) return toast('Liquidités insuffisantes', 'bad');
+    if (S.surveillance) return toast(_t('⚠️ Interdit sous surveillance du régulateur'), 'bad');
+    if (amt <= 0 || S.cash < amt) return toast(_t('Liquidités insuffisantes'), 'bad');
     S.cash -= amt; S.fortune += amt * 0.7; S.stats.bonus += amt; SFX.play('coin');
-    if (+el.dataset.f >= 0.05) { S.reputation = clamp(S.reputation - 8, 0, 100); toast('📰 « Scandale des bonus ! » titre la presse. Réputation -8', 'bad'); }
-    log(`😎 Vous vous versez un bonus de ${money(amt)} (${money(amt * 0.7)} après impôts).`);
+    if (+el.dataset.f >= 0.05) { S.reputation = clamp(S.reputation - 8, 0, 100); toast(_t('📰 « Scandale des bonus ! » titre la presse. Réputation -8'), 'bad'); }
+    log(_l`😎 Vous vous versez un bonus de ${money(amt)} (${money(amt * 0.7)} après impôts).`);
     renderPanel(true);
   },
   lux: el => {
     const l = LUXURY[el.dataset.id];
-    if (S.fortune < l.cost) return toast('Fortune personnelle insuffisante', 'bad');
+    if (S.fortune < l.cost) return toast(_t('Fortune personnelle insuffisante'), 'bad');
     S.fortune -= l.cost; S.owned.push(el.dataset.id);
-    toast(`${l.icon} Vous possédez maintenant : ${l.name} !`, 'gold'); log(`${l.icon} Achat perso : ${l.name}.`);
+    toast(_l`${l.icon} Vous possédez maintenant : ${l.name} !`, 'gold'); log(_l`${l.icon} Achat perso : ${l.name}.`);
     renderPanel(true);
   },
   retire: () => { closeModal(); gameOver('retraite'); },
-  confirmRetire: () => confirmBox('🎣', 'Prendre sa retraite ?', 'La partie se termine et votre score est enregistré (fonds propres + fortune personnelle).', 'retire', 'Oui, je raccroche'),
+  confirmRetire: () => confirmBox('🎣', _t('Prendre sa retraite ?'), _t('La partie se termine et votre score est enregistré (fonds propres + fortune personnelle).'), 'retire', _t('Oui, je raccroche')),
   choice: el => {
     const c = ui.event.choices[+el.dataset.i];
     closeModal();
@@ -145,7 +145,7 @@ const actions = {
   clPage: el => { ui.clPage = +el.dataset.v; renderPanel(true); $('#panel').scrollTop = 0; },
   nextDay: () => nextDay(),
   focusCard: el => { ui.focusCard = +el.dataset.id; renderPanel(true); },
-  delegate: () => { const n = delegateRest(S); if (n) toast(`👥 Votre équipe a reçu ${n} client${n > 1 ? 's' : ''}`, 'good'); renderTop(); renderPanel(true); },
+  delegate: () => { const n = delegateRest(S); if (n) toast(_l`👥 Votre équipe a reçu ${n} client${n > 1 ? 's' : ''}`, 'good'); renderTop(); renderPanel(true); },
   card: el => {
     const c = S.today && S.today.cards.find(x => x.id == el.dataset.id); if (!c || c.done) return;
     const before = { ...S.today.tally }, art = el.closest('.ccard');
@@ -161,28 +161,28 @@ const actions = {
   sceneBr: el => { ui.branch = el.dataset.id; floorReset(ui.branch); renderPanel(true); },
   cardLoan: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); const before = c && { ...S.today.tally }; if (c && offerLoanCard(S, c)) { funCard(S, c, before, el); renderTop(); afterCard(c); } },
   cardVerify: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; verifyRequest(c.req.id, c.req); if (c.req.fraud && c.req.checked) { c.done = true; S.today.done++; } afterCard(c); },
-  cardDefer: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; c.req.expires = S.day + 20; S.requests.push(c.req); c.done = true; S.today.done++; toast('📁 Dossier rangé dans l’onglet Prêts (20 jours pour décider)', 'gold'); afterCard(c); },
+  cardDefer: el => { const c = S.today.cards.find(x => x.id == el.dataset.id); if (!c) return; c.req.expires = S.day + 20; S.requests.push(c.req); c.done = true; S.today.done++; toast(_t('📁 Dossier rangé dans l’onglet Prêts (20 jours pour décider)'), 'gold'); afterCard(c); },
   spec: el => {
     const b = getBranch(S, ui.branch), v = el.dataset.v; if ((b.spec || 'aucune') === v) return;
     const cost = Math.round(cityOf(b).build * 0.2 / 1e3) * 1e3;
-    if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad');
+    if (S.cash < cost) return toast(_t('Liquidités insuffisantes'), 'bad');
     S.cash -= cost; S.fixed = (S.fixed || 0) + cost; b.spec = v; SFX.play('build');
-    toast(`${SPECS[v].icon} ${CITIES[b.id].name} devient une agence « ${SPECS[v].name} »`, 'good'); log(`${SPECS[v].icon} ${CITIES[b.id].name} se spécialise : ${SPECS[v].name}.`);
+    toast(_l`${SPECS[v].icon} ${CITIES[b.id].name} devient une agence « ${SPECS[v].name} »`, 'good'); log(_l`${SPECS[v].icon} ${CITIES[b.id].name} se spécialise : ${SPECS[v].name}.`);
     renderPlanSide();
   },
   tip: el => showTip(el.dataset.k),
   settings: () => openSettings(),
   setPref: el => setPref(el.dataset.k, el.dataset.v),
   verify: el => { verifyRequest(el.dataset.id); renderPanel(true); },
-  buyout: el => { const R = RIVALS.find(x => x.id === el.dataset.id), r = S.rivals.find(x => x.id === el.dataset.id); confirmBox('🦈', `Racheter ${R.name} ?`, `Prix : <b>${money(buyoutPrice(r))}</b>. Vous récupérez ses clients et jusqu’à deux de ses agences.`, 'doBuyout', 'Racheter', el.dataset.id); },
+  buyout: el => { const R = RIVALS.find(x => x.id === el.dataset.id), r = S.rivals.find(x => x.id === el.dataset.id); confirmBox('🦈', _l`Racheter ${R.name} ?`, _l`Prix : <b>${money(buyoutPrice(r))}</b>. Vous récupérez ses clients et jusqu’à deux de ses agences.`, 'doBuyout', _t('Racheter'), el.dataset.id); },
   doBuyout: el => { closeModal(); buyoutRival(el.dataset.id); renderPanel(true); },
   editPlan: () => { ui.editPlan = !ui.editPlan; floor.drag = null; floor.editHover = null; renderPanel(true); },
   theme: el => {
     const b = getBranch(S, ui.branch); b.theme = { ...themeOf(b), [el.dataset.g]: el.dataset.v };
     SFX.play('click'); renderPlanSide();
   },
-  themeAll: () => { const t = themeOf(getBranch(S, ui.branch)); for (const x of S.branches) x.theme = { ...t }; toast('🎨 Style appliqué à toutes vos agences', 'good'); },
-  resetLayout: () => { const b = getBranch(S, ui.branch); if (b.pos) delete b.pos[b.size]; floor.agents = []; floor.busy = {}; toast('Disposition d’origine rétablie', 'good'); },
+  themeAll: () => { const t = themeOf(getBranch(S, ui.branch)); for (const x of S.branches) x.theme = { ...t }; toast(_t('🎨 Style appliqué à toutes vos agences'), 'good'); },
+  resetLayout: () => { const b = getBranch(S, ui.branch); if (b.pos) delete b.pos[b.size]; floor.agents = []; floor.busy = {}; toast(_t('Disposition d’origine rétablie'), 'good'); },
   pickCand: el => {
     const c = ui.cands && ui.cands[+el.dataset.i]; if (!c) return;
     closeModal();
@@ -191,12 +191,12 @@ const actions = {
   promote: el => { promoteEmp(el.dataset.id); renderPlanSide(); },
   train: el => { trainEmp(el.dataset.id); renderPlanSide(); },
   selEmp: el => { ui.emp = ui.emp == el.dataset.id ? null : +el.dataset.id; renderPlanSide(); },
-  fire: el => { const [, e] = findEmp(el.dataset.id); if (e) confirmBox('📦', `Licencier ${esc(e.name)} ?`, 'Ses clients regretteront son départ (-1 réputation).', 'doFire', 'Licencier', e.id); },
+  fire: el => { const [, e] = findEmp(el.dataset.id); if (e) confirmBox('📦', _l`Licencier ${esc(e.name)} ?`, _t('Ses clients regretteront son départ (-1 réputation).'), 'doFire', _t('Licencier'), e.id); },
   doFire: el => { fireEmp(el.dataset.id); closeModal(); renderPlanSide(); },
   toggleMore: el => { ui.openMore = !el.parentNode.open; },
   menu: () => {
     ui.modal = true;
-    showModal(`<div class="m-ico">☰</div><h2>Pause</h2><p class="center muted">Le temps est arrêté tant que ce menu est ouvert.</p><div class="choices">
+    showModal(_l`<div class="m-ico">☰</div><h2>Pause</h2><p class="center muted">Le temps est arrêté tant que ce menu est ouvert.</p><div class="choices">
       <button class="btn primary" data-act="closeModal">Reprendre</button>
       <button class="btn" data-act="help">Comment jouer</button>
       <button class="btn" data-act="settings">Options et accessibilité</button>
@@ -205,13 +205,13 @@ const actions = {
       <button class="btn" data-act="confirmRetire">Prendre sa retraite (terminer)</button>
       <button class="btn ghost" data-act="toStart">Retour à l’accueil</button></div>`);
   },
-  saveNow: () => { save(); closeModal(); toast('💾 Partie sauvegardée', 'good'); },
+  saveNow: () => { save(); closeModal(); toast(_t('💾 Partie sauvegardée'), 'good'); },
   toStart: () => { save(); closeModal(true); S = null; showStart(); },
   help: () => { ui.modal = true; showModal(HELP); },
   mute: () => { prefs.mute = !prefs.mute; savePrefs(); $('#muteBtn').innerHTML = ic(prefs.mute ? 'mute' : 'vol'); if (!prefs.mute) SFX.play('click'); },
   continue: () => { const s = loadSave(); if (s) startGame(s); },
   newGame: () => {
-    if (loadSave()) return confirmBox('⚠️', 'Écraser la partie en cours ?', 'Votre partie sauvegardée sera perdue.', 'newGameForce', 'Nouvelle partie');
+    if (loadSave()) return confirmBox('⚠️', _t('Écraser la partie en cours ?'), _t('Votre partie sauvegardée sera perdue.'), 'newGameForce', _t('Nouvelle partie'));
     actions.newGameForce();
   },
   newGameForce: () => {
@@ -229,8 +229,8 @@ const actions = {
 };
 
 function randomBankName() {
-  return pick(['Banque', 'Crédit', 'Caisse', 'Comptoir', 'Société Financière']) + ' ' +
-    pick(['du Lapin d’Or', 'des Escargots Réunis', 'de la Baguette', 'Mutuel du Camembert', 'des Pigeons Voyageurs', 'Galactique', 'du Petit Cochon', 'de la Lune', 'des Licornes', 'du Croissant']);
+  return pick([_t('Banque'), _t('Crédit'), _t('Caisse'), _t('Comptoir'), _t('Société Financière')]) + ' ' +
+    pick([_t('du Lapin d’Or'), _t('des Escargots Réunis'), _t('de la Baguette'), _t('Mutuel du Camembert'), _t('des Pigeons Voyageurs'), _t('Galactique'), _t('du Petit Cochon'), _t('de la Lune'), _t('des Licornes'), _t('du Croissant')]);
 }
 
 // ---------- Recrutement ----------
@@ -239,12 +239,12 @@ function showCandidates(role) {
   ui.cands = makeCandidates(role); ui.modal = true;
   const cards = ui.cands.map((e, i) => {
     const cost = hireCost(b, e), T = TRAITS[e.trait];
-    return `<button class="cand" data-act="pickCand" data-i="${i}" ${S.cash < cost ? 'disabled' : ''}>
+    return _l`<button class="cand" data-act="pickCand" data-i="${i}" ${S.cash < cost ? 'disabled' : ''}>
       ${avatar(e, 64)}<b>${esc(e.name)}</b><small>${empTitle(e)}</small><span class="stars">${stars(e.lvl)}</span>
       <span class="trait" title="${esc(T.desc)}">${T.icon} ${T.name}</span><small class="muted">${T.desc}</small>
       <span class="cand-foot"><small>Salaire ${money(empWage(S, b, e))}/mois</small><b>${money(cost)}</b></span></button>`;
   }).join('');
-  showModal(`<h2>Recruter : ${STAFF_ROLES[role].toLowerCase()}</h2><p class="center muted">Trois candidats se présentent à ${CITIES[b.id].name}. Les plus expérimentés coûtent plus cher, mais travaillent mieux.</p>
+  showModal(_l`<h2>Recruter : ${STAFF_ROLES[role].toLowerCase()}</h2><p class="center muted">Trois candidats se présentent à ${CITIES[b.id].name}. Les plus expérimentés coûtent plus cher, mais travaillent mieux.</p>
     <div class="cands">${cards}</div><div class="choices"><button class="btn ghost" data-act="closeModal">Annuler</button></div>`);
   $('#modal .modal-box').classList.add('wide');
 }
@@ -256,24 +256,24 @@ function confetti(n = 90) {
   for (let i = 0; i < n; i++) {
     const el = document.createElement('i');
     el.className = 'confetti';
-    el.style.cssText = `left:${rnd(0, 100)}vw;background:${pick(cols)};--dx:${rnd(-120, 120)}px;--r:${rint(-720, 720)}deg;animation-duration:${rnd(1.6, 3)}s;animation-delay:${rnd(0, 0.4)}s;width:${rint(6, 10)}px;height:${rint(8, 14)}px`;
+    el.style.cssText = _l`left:${rnd(0, 100)}vw;background:${pick(cols)};--dx:${rnd(-120, 120)}px;--r:${rint(-720, 720)}deg;animation-duration:${rnd(1.6, 3)}s;animation-delay:${rnd(0, 0.4)}s;width:${rint(6, 10)}px;height:${rint(8, 14)}px`;
     document.body.appendChild(el); setTimeout(() => el.remove(), 3600);
   }
 }
 
 // ---------- Tutoriel ----------
 const TUTO = [
-  { tab: 'dash', target: ['g', 0], txt: 'Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est vide. Cliquez sur le <b>＋</b> qui clignote pour construire votre premier <b>guichet</b>.', done: s => getBranch(s, HQ).g >= 1 },
-  { tab: 'dash', target: ['g', 0], txt: 'Il faut quelqu’un derrière ! Cliquez sur le guichet, puis sur <b>Embaucher</b>, et choisissez un <b>guichetier</b> parmi les candidats.', done: s => getBranch(s, HQ).gs >= 1 },
-  { tab: 'dash', reward: 2000, txt: 'Les portes sont ouvertes ! Au-dessus de chaque client, ce qu’il veut : <b>🙋 ouvrir un compte</b>, <b>💬 une opération</b>, <b>🏧 retirer</b>. Regardez votre guichetier en servir quelques-uns.', done: s => (s.today && s.today.served >= 3) || s.clients >= 3 },
-  { tab: 'dash', target: ['g', 0], reward: 3000, txt: 'Plus votre guichet est rapide, moins les clients attendent. <b>Cliquez sur votre guichet</b> et passez-le au <b>niveau 2</b>.', done: s => s.branches.some(b => b.lv && b.lv.g && b.lv.g.some(x => x >= 2)) },
-  { tab: 'dash', target: ['g', 1], reward: 5000, txt: 'Un seul guichet, c’est peu : construisez un <b>2ᵉ guichet</b> (le ＋ qui clignote) et embauchez quelqu’un. Deux fois plus de clients servis !', done: s => getBranch(s, HQ).gs >= 2 },
-  { tab: 'dash', el: '.profit', btn: 'Compris !', txt: 'À droite, <b>votre résultat</b> : pour l’instant, la banque dépense plus qu’elle ne gagne. C’est normal ! Il faut d’abord des clients et leur argent avant de pouvoir <b>prêter</b>.' },
-  { tab: 'dash', el: '.side-box.chap', txt: 'Votre premier objectif est à droite : <b>25 clients</b> et <b>50 000 €</b> déposés. Laissez tourner, et faites une pause avec <b>⏸</b> (ou Espace) quand vous voulez.', done: s => s.chapter >= 1 },
-  { tab: 'dash', target: ['b', 0], reward: 5000, txt: '🎉 Les <b>prêts</b> sont débloqués : c’est là que la banque gagne vraiment sa vie ! Construisez un <b>bureau de crédit</b> (le ＋ à gauche) et recrutez un <b>conseiller</b>.', done: s => getBranch(s, HQ).bs >= 1 },
-  { tab: 'dash', el: '.grow-box', reward: 3000, txt: 'Lancez le <b>livret d’épargne</b> dans <b>« Développer ma banque »</b> : il attire l’argent des épargnants, que vous pourrez prêter.', done: s => s.prod.liv.on },
-  { tab: 'dash', el: '.inbox', reward: 5000, txt: 'Vos conseillers signent seuls les petits prêts. Les <b>gros dossiers</b> arrivent dans <b>« Dossiers du PDG »</b> : ouvrez-les et décidez. Objectif : <b>3 prêts signés</b>.', done: s => s.stats.granted >= 3 },
-  { tab: 'dash', reward: 10000, btn: 'Merci Gisèle !', txt: 'Bravo, vous savez tout ! Suivez les <b>chapitres</b> à droite pour faire grandir votre banque : coffres, salon VIP, nouvelles villes… et un jour, la Lune. 🚀' },
+  { tab: 'dash', target: ['g', 0], txt: _t('Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est vide. Cliquez sur le <b>＋</b> qui clignote pour construire votre premier <b>guichet</b>.'), done: s => getBranch(s, HQ).g >= 1 },
+  { tab: 'dash', target: ['g', 0], txt: _t('Il faut quelqu’un derrière ! Cliquez sur le guichet, puis sur <b>Embaucher</b>, et choisissez un <b>guichetier</b> parmi les candidats.'), done: s => getBranch(s, HQ).gs >= 1 },
+  { tab: 'dash', reward: 2000, txt: _t('Les portes sont ouvertes ! Au-dessus de chaque client, ce qu’il veut : <b>🙋 ouvrir un compte</b>, <b>💬 une opération</b>, <b>🏧 retirer</b>. Regardez votre guichetier en servir quelques-uns.'), done: s => (s.today && s.today.served >= 3) || s.clients >= 3 },
+  { tab: 'dash', target: ['g', 0], reward: 3000, txt: _t('Plus votre guichet est rapide, moins les clients attendent. <b>Cliquez sur votre guichet</b> et passez-le au <b>niveau 2</b>.'), done: s => s.branches.some(b => b.lv && b.lv.g && b.lv.g.some(x => x >= 2)) },
+  { tab: 'dash', target: ['g', 1], reward: 5000, txt: _t('Un seul guichet, c’est peu : construisez un <b>2ᵉ guichet</b> (le ＋ qui clignote) et embauchez quelqu’un. Deux fois plus de clients servis !'), done: s => getBranch(s, HQ).gs >= 2 },
+  { tab: 'dash', el: '.profit', btn: _t('Compris !'), txt: _t('À droite, <b>votre résultat</b> : pour l’instant, la banque dépense plus qu’elle ne gagne. C’est normal ! Il faut d’abord des clients et leur argent avant de pouvoir <b>prêter</b>.') },
+  { tab: 'dash', el: '.side-box.chap', txt: _t('Votre premier objectif est à droite : <b>25 clients</b> et <b>50 000 €</b> déposés. Laissez tourner, et faites une pause avec <b>⏸</b> (ou Espace) quand vous voulez.'), done: s => s.chapter >= 1 },
+  { tab: 'dash', target: ['b', 0], reward: 5000, txt: _t('🎉 Les <b>prêts</b> sont débloqués : c’est là que la banque gagne vraiment sa vie ! Construisez un <b>bureau de crédit</b> (le ＋ à gauche) et recrutez un <b>conseiller</b>.'), done: s => getBranch(s, HQ).bs >= 1 },
+  { tab: 'dash', el: '.grow-box', reward: 3000, txt: _t('Lancez le <b>livret d’épargne</b> dans <b>« Développer ma banque »</b> : il attire l’argent des épargnants, que vous pourrez prêter.'), done: s => s.prod.liv.on },
+  { tab: 'dash', el: '.inbox', reward: 5000, txt: _t('Vos conseillers signent seuls les petits prêts. Les <b>gros dossiers</b> arrivent dans <b>« Dossiers du PDG »</b> : ouvrez-les et décidez. Objectif : <b>3 prêts signés</b>.'), done: s => s.stats.granted >= 3 },
+  { tab: 'dash', reward: 10000, btn: _t('Merci Gisèle !'), txt: _t('Bravo, vous savez tout ! Suivez les <b>chapitres</b> à droite pour faire grandir votre banque : coffres, salon VIP, nouvelles villes… et un jour, la Lune. 🚀') },
 ];
 function tutStep(s) { return s && s.tut >= 0 && s.tut < TUTO.length ? TUTO[s.tut] : null; }
 // L'emplacement du plan à montrer du doigt (flèche animée)
@@ -281,7 +281,7 @@ function tutTarget() { const st = tutStep(S); return st && st.target && ui.tab =
 function tutReward(s, st) {
   if (!st.reward) return;
   s.cash += st.reward; gainXP(s, 30);
-  toast(`✅ Étape réussie : <b>+${money(st.reward)}</b>`, 'good'); SFX.play('good'); confetti(30);
+  toast(_l`✅ Étape réussie : <b>+${money(st.reward)}</b>`, 'good'); SFX.play('good'); confetti(30);
 }
 function updateCoach(force) {
   const s = S, el = $('#coach');
@@ -294,26 +294,26 @@ function updateCoach(force) {
   want.forEach(x => x.classList.add('tut-glow'));
   if (!force && el.dataset.step == s.tut && !el.hidden) return;
   el.dataset.step = s.tut; el.hidden = false;
-  el.innerHTML = `<div class="coach-h"><span class="coach-av">🧑‍💼</span><div class="grow"><b>Gisèle, votre directrice adjointe</b><small>Étape ${s.tut + 1} / ${TUTO.length}</small></div>${st.reward ? `<span class="coach-rw">🎁 ${money(st.reward)}</span>` : ''}</div>
+  el.innerHTML = _l`<div class="coach-h"><span class="coach-av">🧑‍💼</span><div class="grow"><b>Gisèle, votre directrice adjointe</b><small>Étape ${s.tut + 1} / ${TUTO.length}</small></div>${st.reward ? `<span class="coach-rw">🎁 ${money(st.reward)}</span>` : ''}</div>
     <div class="coach-bar"><i style="width:${s.tut / TUTO.length * 100}%"></i></div>
     <p>${st.txt}</p><div class="row">${st.btn ? `<button class="btn sm primary" data-act="tutNext">${st.btn}</button>` : ''}<button class="btn sm ghost" data-act="tutSkip">Passer le tutoriel</button></div>`;
 }
 
 // ---------- Textes ----------
-const HELP = `<div class="m-ico">📘</div><h2>Comment jouer</h2>
+const HELP = _l`<div class="m-ico">📘</div><h2>Comment jouer</h2>
 <ul>
-<li>🎯 <b>But</b> : terminer les 8 chapitres, d’une agence vide à Montpellier jusqu’à la première banque interplanétaire.</li>
-<li>🏦 <b>Ma banque</b> : installez des bureaux, des guichets et des distributeurs, recrutez et formez votre équipe. Chaque jour, des clients viennent : s’il n’y a pas assez de monde pour les servir, ils repartent et vous perdez de l’argent.</li>
-<li>🤝 <b>Prêts</b> : vos conseillers reçoivent les demandes. Choisissez le taux, et faites vérifier (🔎) les dossiers douteux : certains sont des escrocs.</li>
+<li>🎯 <b>But</b> : terminer les chapitres, d’une agence vide à Montpellier jusqu’à la première banque interplanétaire.</li>
+<li>🏦 <b>Votre agence</b> : les clients entrent, font la queue et se font servir. Construisez et améliorez guichets, bureaux de crédit, distributeurs et salles spéciales, et recrutez votre équipe. S’il n’y a pas assez de monde, les clients repartent fâchés.</li>
+<li>🤝 <b>Prêts</b> : vos conseillers signent seuls les petits prêts. Les gros dossiers arrivent sur votre bureau : choisissez le taux, et faites vérifier (🔎) les dossiers douteux : certains sont des escrocs.</li>
 <li>💳 <b>Produits</b> : comptes courants, livrets, assurance-vie et cartes attirent l’argent des clients et rapportent des frais.</li>
 <li>🌍 <b>Monde</b> : chaque chapitre terminé ouvre de nouvelles régions.</li>
 <li>📊 <b>Classement</b> : les concurrents s’installent près de vous, lancent des guerres des taux, débauchent vos employés… et vous pouvez les racheter.</li>
 <li>⚖️ <b>Ratio de solvabilité</b> : gardez au moins 8 % de fonds propres face à vos risques, sinon le régulateur intervient.</li>
-<li>❓ Les petits <b>?</b> expliquent chaque terme. <b>⚙️ Options</b> : taille du texte, animations réduites, contraste, mode daltonien et mode détente.</li>
-<li>⏸️ <b>Échap</b> ouvre le menu et met le jeu en pause. Sauvegarde automatique chaque mois.</li>
+<li>❓ Les petits <b>?</b> expliquent chaque terme. <b>⚙️ Options</b> : langue, taille du texte, animations réduites, contraste, mode daltonien et mode détente.</li>
+<li>⏸️ <b>Espace</b> met le temps en pause, <b>Échap</b> ouvre le menu. La partie se sauvegarde toute seule.</li>
 </ul><div class="choices"><button class="btn primary" data-act="closeModal">Compris</button></div>`;
-const WELCOME = () => `<div class="m-ico">🎉</div><h2>Bienvenue, PDG !</h2>
-<p class="center"><b>${esc(S.name)}</b> s’installe à <b>Montpellier</b> avec <b>${money(equity(S))}</b> de capital. Le temps avance quand vous le décidez : <b>un clic = une journée</b>.</p>
+const WELCOME = () => _l`<div class="m-ico">🎉</div><h2>Bienvenue, PDG !</h2>
+<p class="center"><b>${esc(S.name)}</b> s’installe à <b>Montpellier</b> avec <b>${money(equity(S))}</b> de capital. Le temps avance tout seul : <b>une journée toutes les 15 secondes</b>. Faites une pause quand vous voulez avec <b>⏸</b>.</p>
 <p class="center muted">Votre directrice adjointe va vous montrer les bases. Votre objectif : ouvrir des agences partout dans le monde… et au-delà.</p>
 <div class="choices"><button class="btn primary" data-act="closeModal">Ouvrir les portes</button></div>`;
 
@@ -322,10 +322,10 @@ function showStart() {
   $('#game').hidden = true; $('#start').hidden = false; $('#coach').hidden = true;
   const sv = loadSave();
   $('#continueBox').hidden = !sv;
-  if (sv) $('#continueInfo').textContent = `${sv.name} — ${dateStr(sv.day)} · chapitre ${sv.chapter + 1}`;
+  if (sv) $('#continueInfo').textContent = _l`${sv.name} — ${dateStr(sv.day)} · chapitre ${sv.chapter + 1}`;
   if (!$('#bankName').value) $('#bankName').value = randomBankName();
   const best = loadBest();
-  $('#leaderboard').innerHTML = best.length ? `<div class="card"><header class="card-h"><h3>Meilleurs scores</h3></header>${bestTable(best)}</div>` : '';
+  $('#leaderboard').innerHTML = best.length ? _l`<div class="card"><header class="card-h"><h3>Meilleurs scores</h3></header>${bestTable(best)}</div>` : '';
 }
 function startGame(state) {
   S = state; ui.acc = 0; ui.tab = 'dash'; ui.branch = HQ; ui.region = 'france'; ui.seen = new Set();
@@ -353,14 +353,14 @@ document.addEventListener('input', e => {
     card.querySelector('[data-o=pmt]').textContent = money(payment(r.amount, r.offer, r.dur));
     card.querySelector('[data-o=bar]').style.width = p * 100 + '%';
     const en = card.querySelector('[data-o=endet]');
-    if (en) { const e = endet(r); en.textContent = pct(e * 100, 0); en.className = e > 0.35 ? 'neg' : e > 0.3 ? 'warn' : 'pos'; card.querySelector('[data-o=hcsf]').textContent = e > 0.35 ? ' au-delà de 35 % : interdit' : ''; card.querySelector('[data-o=hcsf]').className = 'neg small'; }
+    if (en) { const e = endet(r); en.textContent = pct(e * 100, 0); en.className = e > 0.35 ? 'neg' : e > 0.3 ? 'warn' : 'pos'; card.querySelector('[data-o=hcsf]').textContent = e > 0.35 ? _t(' au-delà de 35 % : interdit') : ''; card.querySelector('[data-o=hcsf]').className = _t('neg small'); }
   }
   if (el.dataset.input === 'clSearch') { ui.clSearch = el.value; ui.clPage = 0; clearTimeout(ui.clT); ui.clT = setTimeout(() => { const pos = el.selectionStart; renderPanel(true); const n = $('[data-input=clSearch]'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 250); }
   if (el.dataset.input === 'prod') {
     const k = el.dataset.p, f = el.dataset.f, v = +el.value;
     if (f === 'rate') S.depositRate = v; else if (f === 'od') S.prod.cc.od = v; else S.prod[k][f] = v;
     const o = $(`[data-o="${k}-${f}"]`);
-    if (o) o.textContent = f === 'od' ? Math.round(v * 100) + ' % du salaire' : f === 'agio' ? pct(v) : f === 'rate' ? pct(v, 2) : k === 'av' ? pct(v) + '/an' : k === 'carte' ? nf0.format(v) + ' €/an' : nf1.format(v) + ' €/mois';
+    if (o) o.textContent = f === 'od' ? Math.round(v * 100) + _t(' % du salaire') : f === 'agio' ? pct(v) : f === 'rate' ? pct(v, 2) : k === 'av' ? pct(v) + '/an' : k === 'carte' ? nf0.format(v) + ' €/an' : nf1.format(v) + ' €/mois';
   }
 });
 document.addEventListener('pointerdown', () => { ui.pointerDown = true; });

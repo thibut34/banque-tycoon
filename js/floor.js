@@ -7,7 +7,7 @@
    ===================================================================== */
 
 const ROOMS = [null, { W: 10, D: 8 }, { W: 13, D: 10 }, { W: 17, D: 12 }];
-const SLOT_LABEL = { g: 'guichet', b: 'bureau de conseil', dab: 'distributeur', vig: 'vigile', deco: 'décoration', cof: 'salle des coffres', ent: 'espace entreprises', vip: 'salon VIP' };
+const SLOT_LABEL = { g: 'guichet', b: _t('bureau de conseil'), dab: 'distributeur', vig: 'vigile', deco: _t('décoration'), cof: _t('salle des coffres'), ent: _t('espace entreprises'), vip: _t('salon VIP') };
 const ROOM_KINDS = ['cof', 'ent', 'vip'];
 const ALL_KINDS = ['g', 'b', 'dab', 'vig', 'deco', 'cof', 'ent', 'vip'];
 const CLIENT_COLORS = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#64748b', '#e11d48', '#0ea5e9'];
@@ -49,21 +49,21 @@ function floorReset(id) { Object.assign(floor, { id, size: 0, agents: [], walker
 function doBuild(k, cand) {
   const b = getBranch(S, ui.branch); if (!b) return false;
   if (STAFF_KEYS.includes(k) && !cand) {
-    if (k !== 'vig' && b[k] >= b[k[0]]) return toast(`Construisez d’abord un ${k === 'gs' ? 'guichet' : 'bureau'}`, 'bad'), false;
-    if (k === 'vig' && b.vig >= SIZES[b.size].vig) return toast('Plus de place : agrandissez l’agence', 'bad'), false;
+    if (k !== 'vig' && b[k] >= b[k[0]]) return toast(_l`Construisez d’abord un ${k === 'gs' ? 'guichet' : 'bureau'}`, 'bad'), false;
+    if (k === 'vig' && b.vig >= SIZES[b.size].vig) return toast(_t('Plus de place : agrandissez l’agence'), 'bad'), false;
     showCandidates(k); return false;
   }
   const lim = SIZES[b.size], c = cityOf(b);
   let cost = 0, msg = '';
-  if (k === 'size') { if (b.size >= 3) return false; cost = sizeUpCost(b); msg = `${c.name} passe au niveau ${b.size + 1} : ${SIZES[b.size + 1].name}`; }
-  else if (k === 'gs') { if (b.gs >= b.g) return toast('Construisez d’abord un guichet', 'bad'), false; cost = itemCost(b, 'gs'); msg = 'Guichetier embauché'; }
-  else if (k === 'bs') { if (b.bs >= b.b) return toast('Construisez d’abord un bureau', 'bad'), false; cost = itemCost(b, 'bs'); msg = 'Conseiller embauché'; }
+  if (k === 'size') { if (b.size >= 3) return false; cost = sizeUpCost(b); msg = _l`${c.name} passe au niveau ${b.size + 1} : ${SIZES[b.size + 1].name}`; }
+  else if (k === 'gs') { if (b.gs >= b.g) return toast(_t('Construisez d’abord un guichet'), 'bad'), false; cost = itemCost(b, 'gs'); msg = _t('Guichetier embauché'); }
+  else if (k === 'bs') { if (b.bs >= b.b) return toast(_t('Construisez d’abord un bureau'), 'bad'), false; cost = itemCost(b, 'bs'); msg = _t('Conseiller embauché'); }
   else {
-    if ((b[k] || 0) >= (lim[k] || 0)) return toast('Plus de place : agrandissez l’agence', 'bad'), false;
-    cost = itemCost(b, k); msg = `${ITEMS[k].name} ${k === 'vig' ? 'embauché' : 'installé'}`;
+    if ((b[k] || 0) >= (lim[k] || 0)) return toast(_t('Plus de place : agrandissez l’agence'), 'bad'), false;
+    cost = itemCost(b, k); msg = `${ITEMS[k].name} ${k === 'vig' ? _t('embauché') : _t('installé')}`;
   }
-  if (cand) { cost = hireCost(b, cand); msg = `${cand.name} rejoint l’équipe`; }
-  if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad'), false;
+  if (cand) { cost = hireCost(b, cand); msg = _l`${cand.name} rejoint l’équipe`; }
+  if (S.cash < cost) return toast(_t('Liquidités insuffisantes'), 'bad'), false;
   S.cash -= cost;
   if (!cand && !STAFF_KEYS.includes(k)) S.fixed = (S.fixed || 0) + cost; // un équipement : il garde sa valeur (amortie)
   if (k === 'size') b.size++; else b[k] = (b[k] || 0) + 1;
@@ -84,13 +84,13 @@ function doBuild(k, cand) {
 function slotAction(b, kind, i) {
   if (kind === 'g' || kind === 'b') {
     const built = b[kind], staffed = b[kind + 's'];
-    if (i < staffed) { const e = staffOf(b, kind + 's')[i]; return e ? { emp: e.id, label: `${e.name} — ${empTitle(e)} (voir la fiche)` } : { label: 'Au travail' }; }
-    if (i < built) return { k: kind + 's', label: `Embaucher un ${kind === 'g' ? 'guichetier' : 'conseiller'} — ${money(itemCost(b, kind + 's'))}` };
-    return { k: kind, label: `Construire un ${SLOT_LABEL[kind]} — ${money(itemCost(b, kind))}` };
+    if (i < staffed) { const e = staffOf(b, kind + 's')[i]; return e ? { emp: e.id, label: _l`${e.name} — ${empTitle(e)} (voir la fiche)` } : { label: _t('Au travail') }; }
+    if (i < built) return { k: kind + 's', label: _l`Embaucher un ${kind === 'g' ? 'guichetier' : 'conseiller'} — ${money(itemCost(b, kind + 's'))}` };
+    return { k: kind, label: _l`Construire un ${SLOT_LABEL[kind]} — ${money(itemCost(b, kind))}` };
   }
-  if (kind === 'vig' && i < b.vig) { const e = staffOf(b, 'vig')[i]; return e ? { emp: e.id, label: `${e.name} — ${empTitle(e)} (voir la fiche)` } : { label: 'Vigile' }; }
+  if (kind === 'vig' && i < b.vig) { const e = staffOf(b, 'vig')[i]; return e ? { emp: e.id, label: _l`${e.name} — ${empTitle(e)} (voir la fiche)` } : { label: _t('Vigile') }; }
   if (i < (b[kind] || 0)) return { label: ITEMS[kind].name };
-  return { k: kind, label: `${kind === 'vig' ? 'Embaucher un vigile' : 'Installer : ' + SLOT_LABEL[kind]} — ${money(itemCost(b, kind))}` };
+  return { k: kind, label: `${kind === 'vig' ? _t('Embaucher un vigile') : _t('Installer : ') + SLOT_LABEL[kind]} — ${money(itemCost(b, kind))}` };
 }
 // Un emplacement est visible s'il est construit, ou si c'est le prochain à construire
 const slotVisible = (b, kind, i) => i <= (b[kind] || 0) && i < (SIZES[b.size][kind] || 0) && itemUnlocked(kind);

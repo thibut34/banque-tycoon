@@ -38,7 +38,7 @@ function escalate(s, c) {
 function advisorLoan(s, c, sum, q) {
   const r = c.req, A = s.auto || { min: 'B', margin: 0.5 };
   c.done = true;
-  if (r.fraud && chance(0.35 + q * 0.55)) { sum.fraud++; log(`🕵️ Vos conseillers démasquent un faux dossier : ${r.name}.`, 'good'); return; }
+  if (r.fraud && chance(0.35 + q * 0.55)) { sum.fraud++; log(_l`🕵️ Vos conseillers démasquent un faux dossier : ${r.name}.`, 'good'); return; }
   const ok = 'ABCDE'.slice(0, 'ABCDE'.indexOf(A.min) + 1);
   const big = r.amount > seuil(s); // trop gros pour l'équipe : elle reste très prudente
   if (s.surveillance || !ok.includes(grade(r.score)) || (big && ('AB'.indexOf(grade(r.score)) < 0 || r.amount > equity(s) * 0.1)) || endet(r) > 0.35 || s.cash - r.amount < s.deposits * 0.1) { sum.refus++; s.stats.refused++; return; }
@@ -76,34 +76,34 @@ function makeBilan(s, eq0) {
   const pl = s.lastPL, eq1 = equity(s);
   if (eq0 == null) eq0 = eq1 - pl.net; // première fois : pas de point de départ connu
   s.flags.eqM = eq1;
-  toast(`📊 Bilan du mois : <b class="${pl.net >= 0 ? 'pos' : 'neg'}">${pl.net >= 0 ? '+' : '−'}${money(Math.abs(pl.net))}</b> — détails à droite de votre bureau`, pl.net >= 0 ? 'good' : 'bad');
+  toast(_l`📊 Bilan du mois : <b class="${pl.net >= 0 ? 'pos' : 'neg'}">${pl.net >= 0 ? '+' : '−'}${money(Math.abs(pl.net))}</b> — détails à droite de votre bureau`, pl.net >= 0 ? 'good' : 'bad');
   s.flags.bilan = { month: Math.floor((s.day - 1) / 30), pl: { ...pl }, eq0, eq1, other: (eq1 - eq0) - pl.net, cash: s.cash, deposits: s.deposits, seen: false };
 }
 function bilanTip(s, B) {
   const p = B.pl, inc = p.interest + p.fees + p.coupons + (p.reserves || 0);
-  if (p.losses > inc * 0.4) return '💥 Des prêts n’ont pas été remboursés. Vérifiez mieux les dossiers (🔎) et évitez les notes D et E.';
-  if (p.costs > inc) return `👥 Vos salaires et loyers (${money(p.costs)}) coûtent plus que ce que vous gagnez. Accordez plus de prêts : ce sont eux qui rapportent le plus.`;
-  if (p.depInt > p.interest * 0.5 && p.depInt > 500) return '🐷 Votre livret coûte cher. Baissez un peu son taux dans Produits.';
-  if (B.cash > B.deposits * 0.35 && B.deposits > 5e4) return `💤 ${money(B.cash)} dorment dans vos caisses. Prêtez-les : un prêt rapporte bien plus.`;
-  if (B.other < -Math.max(5000, Math.abs(p.net))) return '🧾 Vos achats et les événements du mois ont pesé lourd. C’est normal si vous investissez pour grandir.';
-  return p.net > 0 ? '🎉 Belle gestion ! Continuez à prêter prudemment et à fidéliser vos clients.' : '📉 Patience : une banque met plusieurs mois à devenir rentable.';
+  if (p.losses > inc * 0.4) return _t('💥 Des prêts n’ont pas été remboursés. Vérifiez mieux les dossiers (🔎) et évitez les notes D et E.');
+  if (p.costs > inc) return _l`👥 Vos salaires et loyers (${money(p.costs)}) coûtent plus que ce que vous gagnez. Accordez plus de prêts : ce sont eux qui rapportent le plus.`;
+  if (p.depInt > p.interest * 0.5 && p.depInt > 500) return _t('🐷 Votre livret coûte cher. Baissez un peu son taux dans Produits.');
+  if (B.cash > B.deposits * 0.35 && B.deposits > 5e4) return _l`💤 ${money(B.cash)} dorment dans vos caisses. Prêtez-les : un prêt rapporte bien plus.`;
+  if (B.other < -Math.max(5000, Math.abs(p.net))) return _t('🧾 Vos achats et les événements du mois ont pesé lourd. C’est normal si vous investissez pour grandir.');
+  return p.net > 0 ? _t('🎉 Belle gestion ! Continuez à prêter prudemment et à fidéliser vos clients.') : _t('📉 Patience : une banque met plusieurs mois à devenir rentable.');
 }
 function showBilan() {
   const s = S, B = s.flags.bilan, p = B.pl; B.seen = true;
   let max = 1;
   const rows = (list, sign) => {
-    return list.filter(([, v]) => Math.abs(v) >= 1).map(([l, v, h]) => `<div class="bl-row"><span class="bl-l">${l}${h ? `<small>${h}</small>` : ''}</span><span class="bl-bar"><i class="${sign}" style="width:${Math.max(3, Math.abs(v) / max * 100)}%"></i></span><b class="${sign === 'in' ? 'pos' : 'neg'}">${sign === 'in' ? '+' : '−'}${money(Math.abs(v))}</b></div>`).join('') || '<p class="muted small">Rien ce mois-ci.</p>';
+    return list.filter(([, v]) => Math.abs(v) >= 1).map(([l, v, h]) => `<div class="bl-row"><span class="bl-l">${l}${h ? `<small>${h}</small>` : ''}</span><span class="bl-bar"><i class="${sign}" style="width:${Math.max(3, Math.abs(v) / max * 100)}%"></i></span><b class="${sign === 'in' ? 'pos' : 'neg'}">${sign === 'in' ? '+' : '−'}${money(Math.abs(v))}</b></div>`).join('') || _t('<p class="muted small">Rien ce mois-ci.</p>');
   };
-  const ins = [['Intérêts des prêts', p.interest, 'Ce que vos emprunteurs vous paient'], ['Frais, cartes et agios', p.fees, 'Payés par les clients'], ['Placements', p.coupons + (p.reserves || 0), 'Obligations et réserves']];
-  const outs = [['Salaires et loyers', p.costs, 'Votre équipe et vos agences'], ['Intérêts des livrets', p.depInt, 'Versés à vos épargnants'], ['Banque centrale', p.cbInt], ['Prêts non remboursés', p.losses], ['Amortissements', p.amort || 0, 'Vos équipements, étalés sur 5 ans'], ['Impôts', p.tax]];
+  const ins = [[_t('Intérêts des prêts'), p.interest, _t('Ce que vos emprunteurs vous paient')], [_t('Frais, cartes et agios'), p.fees, _t('Payés par les clients')], [_t('Placements'), p.coupons + (p.reserves || 0), _t('Obligations et réserves')]];
+  const outs = [[_t('Salaires et loyers'), p.costs, _t('Votre équipe et vos agences')], [_t('Intérêts des livrets'), p.depInt, _t('Versés à vos épargnants')], [_t('Banque centrale'), p.cbInt], [_t('Prêts non remboursés'), p.losses], [_t('Amortissements'), p.amort || 0, _t('Vos équipements, étalés sur 5 ans')], [_t('Impôts'), p.tax]];
   max = Math.max(1, ...ins.concat(outs).map(([, v]) => Math.abs(v)));
   ui.modal = true;
-  showModal(`<div class="bilan"><small class="eyebrow">Bilan de ${MONTHS[B.month % 12]}</small>
+  showModal(_l`<div class="bilan"><small class="eyebrow">Bilan de ${MONTHS[B.month % 12]}</small>
     <div class="bl-net ${p.net >= 0 ? 'pos' : 'neg'}">${p.net >= 0 ? '+' : '−'}${money(Math.abs(p.net))}</div>
     <p class="center muted">Résultat net du mois</p>
     <h3 class="sec">💰 Ce que vous avez gagné</h3>${rows(ins, 'in')}
     <h3 class="sec">💸 Ce que vous avez dépensé</h3>${rows(outs, 'out')}
-    <div class="bl-eq"><span>Vos fonds propres</span><b>${money(B.eq0)} → ${money(B.eq1)}</b>${Math.abs(B.other) >= 1 ? `<small>dont ${B.other >= 0 ? '+' : '−'}${money(Math.abs(B.other))} d’achats, d’événements, de récompenses et de variations des marchés</small>` : ''}</div>
+    <div class="bl-eq"><span>Vos fonds propres</span><b>${money(B.eq0)} → ${money(B.eq1)}</b>${Math.abs(B.other) >= 1 ? _l`<small>dont ${B.other >= 0 ? '+' : '−'}${money(Math.abs(B.other))} d’achats, d’événements, de récompenses et de variations des marchés</small>` : ''}</div>
     <div class="bl-tip">${bilanTip(s, B)}</div>
     <div class="choices"><button class="btn primary" data-act="closeModal">Continuer</button></div></div>`);
   $('#modal .modal-box').classList.add('wide');

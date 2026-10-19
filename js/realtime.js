@@ -37,7 +37,7 @@ function clockUI(s) {
   if (b.dataset.st !== key) {
     b.dataset.st = key;
     b.classList.toggle('paused', st !== 'run');
-    b.querySelector('span').textContent = st === 'run' ? '⏸ Pause' : st === 'staff' ? '⏳ Recrutez un guichetier' : st === 'pause' ? '▶ Reprendre' : '⏸ En pause';
+    b.querySelector('span').textContent = st === 'run' ? _t('⏸ Pause') : st === 'staff' ? _t('⏳ Recrutez un guichetier') : st === 'pause' ? _t('▶ Reprendre') : _t('⏸ En pause');
   }
   b.querySelector('i').style.width = (st === 'run' || st === 'wait' ? clock.acc / DAY_MS * 100 : 0) + '%';
 }
@@ -51,7 +51,7 @@ function advanceDay() {
   startDay(s);
   const t = s.today;
   s.flags.lostAvg = (s.flags.lostAvg || 0) * 0.8 + (t.lost || 0) * 0.2;
-  if (s.day % 30 === 27) { const sc = $('.scene'); if (sc && ui.tab === 'dash') { const r = sc.getBoundingClientRect(); floatText(r.left + r.width / 2, r.top + r.height * 0.3, '💶 Jour de paie !', 'big'); } }
+  if (s.day % 30 === 27) { const sc = $('.scene'); if (sc && ui.tab === 'dash') { const r = sc.getBoundingClientRect(); floatText(r.left + r.width / 2, r.top + r.height * 0.3, _t('💶 Jour de paie !'), 'big'); } }
   if (s.day % 5 === 0) save();
   if (s.day % 30 === 1 && s.day > 30) CG.midgame(); // une pub entre deux mois, pendant le bilan
   renderTop();
@@ -61,7 +61,7 @@ function liveStats(s) {
   const el = $('#liveStats'); if (!el || !s.today) return;
   const b = getBranch(s, ui.branch) || s.branches[0], A = b && ag(b), t = s.today;
   const q = A ? A.agents.filter(a => a.st === 'queue').length : 0;
-  el.innerHTML = `<span>🚶 <b>${t.arrived}</b> aujourd’hui</span><span>✅ <b>${t.served || 0}</b> servis</span>${t.lost ? `<span class="neg">😤 <b>${t.lost}</b> partis</span>` : ''}${q ? `<span>⏳ <b>${q}</b> dans la file</span>` : ''}`;
+  el.innerHTML = _l`<span>🚶 <b>${t.arrived}</b> aujourd’hui</span><span>✅ <b>${t.served || 0}</b> servis</span>${t.lost ? _l`<span class="neg">😤 <b>${t.lost}</b> partis</span>` : ''}${q ? _l`<span>⏳ <b>${q}</b> dans la file</span>` : ''}`;
 }
 
 // ---------- Le bureau : les dossiers attendent quelques jours ----------
@@ -79,11 +79,11 @@ function expireCard(s, c) {
   ui.teamQ = teamQ(s, getBranch(s, c.branch) || s.branches[0]);
   if ((c.kind === 'pret' || c.kind === 'pro') && c.req) {
     c.done = true; s.stats.refused++;
-    log(`⌛ ${c.name} attendait votre signature : sans réponse, il est allé voir un concurrent.`, 'bad');
+    log(_l`⌛ ${c.name} attendait votre signature : sans réponse, il est allé voir un concurrent.`, 'bad');
     return;
   }
   const m = resolveCard(s, c, delegateChoice(s, c), false);
-  log(`⌛ Sans décision de votre part, votre équipe a tranché${c.name ? ' pour ' + c.name : ''}${m ? ' : ' + m.replace(/<[^>]+>/g, '') : '.'}`);
+  log(_l`⌛ Sans décision de votre part, votre équipe a tranché${c.name ? ' pour ' + c.name : ''}${m ? ' : ' + m.replace(/<[^>]+>/g, '') : '.'}`);
 }
 
 // ---------- Résultat en direct ----------
@@ -105,32 +105,32 @@ const adBonus = s => Math.round(Math.max(5000, equity(s) * 0.01) / 500) * 500;
 function growthOptions(s) {
   const b = getBranch(s, HQ) || s.branches[0]; if (!b) return [];
   const lim = SIZES[b.size], out = [], lost = s.flags.lostAvg || 0;
-  if (CG.rewardReady() && hasStaff(s)) out.push({ ad: 1, ico: '📺', name: 'Coup de pouce gratuit', fx: `Regardez une publicité : +${money(adBonus(s))}`, cost: 0, hot: true });
-  if (b.g > b.gs) out.push({ k: 'gs', ico: '🧑‍💼', name: 'Embaucher un guichetier', fx: '+6 clients servis par jour', cost: itemCost(b, 'gs'), hot: true });
-  else if (b.g < lim.g) out.push({ k: 'g', ico: '🪟', name: 'Nouveau guichet', fx: lost > 0.5 ? `${Math.round(lost)} clients repartent chaque jour faute de place` : 'Accueillir plus de clients', cost: itemCost(b, 'g'), hot: lost > 0.5 });
+  if (CG.rewardReady() && hasStaff(s)) out.push({ ad: 1, ico: '📺', name: _t('Coup de pouce gratuit'), fx: _l`Regardez une publicité : +${money(adBonus(s))}`, cost: 0, hot: true });
+  if (b.g > b.gs) out.push({ k: 'gs', ico: '🧑‍💼', name: _t('Embaucher un guichetier'), fx: _t('+6 clients servis par jour'), cost: itemCost(b, 'gs'), hot: true });
+  else if (b.g < lim.g) out.push({ k: 'g', ico: '🪟', name: _t('Nouveau guichet'), fx: lost > 0.5 ? _l`${Math.round(lost)} clients repartent chaque jour faute de place` : _t('Accueillir plus de clients'), cost: itemCost(b, 'g'), hot: lost > 0.5 });
   if (loansOpen(s) || staffTotal(s, 'gs') >= 1) {
-    if (b.b > b.bs) out.push({ k: 'bs', ico: '👔', name: 'Recruter un conseiller', fx: '+3 dossiers de prêt par jour', cost: itemCost(b, 'bs'), hot: true });
-    else if (b.b < lim.b && itemUnlocked('b')) out.push({ k: 'b', ico: '🗂️', name: 'Bureau de conseil', fx: 'Pour recevoir les demandes de prêt', cost: itemCost(b, 'b') });
+    if (b.b > b.bs) out.push({ k: 'bs', ico: '👔', name: _t('Recruter un conseiller'), fx: _t('+3 dossiers de prêt par jour'), cost: itemCost(b, 'bs'), hot: true });
+    else if (b.b < lim.b && itemUnlocked('b')) out.push({ k: 'b', ico: '🗂️', name: _t('Bureau de conseil'), fx: _t('Pour recevoir les demandes de prêt'), cost: itemCost(b, 'b') });
   }
-  for (const k of ROOM_KINDS) if (itemUnlocked(k) && (b[k] || 0) < (lim[k] || 0)) out.push({ k, ico: ITEMS[k].icon, name: (b[k] ? 'Un 2ᵉ ' : 'Ouvrir : ') + ITEMS[k].name.charAt(0).toLowerCase() + ITEMS[k].name.slice(1), fx: { cof: 'Des coffres à louer à vos clients', ent: 'Les entreprises : trésorerie, commissions, gros prêts', vip: 'Les clients fortunés : gros placements, honoraires' }[k], cost: itemCost(b, k), hot: !b[k] });
-  for (const k of ['liv', 'carte', 'av']) if (!s.prod[k].on && PROD_UNLOCK[k](s)) out.push({ launch: k, ico: PRODUCTS[k].icon, name: `Lancer : ${PRODUCTS[k].name}`, fx: PRODUCTS[k].desc.split('.')[0], cost: 0, hot: true });
+  for (const k of ROOM_KINDS) if (itemUnlocked(k) && (b[k] || 0) < (lim[k] || 0)) out.push({ k, ico: ITEMS[k].icon, name: (b[k] ? _t('Un 2ᵉ ') : _t('Ouvrir : ')) + ITEMS[k].name.charAt(0).toLowerCase() + ITEMS[k].name.slice(1), fx: { cof: _t('Des coffres à louer à vos clients'), ent: _t('Les entreprises : trésorerie, commissions, gros prêts'), vip: _t('Les clients fortunés : gros placements, honoraires') }[k], cost: itemCost(b, k), hot: !b[k] });
+  for (const k of ['liv', 'carte', 'av']) if (!s.prod[k].on && PROD_UNLOCK[k](s)) out.push({ launch: k, ico: PRODUCTS[k].icon, name: _l`Lancer : ${PRODUCTS[k].name}`, fx: PRODUCTS[k].desc.split('.')[0], cost: 0, hot: true });
   // les améliorations de postes les moins chères
   const ups = [];
-  for (const k of ['g', 'b', 'dab', ...ROOM_KINDS]) for (let i = 0; i < stCount(b, k); i++) { const lv = stLv(b, k, i); if (lv < ST_MAX) ups.push({ st: [k, i], ico: '⬆️', name: `${ST_NAME[k]}${stCount(b, k) > 1 || k === 'g' || k === 'b' ? ' ' + (i + 1) : ''} : niveau ${lv + 1}`, fx: k === 'g' ? 'Plus rapide, vend plus' : k === 'b' ? 'Plus rapide, meilleure marge' : k === 'dab' ? 'Plus rapide' : 'Plus rapide, rapporte plus', cost: stCost(b, k, lv), hot: lost > 0.5 }); }
+  for (const k of ['g', 'b', 'dab', ...ROOM_KINDS]) for (let i = 0; i < stCount(b, k); i++) { const lv = stLv(b, k, i); if (lv < ST_MAX) ups.push({ st: [k, i], ico: '⬆️', name: _l`${ST_NAME[k]}${stCount(b, k) > 1 || k === 'g' || k === 'b' ? ' ' + (i + 1) : ''} : niveau ${lv + 1}`, fx: k === 'g' ? _t('Plus rapide, vend plus') : k === 'b' ? _t('Plus rapide, meilleure marge') : k === 'dab' ? _t('Plus rapide') : _t('Plus rapide, rapporte plus'), cost: stCost(b, k, lv), hot: lost > 0.5 }); }
   ups.sort((x, y) => x.cost - y.cost).slice(0, 2).forEach(u => out.push(u));
-  if (!(s.flags.sponsorUntil > s.day) && s.clients >= 5) out.push({ pub: 1, ico: '📣', name: 'Campagne de publicité', fx: '+15 % de visiteurs pendant 30 jours', cost: 8000 });
+  if (!(s.flags.sponsorUntil > s.day) && s.clients >= 5) out.push({ pub: 1, ico: '📣', name: _t('Campagne de publicité'), fx: _t('+15 % de visiteurs pendant 30 jours'), cost: 8000 });
   const emp = s.branches.flatMap(x => (x.staff || []).map(e => [x, e])).filter(([, e]) => canTrain(s, e)).sort((a, c) => a[1].lvl - c[1].lvl)[0];
-  if (emp) out.push({ train: emp[1].id, ico: '🎓', name: `Former ${emp[1].name.split(' ')[0]}`, fx: 'Votre équipe décidera mieux à votre place', cost: trainCost(s, emp[0], emp[1]) });
-  if (itemUnlocked('dab') && b.dab < lim.dab) out.push({ k: 'dab', ico: '🏧', name: 'Distributeur de billets', fx: 'Des revenus chaque mois', cost: itemCost(b, 'dab') });
-  if (b.g >= lim.g && b.b >= lim.b && b.size < 3) out.push({ k: 'size', ico: '🏗️', name: 'Agrandir l’agence', fx: 'Plus de guichets et de bureaux', cost: sizeUpCost(b) });
-  if (tabUnlocked('world')) out.push({ world: 1, ico: '🌍', name: 'Ouvrir une nouvelle agence', fx: 'Conquérir d’autres villes', cost: null });
+  if (emp) out.push({ train: emp[1].id, ico: '🎓', name: _l`Former ${emp[1].name.split(' ')[0]}`, fx: _t('Votre équipe décidera mieux à votre place'), cost: trainCost(s, emp[0], emp[1]) });
+  if (itemUnlocked('dab') && b.dab < lim.dab) out.push({ k: 'dab', ico: '🏧', name: _t('Distributeur de billets'), fx: _t('Des revenus chaque mois'), cost: itemCost(b, 'dab') });
+  if (b.g >= lim.g && b.b >= lim.b && b.size < 3) out.push({ k: 'size', ico: '🏗️', name: _t('Agrandir l’agence'), fx: _t('Plus de guichets et de bureaux'), cost: sizeUpCost(b) });
+  if (tabUnlocked('world')) out.push({ world: 1, ico: '🌍', name: _t('Ouvrir une nouvelle agence'), fx: _t('Conquérir d’autres villes'), cost: null });
   return out.slice(0, 6);
 }
 function growthHTML(s) {
   const o = growthOptions(s); if (!o.length) return '';
-  return `<section class="grow-box"><h3>🚀 Développer ma banque</h3><div class="grow-list">${o.map((g, i) => {
+  return _l`<section class="grow-box"><h3>🚀 Développer ma banque</h3><div class="grow-list">${o.map((g, i) => {
     const poor = g.cost && s.cash < g.cost;
-    return `<button class="grow-item ${g.hot ? 'hot' : ''}" data-act="grow" data-i="${i}" ${poor ? 'disabled' : ''}><span class="gi-ico">${g.ico}</span><span class="grow"><b>${g.name}</b><small>${g.fx}</small></span><span class="gi-cost">${g.ad ? '▶ Pub' : g.cost === null ? '→' : g.cost ? money(g.cost) : 'Gratuit'}</span></button>`;
+    return `<button class="grow-item ${g.hot ? 'hot' : ''}" data-act="grow" data-i="${i}" ${poor ? 'disabled' : ''}><span class="gi-ico">${g.ico}</span><span class="grow"><b>${g.name}</b><small>${g.fx}</small></span><span class="gi-cost">${g.ad ? _t('▶ Pub') : g.cost === null ? '→' : g.cost ? money(g.cost) : _t('Gratuit')}</span></button>`;
   }).join('')}</div></section>`;
 }
 
@@ -141,11 +141,11 @@ Object.assign(actions, {
     ui.branch = HQ;
     if (g.k) { if (doBuild(g.k)) { renderTop(); SFX.play('build'); } }
     else if (g.launch) actions.launch({ dataset: { p: g.launch } });
-    else if (g.pub) { if (S.cash < 8000) return; S.cash -= 8000; S.flags.sponsorUntil = S.day + 30; toast('📣 Campagne lancée : plus de visiteurs pendant 30 jours !', 'good'); }
+    else if (g.pub) { if (S.cash < 8000) return; S.cash -= 8000; S.flags.sponsorUntil = S.day + 30; toast(_t('📣 Campagne lancée : plus de visiteurs pendant 30 jours !'), 'good'); }
     else if (g.train) trainEmp(g.train);
     else if (g.st) upgradeStation(getBranch(S, HQ), g.st[0], g.st[1]);
     else if (g.world) return actions.tab({ dataset: { tab: 'world' } });
-    else if (g.ad) return CG.rewarded(() => { const v = adBonus(S); S.cash += v; toast(`📺 Merci ! <b>+${money(v)}</b>`, 'good'); const r = el.getBoundingClientRect(); coinBurst(r.left + r.width / 2, r.top, 12); renderTop(); renderPanel(true); });
+    else if (g.ad) return CG.rewarded(() => { const v = adBonus(S); S.cash += v; toast(_l`📺 Merci ! <b>+${money(v)}</b>`, 'good'); const r = el.getBoundingClientRect(); coinBurst(r.left + r.width / 2, r.top, 12); renderTop(); renderPanel(true); });
     renderTop(); renderPanel(true);
   },
 });

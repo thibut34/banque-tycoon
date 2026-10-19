@@ -11,7 +11,7 @@ function isoUnproject(v, px, py) { const X = (px - v.ox) / v.s, Y = 2 * (py - v.
 function shade(hex, f) {
   const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   const m = c => Math.round(clamp(f < 0 ? c * (1 + f) : c + (255 - c) * f, 0, 255));
-  return `rgb(${m(r)},${m(g)},${m(b)})`;
+  return _l`rgb(${m(r)},${m(g)},${m(b)})`;
 }
 function poly(c, v, pts, fill, stroke, lw = 1) {
   c.beginPath(); pts.forEach(([x, y, z], i) => { const [px, py] = isoP(v, x, y, z || 0); i ? c.lineTo(px, py) : c.moveTo(px, py); }); c.closePath();
@@ -218,7 +218,7 @@ function drawFloor(cv, b, lay) {
     for (const k of MOVABLE) for (let i = 0; i < b[k]; i++) { const sl = lay[k][i]; const isD = d && d.kind === k && d.i === i, isH = eh && eh.kind === k && eh.i === i;
       foot(sl, sl.x, sl.y, isD ? (d.ok ? 'rgba(52,211,153,.35)' : 'rgba(248,113,113,.4)') : isH ? 'rgba(99,102,241,.3)' : 'rgba(99,102,241,.08)', isD ? (d.ok ? '#10b981' : '#ef4444') : '#6366f1'); }
   }
-  if (!ui.editPlan && !cv.dataset.mini) for (const kind of ALL_KINDS) lay[kind].forEach((sl, i) => {
+  if (!ui.editPlan && !cv.dataset.mini && !cv.dataset.cover) for (const kind of ALL_KINDS) lay[kind].forEach((sl, i) => {
     if (!slotVisible(b, kind, i)) return;
     const built = i < b[kind], isH = hv && hv.kind === kind && hv.i === i;
     if (built && !isH) return;
@@ -270,14 +270,14 @@ function drawFloor(cv, b, lay) {
   }
   // Boutons « + » flottants sur les emplacements libres
   for (const kind of ALL_KINDS) lay[kind].forEach((sl, i) => {
-    if (ui.editPlan || cv.dataset.mini || !slotVisible(b, kind, i) || i < (b[kind] || 0)) return;
+    if (ui.editPlan || cv.dataset.mini || cv.dataset.cover || !slotVisible(b, kind, i) || i < (b[kind] || 0)) return;
     const [px, py] = isoP(v, sl.x, sl.y, 1.1 + Math.sin(floor.t * 3 + i) * 0.08);
     c.fillStyle = '#6366f1'; c.beginPath(); c.arc(px, py, s * 0.32, 0, 7); c.fill();
     c.strokeStyle = '#fff'; c.lineWidth = Math.max(2, s * 0.08); c.beginPath(); c.moveTo(px - s * 0.14, py); c.lineTo(px + s * 0.14, py); c.moveTo(px, py - s * 0.14); c.lineTo(px, py + s * 0.14); c.stroke();
   });
   // Guichets fermés : petit panneau « embaucher »
-  lay.g.forEach((sl, i) => { if (i < b.g && i >= b.gs) { const [px, py] = isoP(v, sl.x, sl.y, 1.9 + Math.sin(floor.t * 3) * 0.06); c.font = `700 ${Math.max(10, s * 0.32)}px Inter, system-ui`; c.textAlign = 'center'; const t = 'Embaucher'; const tw = c.measureText(t).width + 12; c.fillStyle = '#f59e0b'; c.beginPath(); c.roundRect ? c.roundRect(px - tw / 2, py - s * 0.28, tw, s * 0.5, 6) : c.rect(px - tw / 2, py - s * 0.28, tw, s * 0.5); c.fill(); c.fillStyle = '#1f1300'; c.textBaseline = 'middle'; c.fillText(t, px, py - s * 0.03); } });
-  lay.b.forEach((sl, i) => { if (i < b.b && i >= b.bs) { const [px, py] = isoP(v, sl.x, sl.y, 1.6 + Math.sin(floor.t * 3) * 0.06); c.font = `700 ${Math.max(10, s * 0.32)}px Inter, system-ui`; c.textAlign = 'center'; const t = 'Embaucher'; const tw = c.measureText(t).width + 12; c.fillStyle = '#f59e0b'; c.beginPath(); c.roundRect ? c.roundRect(px - tw / 2, py - s * 0.28, tw, s * 0.5, 6) : c.rect(px - tw / 2, py - s * 0.28, tw, s * 0.5); c.fill(); c.fillStyle = '#1f1300'; c.textBaseline = 'middle'; c.fillText(t, px, py - s * 0.03); } });
+  lay.g.forEach((sl, i) => { if (i < b.g && i >= b.gs) { const [px, py] = isoP(v, sl.x, sl.y, 1.9 + Math.sin(floor.t * 3) * 0.06); c.font = `700 ${Math.max(10, s * 0.32)}px Inter, system-ui`; c.textAlign = 'center'; const t = _t('Embaucher'); const tw = c.measureText(t).width + 12; c.fillStyle = '#f59e0b'; c.beginPath(); c.roundRect ? c.roundRect(px - tw / 2, py - s * 0.28, tw, s * 0.5, 6) : c.rect(px - tw / 2, py - s * 0.28, tw, s * 0.5); c.fill(); c.fillStyle = '#1f1300'; c.textBaseline = 'middle'; c.fillText(t, px, py - s * 0.03); } });
+  lay.b.forEach((sl, i) => { if (i < b.b && i >= b.bs) { const [px, py] = isoP(v, sl.x, sl.y, 1.6 + Math.sin(floor.t * 3) * 0.06); c.font = `700 ${Math.max(10, s * 0.32)}px Inter, system-ui`; c.textAlign = 'center'; const t = _t('Embaucher'); const tw = c.measureText(t).width + 12; c.fillStyle = '#f59e0b'; c.beginPath(); c.roundRect ? c.roundRect(px - tw / 2, py - s * 0.28, tw, s * 0.5, 6) : c.rect(px - tw / 2, py - s * 0.28, tw, s * 0.5); c.fill(); c.fillStyle = '#1f1300'; c.textBaseline = 'middle'; c.fillText(t, px, py - s * 0.03); } });
 
   // Niveau de chaque poste
   // Le tutoriel montre du doigt l'endroit où cliquer
@@ -285,21 +285,21 @@ function drawFloor(cv, b, lay) {
   if (tt && lay[tt[0]] && lay[tt[0]][tt[1]]) {
     const sl = lay[tt[0]][tt[1]], pulse = (Math.sin(floor.t * 5) + 1) / 2;
     const [gx, gy] = isoP(v, sl.x, sl.y, 0);
-    c.strokeStyle = `rgba(255,200,61,${0.5 + pulse * 0.5})`; c.lineWidth = 3 + pulse * 3;
+    c.strokeStyle = _l`rgba(255,200,61,${0.5 + pulse * 0.5})`; c.lineWidth = 3 + pulse * 3;
     c.beginPath(); c.ellipse(gx, gy, s * (1 + pulse * 0.25), s * 0.5 * (1 + pulse * 0.25), 0, 0, 7); c.stroke();
     const [ax, ay] = isoP(v, sl.x, sl.y, 2.6 + pulse * 0.4);
     c.font = `${s * 0.9}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('👇', ax, ay);
   }
   // Le nom des salles spéciales
-  if (!ui.editPlan) for (const k of ROOM_KINDS) lay[k].forEach((sl, i) => {
+  if (!ui.editPlan && !cv.dataset.cover) for (const k of ROOM_KINDS) lay[k].forEach((sl, i) => {
     if (i >= (b[k] || 0)) return;
-    const [px, py] = isoP(v, sl.x, sl.y, 2.15), txt = { cof: '🔐 Coffres', ent: '🏢 Entreprises', vip: '🥂 Salon VIP' }[k];
+    const [px, py] = isoP(v, sl.x, sl.y, 2.15), txt = { cof: _t('🔐 Coffres'), ent: _t('🏢 Entreprises'), vip: _t('🥂 Salon VIP') }[k];
     c.font = `600 ${Math.max(10, s * 0.26)}px Fredoka, Inter, system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
     const tw = c.measureText(txt).width + 14;
     c.fillStyle = k === 'vip' ? '#7c2d12' : k === 'ent' ? '#1e3a8a' : '#334155'; c.beginPath(); c.roundRect ? c.roundRect(px - tw / 2, py - s * 0.2, tw, s * 0.4, 8) : c.rect(px - tw / 2, py - s * 0.2, tw, s * 0.4); c.fill();
     c.fillStyle = k === 'vip' ? '#fde68a' : '#fff'; c.fillText(txt, px, py + 0.5);
   });
-  if (!cv.dataset.mini && !ui.editPlan) for (const k of ['g', 'b', 'dab', ...ROOM_KINDS]) lay[k].forEach((sl, i) => {
+  if (!cv.dataset.mini && !cv.dataset.cover && !ui.editPlan) for (const k of ['g', 'b', 'dab', ...ROOM_KINDS]) lay[k].forEach((sl, i) => {
     if (i >= (b[k] || 0)) return;
     const lv = stLv(b, k, i), [px, py] = isoP(v, sl.x + (k === 'b' ? 0 : sl.w / 2), sl.y + (k === 'b' ? sl.d / 2 : 0), 1.05);
     const r = Math.max(8, s * 0.2);

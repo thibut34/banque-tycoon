@@ -39,14 +39,14 @@ function pickKind(s, b, mine) {
 const NEEDS = { compte: 'g', suspect: 'g', demande: 'g', reclam: 'g', pret: 'b', pro: 'b', av: 'b' };
 
 // ---------- Fabrication des cartes ----------
-const RECLAM = ['ses frais de tenue de compte', 'des agios trop élevés', 'une heure d’attente au guichet', 'une carte avalée par le distributeur', 'un conseiller qui ne rappelle jamais', 'un prélèvement rejeté'];
-const SUSPECT_CLUES = ['paie tout en billets de 500 €', 'présente une pièce d’identité floue', 'refuse de dire d’où vient l’argent', 'donne une adresse qui n’existe pas', 'veut ouvrir 12 comptes d’un coup'];
-const FRAUD_CB = [['une bijouterie de Bangkok', 'à 3 h du matin'], ['un casino en ligne maltais', 'en pleine nuit'], ['un magasin d’électronique de Lagos', 'cinq fois de suite'], ['une boutique de luxe à Dubaï', 'alors qu’il a payé son pain à Montpellier une heure avant']];
+const RECLAM = [_t('ses frais de tenue de compte'), _t('des agios trop élevés'), _t('une heure d’attente au guichet'), _t('une carte avalée par le distributeur'), _t('un conseiller qui ne rappelle jamais'), _t('un prélèvement rejeté')];
+const SUSPECT_CLUES = [_t('paie tout en billets de 500 €'), _t('présente une pièce d’identité floue'), _t('refuse de dire d’où vient l’argent'), _t('donne une adresse qui n’existe pas'), _t('veut ouvrir 12 comptes d’un coup')];
+const FRAUD_CB = [[_t('une bijouterie de Bangkok'), _t('à 3 h du matin')], [_t('un casino en ligne maltais'), _t('en pleine nuit')], [_t('un magasin d’électronique de Lagos'), _t('cinq fois de suite')], [_t('une boutique de luxe à Dubaï'), _t('alors qu’il a payé son pain à Montpellier une heure avant')]];
 const COURRIER = [
-  ['💌', 'Une cliente de 92 ans vous écrit pour remercier son guichetier, « si poli ».', 'rep', 1],
-  ['🏫', 'L’école du quartier vous invite à présenter le métier de banquier.', 'rep', 2],
-  ['📰', 'Le journal local veut une interview sur l’épargne des Français.', 'rep', 2],
-  ['🎂', 'C’est l’anniversaire de votre plus ancien client. Il vous apporte un gâteau.', 'sat', 3],
+  ['💌', _t('Une cliente de 92 ans vous écrit pour remercier son guichetier, « si poli ».'), 'rep', 1],
+  ['🏫', _t('L’école du quartier vous invite à présenter le métier de banquier.'), 'rep', 2],
+  ['📰', _t('Le journal local veut une interview sur l’épargne des Français.'), 'rep', 2],
+  ['🎂', _t('C’est l’anniversaire de votre plus ancien client. Il vous apporte un gâteau.'), 'sat', 3],
 ];
 // Ce que vos clients demandent au guichet
 function pickDemande(s, p) {
@@ -85,9 +85,9 @@ function personLoanRequest(s, p) {
     r.dur = rint(15, 25) * 12;
     const price = Math.round(inc * 12 * rnd(3, 5.5) / 1000) * 1000;
     r.apport = clamp((p.l || 0) / price, 0, 0.3); r.amount = Math.round(price * (1 - r.apport) / 1000) * 1000;
-    r.reason = p.l > price * 0.1 ? 'acheter sa résidence principale' : 'acheter un appartement sans apport';
+    r.reason = p.l > price * 0.1 ? _t('acheter sa résidence principale') : _t('acheter un appartement sans apport');
   } else if (type === 'auto') r.amount = Math.round(rnd(6e3, Math.min(45e3, inc * 14)) / 1000) * 1000;
-  else { r.amount = Math.round(rnd(2e3, Math.min(25e3, inc * 6)) / 500) * 500; if (p.own) r.reason = 'des travaux dans sa maison'; }
+  else { r.amount = Math.round(rnd(2e3, Math.min(25e3, inc * 6)) / 500) * 500; if (p.own) r.reason = _t('des travaux dans sa maison'); }
   r.amount = Math.min(r.amount, Math.max(30e3, equity(s) * 0.2));
   const T = LOAN_TYPES[type], base = s.policyRate + T.spread + reqPD(r, s.policyRate + T.spread) * (1 - T.rec) * 100;
   r.maxRate = Math.min(usure(r), base + rnd(-0.3, 1.2));
@@ -96,7 +96,7 @@ function personLoanRequest(s, p) {
 }
 function makeTask(s, kind, extra = {}) {
   const c = { id: ++ui.cardSeq, kind, task: true, ...extra };
-  if (kind === 'facture') { c.amt = Math.round(monthlyCosts(s) * rnd(0.03, 0.08) / 10) * 10; c.who = pick(['le fournisseur de café', 'l’entreprise de ménage', 'l’imprimeur des chéquiers', 'le dépanneur informatique', 'la société de transport de fonds']); }
+  if (kind === 'facture') { c.amt = Math.round(monthlyCosts(s) * rnd(0.03, 0.08) / 10) * 10; c.who = pick([_t('le fournisseur de café'), _t('l’entreprise de ménage'), _t('l’imprimeur des chéquiers'), _t('le dépanneur informatique'), _t('la société de transport de fonds')]); }
   if (kind === 'courrier') c.letter = rint(0, COURRIER.length - 1);
   if (kind === 'fraudecb') { const [where, when] = pick(FRAUD_CB); c.where = where; c.when = when; c.amt = lognorm(1500); c.fraud = chance(0.85); }
   return c;
@@ -130,11 +130,11 @@ function startDay(s) {
 
 // ---------- Objectif du jour ----------
 const OBJECTIVES = {
-  pret: { txt: () => 'Signer un prêt', cur: t => t.m.prets, ok: t => t.cards.some(c => c.kind === 'pret' || c.kind === 'pro'), n: () => 1 },
-  bureau: { txt: () => 'Traiter tous les dossiers de votre bureau', cur: t => t.cards.every(c => c.done) && (t.manual || 0) >= t.cards.length ? 1 : 0, ok: t => t.cards.length >= 2, n: () => 1 },
-  histoire: { txt: () => 'Faire avancer l’histoire d’un client', cur: t => t.cards.some(c => c.kind === 'story' && c.pid && c.done) ? 1 : 0, ok: t => t.cards.some(c => c.kind === 'story' && c.pid), n: () => 1 },
-  direction: { txt: () => 'Prendre une décision de direction', cur: t => t.cards.some(c => c.sid === 'direction' && c.done) ? 1 : 0, ok: t => t.cards.some(c => c.sid === 'direction'), n: () => 1 },
-  sensible: { txt: () => 'Régler les dossiers sensibles', cur: t => t.cards.some(c => c.esc && !c.done) ? 0 : 1, ok: t => t.cards.some(c => c.esc), n: () => 1 },
+  pret: { txt: () => _t('Signer un prêt'), cur: t => t.m.prets, ok: t => t.cards.some(c => c.kind === 'pret' || c.kind === 'pro'), n: () => 1 },
+  bureau: { txt: () => _t('Traiter tous les dossiers de votre bureau'), cur: t => t.cards.every(c => c.done) && (t.manual || 0) >= t.cards.length ? 1 : 0, ok: t => t.cards.length >= 2, n: () => 1 },
+  histoire: { txt: () => _t('Faire avancer l’histoire d’un client'), cur: t => t.cards.some(c => c.kind === 'story' && c.pid && c.done) ? 1 : 0, ok: t => t.cards.some(c => c.kind === 'story' && c.pid), n: () => 1 },
+  direction: { txt: () => _t('Prendre une décision de direction'), cur: t => t.cards.some(c => c.sid === 'direction' && c.done) ? 1 : 0, ok: t => t.cards.some(c => c.sid === 'direction'), n: () => 1 },
+  sensible: { txt: () => _t('Régler les dossiers sensibles'), cur: t => t.cards.some(c => c.esc && !c.done) ? 0 : 1, ok: t => t.cards.some(c => c.esc), n: () => 1 },
 };
 function makeObjective(s, t) {
   const pool = Object.keys(OBJECTIVES).filter(k => OBJECTIVES[k].ok(t, s));
@@ -146,7 +146,7 @@ function checkObjective(s) {
   const t = s.today, o = t && t.obj; if (!o || o.done) return;
   if (OBJECTIVES[o.k].cur(t) >= o.n) {
     o.done = true; s.cash += o.reward; s.reputation = clamp(s.reputation + 0.5, 0, 100);
-    SFX.play('good'); toast(`🎯 Objectif du jour réussi : +${money(o.reward)}`, 'good');
+    SFX.play('good'); toast(_l`🎯 Objectif du jour réussi : +${money(o.reward)}`, 'good');
   }
 }
 
@@ -170,73 +170,73 @@ function resolveCard(s, c, choice, manual = true) {
       const liv = choice === 'livret' && s.prod.liv.on && c.p.save0 > 300 && chance(Math.min(1, upsellChance(s, manual) * livChance(s) * 2));
       openPersonAccount(s, c.p, { card, livret: liv });
       s.today.tally.comptes++;
-      if (card) { sale(s); msg = `${c.name} prend aussi une carte bancaire 💳`; }
-      if (liv) { sale(s); msg = `${c.name} place ${money(c.p.l)} sur un livret 🐷`; }
-      if (choice === 'carte' && !card && s.prod.carte.on) msg = `${c.name} ouvre son compte, sans carte pour l’instant.`;
-      if (choice === 'livret' && !liv && s.prod.liv.on) msg = `${c.name} ouvre son compte, mais garde ses économies ailleurs.`;
+      if (card) { sale(s); msg = _l`${c.name} prend aussi une carte bancaire 💳`; }
+      if (liv) { sale(s); msg = _l`${c.name} place ${money(c.p.l)} sur un livret 🐷`; }
+      if (choice === 'carte' && !card && s.prod.carte.on) msg = _l`${c.name} ouvre son compte, sans carte pour l’instant.`;
+      if (choice === 'livret' && !liv && s.prod.liv.on) msg = _l`${c.name} ouvre son compte, mais garde ses économies ailleurs.`;
       break;
     }
     case 'suspect':
-      if (choice === 'signale') { s.reputation = clamp(s.reputation + (c.fraud ? 1.5 : -1), 0, 100); s.stats.tracfin = (s.stats.tracfin || 0) + (c.fraud ? 1 : 0); msg = c.fraud ? '🕵️ Bien vu : TRACFIN ouvre une enquête pour blanchiment.' : '😬 Fausse alerte : c’était un honnête collectionneur. Réputation -1'; }
+      if (choice === 'signale') { s.reputation = clamp(s.reputation + (c.fraud ? 1.5 : -1), 0, 100); s.stats.tracfin = (s.stats.tracfin || 0) + (c.fraud ? 1 : 0); msg = c.fraud ? _t('🕵️ Bien vu : TRACFIN ouvre une enquête pour blanchiment.') : _t('😬 Fausse alerte : c’était un honnête collectionneur. Réputation -1'); }
       else if (choice === 'ouvre') { s.depX = (s.depX || 0) + c.amt; s.cash += c.amt; if (c.fraud) s.flags.dirty = (s.flags.dirty || 0) + c.amt; s.today.tally.comptes++; }
       break;
     case 'demande': {
       if (!p) break;
       const ok = choice !== 'refuse';
       switch (c.sub) {
-        case 'plafond': if (ok) { p.o += Math.round(p.s * 0.25 / 50) * 50; p.q += 3; msg = `Découvert autorisé de ${c.name} porté à ${money(p.o)}.`; } else p.q -= 4; break;
+        case 'plafond': if (ok) { p.o += Math.round(p.s * 0.25 / 50) * 50; p.q += 3; msg = _l`Découvert autorisé de ${c.name} porté à ${money(p.o)}.`; } else p.q -= 4; break;
         case 'carte': if (ok) { p.c = 1; sale(s); p.q += 2; } break;
-        case 'gold': if (ok) { if (chance(sk(manual, 0.85, 0.6))) { p.c = 2; sale(s); msg = `${c.name} passe à la carte Gold ✨`; } } else p.q -= 2; break;
-        case 'livret': if (ok && chance(livChance(s) * (sk(manual, 1.1, 0.7)))) { const m = Math.round(p.b * rnd(0.4, 0.7)); p.b -= m; p.l = (p.l || 0) + m; sale(s); msg = `${c.name} place ${money(m)} sur un livret 🐷`; } else if (ok) msg = `${c.name} trouve votre taux trop bas.`; break;
+        case 'gold': if (ok) { if (chance(sk(manual, 0.85, 0.6))) { p.c = 2; sale(s); msg = _l`${c.name} passe à la carte Gold ✨`; } } else p.q -= 2; break;
+        case 'livret': if (ok && chance(livChance(s) * (sk(manual, 1.1, 0.7)))) { const m = Math.round(p.b * rnd(0.4, 0.7)); p.b -= m; p.l = (p.l || 0) + m; sale(s); msg = _l`${c.name} place ${money(m)} sur un livret 🐷`; } else if (ok) msg = _l`${c.name} trouve votre taux trop bas.`; break;
         case 'virement': if (ok) { const fee = 15; p.b -= c.amt + fee; s.cash -= c.amt; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + fee; } else p.q -= 3; break;
         case 'chequier': if (ok) p.q += 1; break;
         case 'cloture':
-          if (choice === 'geste') { p.q += 20; s.flags.mGifts = (s.flags.mGifts || 0) + s.prod.cc.fee * 3; p.b += s.prod.cc.fee * 3; if (chance(sk(manual, 0.75, 0.5))) msg = `${c.name} reste chez vous grâce à votre geste.`; else { closePerson(s, p); msg = `${c.name} part quand même.`; } }
-          else if (ok) { closePerson(s, p); msg = `${c.name} clôture son compte.`; }
+          if (choice === 'geste') { p.q += 20; s.flags.mGifts = (s.flags.mGifts || 0) + s.prod.cc.fee * 3; p.b += s.prod.cc.fee * 3; if (chance(sk(manual, 0.75, 0.5))) msg = _l`${c.name} reste chez vous grâce à votre geste.`; else { closePerson(s, p); msg = _l`${c.name} part quand même.`; } }
+          else if (ok) { closePerson(s, p); msg = _l`${c.name} clôture son compte.`; }
           break;
       }
       break;
     }
     case 'av':
       if (choice === 'refuse' || !p) break;
-      if (chance(sk(manual, 0.85, 0.6))) { const take = Math.min(c.amt, Math.max(0, (p.l || 0) + p.b - 500)); const fromL = Math.min(p.l || 0, take); if (p.l) p.l -= fromL; p.b -= take - fromL; s.cash -= take; p.a = (p.a || 0) + take; sale(s); msg = `${c.name} confie ${money(take)} à votre assurance-vie.`; }
-      else msg = `${c.name} veut réfléchir encore.`;
+      if (chance(sk(manual, 0.85, 0.6))) { const take = Math.min(c.amt, Math.max(0, (p.l || 0) + p.b - 500)); const fromL = Math.min(p.l || 0, take); if (p.l) p.l -= fromL; p.b -= take - fromL; s.cash -= take; p.a = (p.a || 0) + take; sale(s); msg = _l`${c.name} confie ${money(take)} à votre assurance-vie.`; }
+      else msg = _l`${c.name} veut réfléchir encore.`;
       break;
     case 'reclam':
       s.today.tally.recl++;
-      if (choice === 'rembourse') { p && (p.b += c.cost, p.q += 15); s.flags.mGifts = (s.flags.mGifts || 0) + c.cost; if (b) b.sat = clamp(b.sat + 1, 0, 100); msg = `${c.name} repart calmé.`; }
-      else if (choice === 'excuse') { if (chance(sk(manual, 0.6, 0.45))) { p && (p.q += 6); msg = `${c.name} accepte vos excuses.`; } else { p && (p.q -= 8); s.reputation = clamp(s.reputation - 0.5, 0, 100); msg = `${c.name} repart en râlant.`; } }
-      else { s.reputation = clamp(s.reputation - 1, 0, 100); if (p) { p.q -= 20; if (chance(0.4) && p.b >= 0 && !personLoans(s, p).length) { closePerson(s, p); msg = `${c.name} ferme son compte !`; } } }
+      if (choice === 'rembourse') { p && (p.b += c.cost, p.q += 15); s.flags.mGifts = (s.flags.mGifts || 0) + c.cost; if (b) b.sat = clamp(b.sat + 1, 0, 100); msg = _l`${c.name} repart calmé.`; }
+      else if (choice === 'excuse') { if (chance(sk(manual, 0.6, 0.45))) { p && (p.q += 6); msg = _l`${c.name} accepte vos excuses.`; } else { p && (p.q -= 8); s.reputation = clamp(s.reputation - 0.5, 0, 100); msg = _l`${c.name} repart en râlant.`; } }
+      else { s.reputation = clamp(s.reputation - 1, 0, 100); if (p) { p.q -= 20; if (chance(0.4) && p.b >= 0 && !personLoans(s, p).length) { closePerson(s, p); msg = _l`${c.name} ferme son compte !`; } } }
       break;
     case 'decouvert':
       if (!p) break;
-      if (choice === 'tolere') { p.q -= 2; p.k = (p.k || 0) + 0.3; msg = `Paiement accepté : ${c.name} paiera des agios.`; }
-      else if (choice === 'rejette') { const fee = 20, back = Math.max(0, Math.min(-p.b - p.o, Math.max(p.f, p.r))); p.b += back; s.cash += back; p.b -= fee; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + fee; p.q -= 12; p.k = (p.k || 0) + 0.5; msg = `Prélèvement rejeté (+${fee} € de frais). ${c.name} est furieux.`; }
-      else if (choice === 'bloque') { p.blk = s.day + 15; p.q -= 6; msg = `Carte de ${c.name} limitée pendant 15 jours.`; }
+      if (choice === 'tolere') { p.q -= 2; p.k = (p.k || 0) + 0.3; msg = _l`Paiement accepté : ${c.name} paiera des agios.`; }
+      else if (choice === 'rejette') { const fee = 20, back = Math.max(0, Math.min(-p.b - p.o, Math.max(p.f, p.r))); p.b += back; s.cash += back; p.b -= fee; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + fee; p.q -= 12; p.k = (p.k || 0) + 0.5; msg = _l`Prélèvement rejeté (+${fee} € de frais). ${c.name} est furieux.`; }
+      else if (choice === 'bloque') { p.blk = s.day + 15; p.q -= 6; msg = _l`Carte de ${c.name} limitée pendant 15 jours.`; }
       else if (choice === 'appel') {
-        if (p.l > 0 && chance(sk(manual, 0.75, 0.5))) { const m = Math.min(p.l, -p.b + 100); p.l -= m; p.b += m; p.q += 2; msg = `${c.name} vire ${money(m)} depuis son livret.`; }
-        else if (chance(0.4)) { p.sp = Math.round(p.sp * 0.85); p.q += 1; msg = `${c.name} promet de réduire ses dépenses.`; }
-        else msg = `${c.name} ne répond pas.`;
+        if (p.l > 0 && chance(sk(manual, 0.75, 0.5))) { const m = Math.min(p.l, -p.b + 100); p.l -= m; p.b += m; p.q += 2; msg = _l`${c.name} vire ${money(m)} depuis son livret.`; }
+        else if (chance(0.4)) { p.sp = Math.round(p.sp * 0.85); p.q += 1; msg = _l`${c.name} promet de réduire ses dépenses.`; }
+        else msg = _l`${c.name} ne répond pas.`;
       }
       break;
     case 'fraudecb':
-      if (choice === 'bloque') { if (c.fraud) { p && (p.q += 8); s.reputation = clamp(s.reputation + 0.5, 0, 100); s.flags.mGifts = (s.flags.mGifts || 0) + 10; msg = '🛡️ Bien vu : la carte était piratée. Nouvelle carte envoyée.'; } else { p && (p.q -= 10); msg = `😬 C’était vraiment ${c.name}, en vacances. Il est agacé.`; } }
-      else { if (c.fraud) { s.cash -= c.amt; s.flags.mGifts = (s.flags.mGifts || 0) + c.amt; p && (p.q -= 15); s.reputation = clamp(s.reputation - 1, 0, 100); msg = `💸 C’était une fraude : vous remboursez ${money(c.amt)} à ${c.name}.`; } }
+      if (choice === 'bloque') { if (c.fraud) { p && (p.q += 8); s.reputation = clamp(s.reputation + 0.5, 0, 100); s.flags.mGifts = (s.flags.mGifts || 0) + 10; msg = _t('🛡️ Bien vu : la carte était piratée. Nouvelle carte envoyée.'); } else { p && (p.q -= 10); msg = _l`😬 C’était vraiment ${c.name}, en vacances. Il est agacé.`; } }
+      else { if (c.fraud) { s.cash -= c.amt; s.flags.mGifts = (s.flags.mGifts || 0) + c.amt; p && (p.q -= 15); s.reputation = clamp(s.reputation - 1, 0, 100); msg = _l`💸 C’était une fraude : vous remboursez ${money(c.amt)} à ${c.name}.`; } }
       break;
     case 'reunion':
       s.flags.focus = choice; s.flags.focusUntil = s.day + 7;
-      msg = { accueil: 'Cette semaine : priorité à l’accueil (+20 % de visiteurs servis).', ventes: 'Cette semaine : priorité aux ventes (+35 % de chances de vendre).', prudence: 'Cette semaine : priorité à la prudence (fraudes repérées).' }[choice];
+      msg = { accueil: _t('Cette semaine : priorité à l’accueil (+20 % de visiteurs servis).'), ventes: _t('Cette semaine : priorité aux ventes (+35 % de chances de vendre).'), prudence: _t('Cette semaine : priorité à la prudence (fraudes repérées).') }[choice];
       break;
     case 'facture':
-      if (choice === 'negocie') { if (chance(0.5)) { s.cash -= Math.round(c.amt * 0.7); msg = `Négociation réussie avec ${c.who} : -30 %.`; } else { s.cash -= Math.round(c.amt * 1.1); msg = `${c.who} refuse et ajoute des frais de retard.`; } }
+      if (choice === 'negocie') { if (chance(0.5)) { s.cash -= Math.round(c.amt * 0.7); msg = _l`Négociation réussie avec ${c.who} : -30 %.`; } else { s.cash -= Math.round(c.amt * 1.1); msg = _l`${c.who} refuse et ajoute des frais de retard.`; } }
       else s.cash -= c.amt;
       break;
     case 'impaye': {
       const L = s.loans.find(l => l.id === c.loan); if (!L) break;
       const q = L.pid && findPerson(s, L.pid);
-      if (choice === 'appel') { if (q && (q.l || 0) + q.b + q.o > L.pmt && chance(sk(manual, 0.7, 0.5))) { const fromL = Math.min(q.l || 0, L.pmt); if (q.l) q.l -= fromL; q.b += fromL; msg = `${c.name} régularise : il alimente son compte.`; } else msg = `${c.name} ne décroche pas…`; }
-      else if (choice === 'etale') { L.left += 24; L.pmt = payment(L.out, L.rate, L.left); L.miss = Math.max(0, (L.miss || 0) - 1); msg = `Prêt de ${c.name} rallongé de 2 ans : mensualités plus douces.`; }
-      else if (choice === 'saisie') { const got = L.out * Math.min(0.95, LOAN_TYPES[L.type].rec + (L.recB || 0) + 0.1); s.cash += got; s.flags.seizeLoss = (s.flags.seizeLoss || 0) + (L.out - got); s.loans = s.loans.filter(x => x !== L); if (q) { q.k = (q.k || 0) + 2; q.q -= 30; } msg = `Garanties saisies : vous récupérez ${money(got)} sur ${money(L.out)}.`; }
+      if (choice === 'appel') { if (q && (q.l || 0) + q.b + q.o > L.pmt && chance(sk(manual, 0.7, 0.5))) { const fromL = Math.min(q.l || 0, L.pmt); if (q.l) q.l -= fromL; q.b += fromL; msg = _l`${c.name} régularise : il alimente son compte.`; } else msg = _l`${c.name} ne décroche pas…`; }
+      else if (choice === 'etale') { L.left += 24; L.pmt = payment(L.out, L.rate, L.left); L.miss = Math.max(0, (L.miss || 0) - 1); msg = _l`Prêt de ${c.name} rallongé de 2 ans : mensualités plus douces.`; }
+      else if (choice === 'saisie') { const got = L.out * Math.min(0.95, LOAN_TYPES[L.type].rec + (L.recB || 0) + 0.1); s.cash += got; s.flags.seizeLoss = (s.flags.seizeLoss || 0) + (L.out - got); s.loans = s.loans.filter(x => x !== L); if (q) { q.k = (q.k || 0) + 2; q.q -= 30; } msg = _l`Garanties saisies : vous récupérez ${money(got)} sur ${money(L.out)}.`; }
       break;
     }
     case 'courrier': {
@@ -295,12 +295,12 @@ function delegateRest(s) {
 // ---------- Prêts proposés depuis la journée ----------
 function offerLoanCard(s, c) {
   const r = c.req;
-  if (s.surveillance) return toast('⚠️ Sous surveillance : prêts interdits', 'bad'), false;
-  if (s.cash < r.amount) return toast('Liquidités insuffisantes ! Empruntez à la banque centrale ou attirez des dépôts.', 'bad'), false;
-  if (endet(r) > 0.35) return toast('🚫 Endettement au-delà de 35 % : la règle du HCSF vous interdit ce prêt. Baissez le taux ou refusez.', 'bad'), false;
+  if (s.surveillance) return toast(_t('⚠️ Sous surveillance : prêts interdits'), 'bad'), false;
+  if (s.cash < r.amount) return toast(_t('Liquidités insuffisantes ! Empruntez à la banque centrale ou attirez des dépôts.'), 'bad'), false;
+  if (endet(r) > 0.35) return toast(_t('🚫 Endettement au-delà de 35 % : la règle du HCSF vous interdit ce prêt. Baissez le taux ou refusez.'), 'bad'), false;
   s.flags.offered = true;
-  if (chance(acceptProb(r))) { grantLoan(s, r); s.today.tally.prets++; s.today.m.prets++; toast(`✅ ${esc(r.name)} accepte votre offre à ${pct(r.offer)} !`, 'good'); }
-  else { s.stats.refused++; toast(`❌ ${esc(r.name)} trouve votre taux trop élevé.`, 'bad'); }
+  if (chance(acceptProb(r))) { grantLoan(s, r); s.today.tally.prets++; s.today.m.prets++; toast(_l`✅ ${esc(r.name)} accepte votre offre à ${pct(r.offer)} !`, 'good'); }
+  else { s.stats.refused++; toast(_l`❌ ${esc(r.name)} trouve votre taux trop élevé.`, 'bad'); }
   c.done = true; s.today.done++; checkObjective(s);
   return true;
 }
@@ -313,13 +313,13 @@ function nextDay() {
   const auto = delegateRest(s);
   if (t) {
     s.yesterday = { day: t.day, ...t.tally, arrived: t.arrived, lost: t.lost, auto, obj: t.obj ? { txt: OBJECTIVES[t.obj.k].txt(t.obj.n), done: t.obj.done } : null };
-    if (t.lost) log(`🚶 ${t.lost} visiteur${t.lost > 1 ? 's sont repartis' : ' est reparti'} sans être reçu${t.lost > 1 ? 's' : ''}.`, 'bad');
+    if (t.lost) log(_l`🚶 ${t.lost} visiteur${t.lost > 1 ? _t('s sont repartis') : _t(' est reparti')} sans être reçu${t.lost > 1 ? 's' : ''}.`, 'bad');
   }
   tickDay();
   if (!s.over) startDay(s);
   SFX.play('click');
   const d = $('#tbDate'); if (d) { d.classList.remove('flip'); void d.offsetWidth; d.classList.add('flip'); }
-  if (s.day % 30 === 27) { toast('💶 Jour de paie : les salaires tombent sur les comptes de vos clients !', 'good'); const r = d && d.getBoundingClientRect(); if (r) coinBurst(r.left + 40, r.bottom + 10, 10, '#tbCash'); }
+  if (s.day % 30 === 27) { toast(_t('💶 Jour de paie : les salaires tombent sur les comptes de vos clients !'), 'good'); const r = d && d.getBoundingClientRect(); if (r) coinBurst(r.left + 40, r.bottom + 10, 10, '#tbCash'); }
   renderTop(); renderPanel(true);
 }
 
@@ -333,8 +333,8 @@ function clientMonth(s) {
     const dirty = s.flags.dirty, fine = dirty * 0.5 / (s.upgrades.conformite ? 3 : 1);
     s.cash -= dirty + fine; s.depX = Math.max(0, (s.depX || 0) - dirty); recomputeAgg(s); // l'argent sale est saisi
     s.reputation = clamp(s.reputation - 12, 0, 100); s.flags.dirty = 0;
-    log(`🚔 TRACFIN découvre ${money(dirty)} d’argent sale dans vos comptes : saisie et amende de ${money(fine)}.`, 'bad');
-    toast(`🚔 Blanchiment découvert : amende de ${money(fine)} !`, 'bad');
+    log(_l`🚔 TRACFIN découvre ${money(dirty)} d’argent sale dans vos comptes : saisie et amende de ${money(fine)}.`, 'bad');
+    toast(_l`🚔 Blanchiment découvert : amende de ${money(fine)} !`, 'bad');
   }
   return r;
 }

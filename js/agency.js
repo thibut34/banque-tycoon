@@ -13,25 +13,25 @@ const ag = b => AG[b.id] || (ROOM_KINDS.forEach(k => { if (b[k] == null) b[k] = 
 
 // Ce que veut chaque visiteur, le poste où il va et le temps qu'il y passe (en secondes)
 const INTENTS = {
-  compte: { ico: '🙋', st: 'g', t: 2, name: 'Ouvrir un compte' },
-  op: { ico: '💬', st: 'g', t: 1.4, name: 'Une opération' },
-  demande: { ico: '🗣️', st: 'g', t: 1.6, name: 'Une demande' },
-  reclam: { ico: '😠', st: 'g', t: 2, name: 'Une réclamation' },
-  suspect: { ico: '🕶️', st: 'g', t: 2.2, name: 'Déposer du liquide' },
-  pret: { ico: '🏠', st: 'b', t: 3.2, name: 'Un crédit' },
-  pro: { ico: '🏭', st: 'b', t: 3.8, name: 'Un prêt pro' },
-  av: { ico: '☂️', st: 'b', t: 2.6, name: 'Placer son épargne' },
-  dab: { ico: '🏧', st: 'dab', t: 0.9, name: 'Retirer des billets' },
-  coffre: { ico: '🔐', st: 'cof', t: 1.8, name: 'Louer un coffre' },
-  entreprise: { ico: '💼', st: 'ent', t: 3.4, name: 'Un chef d’entreprise' },
-  vip: { ico: '💎', st: 'vip', t: 3.8, name: 'Un client fortuné' },
+  compte: { ico: '🙋', st: 'g', t: 2, name: _t('Ouvrir un compte') },
+  op: { ico: '💬', st: 'g', t: 1.4, name: _t('Une opération') },
+  demande: { ico: '🗣️', st: 'g', t: 1.6, name: _t('Une demande') },
+  reclam: { ico: '😠', st: 'g', t: 2, name: _t('Une réclamation') },
+  suspect: { ico: '🕶️', st: 'g', t: 2.2, name: _t('Déposer du liquide') },
+  pret: { ico: '🏠', st: 'b', t: 3.2, name: _t('Un crédit') },
+  pro: { ico: '🏭', st: 'b', t: 3.8, name: _t('Un prêt pro') },
+  av: { ico: '☂️', st: 'b', t: 2.6, name: _t('Placer son épargne') },
+  dab: { ico: '🏧', st: 'dab', t: 0.9, name: _t('Retirer des billets') },
+  coffre: { ico: '🔐', st: 'cof', t: 1.8, name: _t('Louer un coffre') },
+  entreprise: { ico: '💼', st: 'ent', t: 3.4, name: _t('Un chef d’entreprise') },
+  vip: { ico: '💎', st: 'vip', t: 3.8, name: _t('Un client fortuné') },
 };
 const DEF_INTENT = { g: 'op', b: 'pret', dab: 'dab', cof: 'coffre', ent: 'entreprise', vip: 'vip' };
 const stCount = (b, k) => k === 'g' ? b.gs : k === 'b' ? b.bs : (b[k] || 0);
 
 // ---------- Niveaux des postes ----------
 const ST_MAX = 10;
-const ST_NAME = { g: 'Guichet', b: 'Bureau de crédit', dab: 'Distributeur', cof: 'Salle des coffres', ent: 'Espace entreprises', vip: 'Salon VIP' };
+const ST_NAME = { g: _t('Guichet'), b: _t('Bureau de crédit'), dab: _t('Distributeur'), cof: _t('Salle des coffres'), ent: _t('Espace entreprises'), vip: _t('Salon VIP') };
 const ST_ICO = { g: '🪟', b: '🗂️', dab: '🏧', cof: '🔐', ent: '🏢', vip: '🥂' };
 const stLv = (b, k, i) => (b.lv && b.lv[k] && b.lv[k][i]) || 1;
 const stCost = (b, k, lv) => Math.round(itemCost(b, k) * 0.3 * Math.pow(1.65, lv - 1) / 100) * 100;
@@ -43,13 +43,13 @@ function stTime(b, k, i, intent) { // durée moyenne d'un rendez-vous à ce post
 function upgradeStation(b, k, i) {
   const lv = stLv(b, k, i); if (lv >= ST_MAX) return false;
   const cost = stCost(b, k, lv);
-  if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad'), false;
+  if (S.cash < cost) return toast(_t('Liquidités insuffisantes'), 'bad'), false;
   S.cash -= cost; S.fixed = (S.fixed || 0) + cost;
   b.lv = b.lv || {}; b.lv[k] = b.lv[k] || []; b.lv[k][i] = lv + 1;
   const sl = blay(b)[k][i];
-  ag(b).pops.push({ x: sl.x, y: sl.y, z: 1.8, t: 1.8, txt: `⬆ Niveau ${lv + 1}`, col: '#a5f3fc', big: true });
+  ag(b).pops.push({ x: sl.x, y: sl.y, z: 1.8, t: 1.8, txt: _l`⬆ Niveau ${lv + 1}`, col: '#a5f3fc', big: true });
   SFX.play('build'); gainXP(S, 10 + lv * 4); funHUD();
-  log(`⬆️ ${CITIES[b.id].name} : ${ST_NAME[k].toLowerCase()} ${i + 1} passe au niveau ${lv + 1} (${money(cost)}).`);
+  log(_l`⬆️ ${CITIES[b.id].name} : ${ST_NAME[k].toLowerCase()} ${i + 1} passe au niveau ${lv + 1} (${money(cost)}).`);
   return true;
 }
 
@@ -158,17 +158,17 @@ function completeVisit(s, b, a, lay, A) {
     else { const c = makeCard(s, b, a.intent, mine); if (c) [txt, col] = processVisit(s, b, c); }
   } finally { ui.stBonus = 1; ui.stLv = 1; }
   const tl = s.today.tally;
-  if (!txt && tl.comptes > t0.comptes) txt = '+1 client';
-  if (tl.ventes > t0.ventes) { txt = txt && !txt.startsWith('+1 client') ? txt : (txt ? txt + ' · ' : '') + '💳 Vente'; col = '#86efac'; }
+  if (!txt && tl.comptes > t0.comptes) txt = _t('+1 client');
+  if (tl.ventes > t0.ventes) { txt = txt && !txt.startsWith(_t('+1 client')) ? txt : (txt ? txt + ' · ' : '') + _t('💳 Vente'); col = '#86efac'; }
   if (txt) { const sl = lay[a.k][a.idx]; A.pops.push({ x: sl.x, y: sl.y, z: 1.9, t: 1.7, txt, col }); }
   if (tl.prets > t0.prets || tl.ventes > t0.ventes) SFX.play('coin');
 }
 // Un client déjà chez vous vient pour une opération : votre guichetier tente une vente
 function opVisit(s, p) {
   const up = upsellChance(s, false);
-  if (s.prod.carte.on && !p.c && chance(Math.min(0.9, up * 1.1))) { p.c = 1; s.today.tally.ventes++; recomputeAgg(s); return '💳 Carte vendue'; }
-  if (s.prod.liv.on && p.l == null && p.b > 1500 && chance(Math.min(0.9, up * livChance(s) * 1.2))) { const m = Math.round(p.b * rnd(0.3, 0.6)); p.b -= m; p.l = m; s.today.tally.ventes++; recomputeAgg(s); return '🐷 Livret ouvert'; }
-  if (s.prod.carte.on && p.c === 1 && pinc(p) > 3500 && chance(up * 0.4)) { p.c = 2; s.today.tally.ventes++; recomputeAgg(s); return '✨ Carte Gold'; }
+  if (s.prod.carte.on && !p.c && chance(Math.min(0.9, up * 1.1))) { p.c = 1; s.today.tally.ventes++; recomputeAgg(s); return _t('💳 Carte vendue'); }
+  if (s.prod.liv.on && p.l == null && p.b > 1500 && chance(Math.min(0.9, up * livChance(s) * 1.2))) { const m = Math.round(p.b * rnd(0.3, 0.6)); p.b -= m; p.l = m; s.today.tally.ventes++; recomputeAgg(s); return _t('🐷 Livret ouvert'); }
+  if (s.prod.carte.on && p.c === 1 && pinc(p) > 3500 && chance(up * 0.4)) { p.c = 2; s.today.tally.ventes++; recomputeAgg(s); return _t('✨ Carte Gold'); }
   p.q = clamp(p.q + 1, 0, 100);
   const fee = Math.round((4 + Math.random() * 4) * (ui.stBonus || 1)); // virement, chèque de banque, remise d’espèces…
   s.cash += fee; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + fee;
@@ -180,18 +180,18 @@ function processVisit(s, b, c) {
     if (c.req.amount <= seuil(s) || deskLoans >= 2) {
       const sum = { prets: 0, pretAmt: 0, refus: 0, fraud: 0 };
       advisorLoan(s, c, sum, ui.teamQ);
-      if (sum.prets) return [`🤝 Prêt ${money(sum.pretAmt)}`, '#86efac'];
-      if (sum.fraud) return ['🕵️ Escroc démasqué', '#a5f3fc'];
-      return ['✋ Prêt refusé', '#cbd5e1'];
+      if (sum.prets) return [_l`🤝 Prêt ${money(sum.pretAmt)}`, '#86efac'];
+      if (sum.fraud) return [_t('🕵️ Escroc démasqué'), '#a5f3fc'];
+      return [_t('✋ Prêt refusé'), '#cbd5e1'];
     }
-    toDesk(s, c); return ['📥 Pour vous', '#fde68a'];
+    toDesk(s, c); return [_t('📥 Pour vous'), '#fde68a'];
   }
-  if (escalate(s, c)) { c.esc = 1; toDesk(s, c); return ['📥 Pour vous', '#fde68a']; }
+  if (escalate(s, c)) { c.esc = 1; toDesk(s, c); return [_t('📥 Pour vous'), '#fde68a']; }
   const tr0 = s.stats.tracfin || 0;
   resolveCard(s, c, delegateChoice(s, c), false);
-  if (c.kind === 'suspect') return (s.stats.tracfin || 0) > tr0 ? ['🕵️ Fraudeur signalé', '#a5f3fc'] : ['🚫 Refusé', '#cbd5e1'];
-  if (c.kind === 'reclam') return ['😌 Client calmé', '#e9d5ff'];
-  if (c.kind === 'av') return ['☂️ Épargne placée', '#86efac'];
+  if (c.kind === 'suspect') return (s.stats.tracfin || 0) > tr0 ? [_t('🕵️ Fraudeur signalé'), '#a5f3fc'] : [_t('🚫 Refusé'), '#cbd5e1'];
+  if (c.kind === 'reclam') return [_t('😌 Client calmé'), '#e9d5ff'];
+  if (c.kind === 'av') return [_t('☂️ Épargne placée'), '#86efac'];
   if (c.kind === 'demande') return ['✓', '#86efac'];
   return [null, null];
 }
@@ -199,15 +199,15 @@ function processVisit(s, b, c) {
 const fees = (s, v) => { v = Math.round(v * (ui.stBonus || 1)); s.cash += v; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + v; return v; };
 function roomVisit(s, b, intent, mine) {
   const big = Math.max(1, loanScale(s));
-  if (intent === 'coffre') { const v = fees(s, rnd(120, 260)); s.stats.coffres = (s.stats.coffres || 0) + 1; return [`🔐 Coffre loué +${money(v)}`, '#fde68a']; }
+  if (intent === 'coffre') { const v = fees(s, rnd(120, 260)); s.stats.coffres = (s.stats.coffres || 0) + 1; return [_l`🔐 Coffre loué +${money(v)}`, '#fde68a']; }
   if (intent === 'entreprise') {
     const r = Math.random();
     if (r < 0.45) { // un compte pro : l'entreprise dépose sa trésorerie
       const amt = Math.round(rnd(20, 150) * big) * 1000; s.depX = (s.depX || 0) + amt; s.cash += amt; s.flags.entAcc = (s.flags.entAcc || 0) + 1; recomputeAgg(s);
-      return [`🏢 Compte pro +${money(amt)}`, '#93c5fd'];
+      return [_l`🏢 Compte pro +${money(amt)}`, '#93c5fd'];
     }
     if (r < 0.75) { const c = makeCard(s, b, 'pro', mine); if (c) return processVisit(s, b, c); }
-    const v = fees(s, rnd(150, 600)); return [`💱 Commission +${money(v)}`, '#86efac']; // change de devises, affacturage…
+    const v = fees(s, rnd(150, 600)); return [_l`💱 Commission +${money(v)}`, '#86efac']; // change de devises, affacturage…
   }
   // salon VIP
   const r = Math.random();
@@ -218,15 +218,15 @@ function roomVisit(s, b, intent, mine) {
     else if (s.prod.liv.on) openPersonAccount(s, p, { livret: true });
     else { const sv = p.save0; openPersonAccount(s, p); p.b += sv; s.cash += sv; }
     p.c = 2; recomputeAgg(s); s.today.tally.comptes++;
-    return [`💎 +${money(amt)} confiés`, '#fde68a'];
+    return [_l`💎 +${money(amt)} confiés`, '#fde68a'];
   }
-  if (r < 0.8) { const v = fees(s, rnd(500, 2000)); return [`🥂 Honoraires +${money(v)}`, '#fde68a']; }
+  if (r < 0.8) { const v = fees(s, rnd(500, 2000)); return [_l`🥂 Honoraires +${money(v)}`, '#fde68a']; }
   // un très gros crédit : c'est vous qui signez
   const req = makeRequest(s, 'immo');
-  Object.assign(req, { name: pname(newPersonFor(s, b)), amount: Math.round(rnd(300, 1200) * big) * 1000, score: rint(720, 820), fraud: false, apport: 0.3, reason: pick(['une villa avec vue sur la mer', 'un vignoble dans l’Hérault', 'un hôtel particulier', 'un chalet à Megève']) });
+  Object.assign(req, { name: pname(newPersonFor(s, b)), amount: Math.round(rnd(300, 1200) * big) * 1000, score: rint(720, 820), fraud: false, apport: 0.3, reason: pick([_t('une villa avec vue sur la mer'), _t('un vignoble dans l’Hérault'), _t('un hôtel particulier'), _t('un chalet à Megève')]) });
   req.income = Math.round(payment(req.amount, req.offer, req.dur) / 0.22 / 10) * 10; req.branch = b.id;
   toDesk(s, { id: ++ui.cardSeq, kind: 'pret', branch: b.id, name: req.name, req, vip: 1 });
-  return ['📥 Gros dossier pour vous', '#fde68a'];
+  return [_t('📥 Gros dossier pour vous'), '#fde68a'];
 }
 
 // Un dossier important arrive sur votre bureau (sans arrêter le jeu)
@@ -255,11 +255,11 @@ function showStPop(b, k, i, x, y) {
   const cost = lv < ST_MAX ? stCost(b, k, lv) : 0;
   let el = $('#stpop'); if (!el) { el = document.createElement('div'); el.id = 'stpop'; document.body.appendChild(el); }
   el.dataset.k = k; el.dataset.i = i; el.dataset.b = b.id;
-  el.innerHTML = `<button class="sp-x" data-act="stClose" aria-label="Fermer">×</button>
+  el.innerHTML = _l`<button class="sp-x" data-act="stClose" aria-label="Fermer">×</button>
     <div class="sp-h"><span class="sp-ico">${ST_ICO[k]}</span><div><b>${ST_NAME[k]}${k === 'g' || k === 'b' || stCount(b, k) > 1 ? ' ' + (i + 1) : ''}</b><small>Niveau ${lv} / ${ST_MAX}</small></div></div>
-    ${ROOM_KINDS.includes(k) ? `<p class="small muted">${ITEMS[k].desc}</p>` : ''}${e ? `<p class="sp-emp">${avatar(e, 28)}<span><b>${esc(e.name)}</b><small>${empTitle(e)} · niveau ${e.lvl}</small></span></p>` : people && !staffed ? `<p class="sp-warn">Personne ne travaille ici.</p><button class="btn success full" data-act="stHire">Embaucher · ${money(itemCost(b, k + 's'))}</button>` : ''}
-    <div class="sp-stats"><span>⏱ Temps par client</span><b>${nf1.format(stTime(b, k, i))} s</b>${k !== 'dab' ? `<span>${k === 'b' ? '📈 Marge sur les prêts' : k === 'g' ? '💳 Ventes et commissions' : '💰 Revenus par visite'}</span><b>+${k === 'b' ? nf1.format(0.1 * (lv - 1)) + ' pt' : Math.round(0.1 * (lv - 1) * 100) + ' %'}</b>` : ''}</div>
-    ${lv < ST_MAX ? `<button class="btn gold full" data-act="stUp" ${S.cash < cost ? 'disabled' : ''}>⬆ Niveau ${lv + 1} · ${money(cost)}<small>−12 % de temps${k === 'g' ? ', +10 % de ventes et commissions' : k === 'b' ? ', +0,1 pt de marge sur les prêts' : k === 'dab' ? '' : ', +10 % de revenus'}</small></button>` : '<p class="center gold-t"><b>Niveau maximum !</b></p>'}`;
+    ${ROOM_KINDS.includes(k) ? `<p class="small muted">${ITEMS[k].desc}</p>` : ''}${e ? _l`<p class="sp-emp">${avatar(e, 28)}<span><b>${esc(e.name)}</b><small>${empTitle(e)} · niveau ${e.lvl}</small></span></p>` : people && !staffed ? _l`<p class="sp-warn">Personne ne travaille ici.</p><button class="btn success full" data-act="stHire">Embaucher · ${money(itemCost(b, k + 's'))}</button>` : ''}
+    <div class="sp-stats"><span>⏱ Temps par client</span><b>${nf1.format(stTime(b, k, i))} s</b>${k !== 'dab' ? `<span>${k === 'b' ? _t('📈 Marge sur les prêts') : k === 'g' ? _t('💳 Ventes et commissions') : _t('💰 Revenus par visite')}</span><b>+${k === 'b' ? nf1.format(0.1 * (lv - 1)) + ' pt' : Math.round(0.1 * (lv - 1) * 100) + ' %'}</b>` : ''}</div>
+    ${lv < ST_MAX ? _l`<button class="btn gold full" data-act="stUp" ${S.cash < cost ? 'disabled' : ''}>⬆ Niveau ${lv + 1} · ${money(cost)}<small>−12 % de temps${k === 'g' ? _t(', +10 % de ventes et commissions') : k === 'b' ? _t(', +0,1 pt de marge sur les prêts') : k === 'dab' ? '' : _t(', +10 % de revenus')}</small></button>` : _t('<p class="center gold-t"><b>Niveau maximum !</b></p>')}`;
   el.hidden = false;
   const w = 260, h = el.offsetHeight || 220;
   el.style.left = clamp(x - w / 2, 8, innerWidth - w - 8) + 'px';

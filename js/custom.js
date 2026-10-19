@@ -8,13 +8,13 @@
 
 const THEMES = {
   floor: {
-    marbre: { name: 'Marbre', c: ['#ebe5da', '#ddd5c6'] },
-    damier: { name: 'Damier', c: ['#f1f5f9', '#334155'] },
-    parquet: { name: 'Parquet', c: ['#c08a5a', '#ad7848'], stripes: true },
-    moquette: { name: 'Moquette', c: ['#4b5563', '#465060'] },
-    beton: { name: 'Béton ciré', c: ['#cbd5e1', '#c2ccd8'] },
-    terrazzo: { name: 'Terrazzo', c: ['#f5f0e8', '#ece4d6'], dots: true },
-    or: { name: 'Marbre doré', c: ['#f7e7b4', '#ead38a'], lock: 3 },
+    marbre: { name: _t('Marbre'), c: ['#ebe5da', '#ddd5c6'] },
+    damier: { name: _t('Damier'), c: ['#f1f5f9', '#334155'] },
+    parquet: { name: _t('Parquet'), c: ['#c08a5a', '#ad7848'], stripes: true },
+    moquette: { name: _t('Moquette'), c: ['#4b5563', '#465060'] },
+    beton: { name: _t('Béton ciré'), c: ['#cbd5e1', '#c2ccd8'] },
+    terrazzo: { name: _t('Terrazzo'), c: ['#f5f0e8', '#ece4d6'], dots: true },
+    or: { name: _t('Marbre doré'), c: ['#f7e7b4', '#ead38a'], lock: 3 },
   },
   wall: { creme: '#f1ebe0', blanc: '#f8fafc', bleu: '#bfdbfe', vert: '#bbf7d0', rose: '#fecdd3', lavande: '#ddd6fe', gris: '#cbd5e1', nuit: '#334155' },
   carpet: { rouge: '#9f1239', bleu: '#1d4ed8', vert: '#15803d', violet: '#6d28d9', noir: '#111827', aucun: null },
@@ -130,11 +130,11 @@ function customHTML(b) {
   const t = themeOf(b);
   const sw = (group, key, col, label, locked) => `<button class="swatch ${t[group] === key ? 'on' : ''}" data-act="theme" data-g="${group}" data-v="${key}" title="${label}" ${locked ? 'disabled' : ''}>
     <i style="background:${col || 'repeating-linear-gradient(45deg,#334155 0 4px,#1f2937 4px 8px)'}"></i><small>${label}${locked ? ' 🔒' : ''}</small></button>`;
-  const floors = Object.entries(THEMES.floor).map(([k, f]) => sw('floor', k, `linear-gradient(135deg, ${f.c[0]} 50%, ${f.c[1]} 50%)`, f.name, f.lock && S.chapter < f.lock)).join('');
+  const floors = Object.entries(THEMES.floor).map(([k, f]) => sw('floor', k, _l`linear-gradient(135deg, ${f.c[0]} 50%, ${f.c[1]} 50%)`, f.name, f.lock && S.chapter < f.lock)).join('');
   const walls = Object.entries(THEMES.wall).map(([k, c]) => sw('wall', k, c, k[0].toUpperCase() + k.slice(1))).join('');
   const carpets = Object.entries(THEMES.carpet).map(([k, c]) => sw('carpet', k, c, k[0].toUpperCase() + k.slice(1))).join('');
   const accents = Object.entries(THEMES.accent).map(([k, c]) => sw('accent', k, c, k[0].toUpperCase() + k.slice(1))).join('');
-  return `<div class="custom">
+  return _l`<div class="custom">
     <p class="hint">${ic('spark')} <span><b>Glissez un meuble</b> sur le plan pour le déplacer. Contour vert : la place est libre ; rouge : impossible.</span></p>
     <div class="cgroup"><h4>Sol</h4><div class="swatches">${floors}</div></div>
     <div class="cgroup"><h4>Murs</h4><div class="swatches">${walls}</div></div>

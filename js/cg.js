@@ -7,6 +7,10 @@
    proprement sur le navigateur et le jeu marche sans publicité.
    ===================================================================== */
 
+// Publicités : CrazyGames les interdit en « Basic Launch ». Passez à true seulement quand le jeu
+// est sélectionné pour le « Full Launch » (CrazyGames vous le dira par e-mail).
+const ADS_ENABLED = false;
+
 const CG = {
   sdk: null, playing: null, adOn: false, muted: false, lastAd: 0, lastReward: 0,
   async init() {
@@ -45,7 +49,7 @@ const CG = {
   },
 
   // ---------- Publicités ----------
-  canAd() { return !!(this.sdk && this.sdk.ad); },
+  canAd() { return ADS_ENABLED && !!(this.sdk && this.sdk.ad); },
   ad(type, onDone, onFail) {
     if (!this.canAd() || this.adOn) { if (onFail) onFail('unavailable'); return; }
     this.adOn = true; this.gameplay(false);
@@ -63,6 +67,6 @@ const CG = {
   // Pub récompensée : on la propose au plus toutes les 4 minutes
   rewardReady() { return this.canAd() && Date.now() - this.lastReward > 240e3; },
   rewarded(onReward) {
-    this.ad('rewarded', () => { this.lastReward = Date.now(); onReward(); }, () => toast('Pas de publicité disponible pour le moment. Réessayez plus tard !', 'bad'));
+    this.ad('rewarded', () => { this.lastReward = Date.now(); onReward(); }, () => toast(_t('Pas de publicité disponible pour le moment. Réessayez plus tard !'), 'bad'));
   },
 };

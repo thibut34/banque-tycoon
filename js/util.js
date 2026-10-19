@@ -18,23 +18,31 @@ function weighted(obj) { // {cle: poids}
   return Object.keys(obj)[0];
 }
 
-const nf0 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
-const nf1 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const nf2 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const NUM_LOC = LANG === 'fr' ? 'fr-FR' : 'en-US';
+const nf0 = new Intl.NumberFormat(NUM_LOC, { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat(NUM_LOC, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const nf2 = new Intl.NumberFormat(NUM_LOC, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 function money(n) {
   const a = Math.abs(n), s = n < 0 ? '-' : '';
+  if (LANG !== 'fr') { // €1,234 · €12.3k · €1.23M · €1.23B
+    if (a >= 1e9) return s + '€' + nf2.format(a / 1e9) + 'B';
+    if (a >= 1e6) return s + '€' + nf2.format(a / 1e6) + 'M';
+    if (a >= 1e4) return s + '€' + nf1.format(a / 1e3) + 'k';
+    return s + '€' + nf0.format(a);
+  }
   if (a >= 1e9) return s + nf2.format(a / 1e9) + ' Md€';
   if (a >= 1e6) return s + nf2.format(a / 1e6) + ' M€';
   if (a >= 1e4) return s + nf1.format(a / 1e3) + ' k€';
   return s + nf0.format(a) + ' €';
 }
-const pct = (x, d = 1) => (d === 2 ? nf2 : nf1).format(x) + ' %';
+const pct = (x, d = 1) => (d === 2 ? nf2 : nf1).format(x) + (LANG === 'fr' ? ' %' : '%');
 const cls = n => n >= 0 ? 'pos' : 'neg';
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const MONTHS = LANG === 'fr' ? ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+  : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const START_YEAR = 2027;
-function dateStr(d) { const m = Math.floor(d / 30); return `${d % 30 + 1} ${MONTHS[m % 12]} ${START_YEAR + Math.floor(m / 12)}`; }
+function dateStr(d) { const m = Math.floor(d / 30), y = START_YEAR + Math.floor(m / 12); return LANG === 'fr' ? `${d % 30 + 1} ${MONTHS[m % 12]} ${y}` : `${MONTHS[m % 12]} ${d % 30 + 1}, ${y}`; }
 function monthStr(d) { const m = Math.floor(d / 30); return `${MONTHS[m % 12]} ${START_YEAR + Math.floor(m / 12)}`; }
 
 // ---------- Préférences ----------
@@ -72,6 +80,9 @@ const SFX = (() => {
     chest: () => { [0, 0.12, 0.24, 0.36, 0.48].forEach((t, i) => tone(200 + i * 40, t, 0.08, 'square', 0.05)); tone(523, 0.75, 0.15, 'triangle', 0.1); tone(1047, 0.85, 0.5, 'sine', 0.1); },
     level: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.11, 0.3, 'triangle', 0.1)); tone(1319, 0.5, 0.6, 'sine', 0.08); },
   };
+  // iPhone : le son peut être coupé par le système, on le relance au premier geste du joueur
+  const wake = () => { if (ctx && ctx.state !== 'running') ctx.resume(); };
+  ['pointerup', 'touchend', 'click'].forEach(e => document.addEventListener(e, wake, { passive: true }));
   return { play(n, a) { if (prefs.mute || !sounds[n] || (window.CG && (CG.muted || CG.adOn))) return; try { sounds[n](a); } catch (e) { } } };
 })();
 
