@@ -11,6 +11,7 @@
 // est sélectionné pour le « Full Launch » (CrazyGames vous le dira par e-mail).
 const ADS_ENABLED = false;
 
+const BIG = '__trop_gros__'; // marqueur : la sauvegarde est dans localStorage
 const CG = {
   sdk: null, playing: null, adOn: false, muted: false, lastAd: 0, lastReward: 0,
   async init() {
@@ -36,11 +37,12 @@ const CG = {
 
   // ---------- Sauvegarde ----------
   getItem(k) {
-    try { if (this.sdk && this.sdk.data) { const v = this.sdk.data.getItem(k); if (v != null) return v; } } catch (e) { }
+    try { if (this.sdk && this.sdk.data) { const v = this.sdk.data.getItem(k); if (v === BIG) return localStorage.getItem(k); if (v != null) return v; } } catch (e) { }
     try { return localStorage.getItem(k); } catch (e) { return null; }
   },
   setItem(k, v) {
-    try { if (this.sdk && this.sdk.data) { this.sdk.data.setItem(k, v); return; } } catch (e) { }
+    // CrazyGames refuse plus de 1 Mo : une très grosse partie reste alors dans le navigateur, et le module Data le note
+    try { if (this.sdk && this.sdk.data) { if (v.length < 1e6 - 2e3) { this.sdk.data.setItem(k, v); return; } this.sdk.data.setItem(k, BIG); } } catch (e) { }
     try { localStorage.setItem(k, v); } catch (e) { }
   },
   removeItem(k) {

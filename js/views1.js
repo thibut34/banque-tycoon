@@ -279,22 +279,22 @@ function worldMap(s, rid) {
 function cityCard(s, id) {
   const c = CITIES[id], own = getBranch(s, id), open = regionUnlocked(s, c.region);
   const T = TIERS[c.tier];
-  return _l`<div class="item ${own ? 'owned' : ''} ${ui.city === id ? 'sel' : ''}"><div class="row"><span class="cc big">${c.cc}</span><div class="grow"><b>${c.name}</b><br><small class="muted">${c.desc || (T ? T.label : '')}</small></div></div>
+  return _l`<div class="item ${own ? 'owned' : ''} ${ui.city === id ? 'sel' : ''}"><div class="row"><span class="cc big">${FLAGS[c.cc] ? flagSVG(c.cc, 30) : c.cc}</span><div class="grow"><b>${c.name}</b><br><small class="muted">${c.desc || (T ? T.label : '')}</small></div></div>
     <div class="meta">Dépôts potentiels : <b>jusqu’à ${money(c.cap * 1.5)}</b><br>Demandes de prêt : <b>×${c.loans}</b><br>Loyer : <b>${money(c.rent)}/mois</b></div>
     ${own ? _l`<button class="btn sm" data-act="goBranch" data-id="${id}">Voir l’agence ${ic('arrow')}</button>`
-      : !open ? _l`<button class="btn" disabled>${ic('lock')} Chapitre ${REGIONS[c.region].unlock + 1}</button>`
+      : !open ? _l`<button class="btn" disabled>${ic('lock')} Chapitre ${regionUnlock(s, c.region) + 1}</button>`
         : _l`<button class="btn gold" data-act="branch" data-id="${id}" ${s.cash < c.cost ? 'disabled' : ''}>Ouvrir — ${money(c.cost)}</button>`}</div>`;
 }
 function vWorld() {
   const s = S, rid = ui.region;
-  const tabs = [['all', _t('Monde')], ...Object.entries(REGIONS).map(([k, r]) => [k, r.name])].map(([k, n]) => {
+  const tabs = [['all', _t('Monde')], ...[...regionOrder(s), 'espace'].map(k => [k, REGIONS[k].name])].map(([k, n]) => {
     const lock = k !== 'all' && !regionUnlocked(s, k), cnt = k === 'all' ? s.branches.length : regionCount(s, k);
     return `<button class="chip ${rid === k ? 'on' : ''} ${lock ? 'locked' : ''}" data-act="region" data-v="${k}">${lock ? ic('lock') : ''}${n}${cnt ? ` <small>${cnt}</small>` : ''}</button>`;
   }).join('');
   const total = Object.keys(CITIES).length;
   const list = Object.keys(CITIES).filter(id => rid === 'all' ? getBranch(s, id) : CITIES[id].region === rid);
   const R = REGIONS[rid];
-  const lockMsg = rid !== 'all' && !regionUnlocked(s, rid) ? _l`<div class="alert indigo">${ic('lock')}<div>Région verrouillée : terminez le <b>chapitre ${R.unlock}</b> (« ${CHAPTERS[R.unlock - 1].name} ») pour obtenir la licence.</div></div>` : '';
+  const lockMsg = rid !== 'all' && !regionUnlocked(s, rid) ? _l`<div class="alert indigo">${ic('lock')}<div>Région verrouillée : terminez le <b>chapitre ${regionUnlock(s, rid)}</b> (« ${CHAPTERS[regionUnlock(s, rid) - 1].name} ») pour obtenir la licence.</div></div>` : '';
   return `<div class="chips">${tabs}</div>
   ${lockMsg}
   ${rid === 'espace' ? '' : card(_l`${rid === 'all' ? _t('Votre réseau mondial') : R.name} <small class="muted">· ${s.branches.length}/${total} agences dans le monde</small>`, worldMap(s, rid), 'map-card')}

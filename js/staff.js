@@ -8,13 +8,13 @@
 const STAFF_KEYS = ['gs', 'bs', 'vig'];
 const AV_BG = ['#c7d2fe', '#fde68a', '#bbf7d0', '#fecdd3', '#bae6fd', '#ddd6fe', '#fed7aa'];
 
-function makeEmployee(role, lvl = 1, trait) {
-  const female = chance(0.5);
+function makeEmployee(role, lvl = 1, trait, br) {
+  const female = chance(0.5), P = namePool(br || ui.branch || HQ);
   return {
     id: S.nextEmp = (S.nextEmp || 0) + 1, role, lvl, xp: 0,
-    name: pick(female ? [_t('Sophie'), _t('Chloé'), _t('Léa'), _t('Inès'), _t('Manon'), _t('Camille'), _t('Fatou'), _t('Nadia'), _t('Clémence'), _t('Josiane'), _t('Brigitte'), _t('Aïcha'), _t('Emma'), _t('Lina'), _t('Yasmine'), _t('Mei')] : [_t('Gérard'), _t('Kevin'), _t('Mohamed'), _t('Jean-Michel'), _t('Patrick'), _t('Thierry'), _t('Rachid'), _t('Hugo'), _t('Yannick'), _t('Bernard'), _t('Lucas'), _t('Gaston'), _t('Karim'), _t('Théo'), _t('Paolo'), _t('Kenji')]) + ' ' + pick(LAST),
+    name: poolName(P, female),
     trait: trait || weighted({ souriant: 3, rapide: 3, ambitieux: 3, fidele: 2, bavard: 2, raleur: 1.5 }),
-    face: { female, skin: pick(SKINS), hair: pick(HAIRS), style: rint(0, 3), bg: pick(AV_BG) },
+    face: { female, skin: pick(P.skin || SKINS), hair: pick(HAIRS), style: rint(0, 3), bg: pick(AV_BG) },
     since: S.day, ready: 0, trained: -99,
   };
 }
@@ -24,7 +24,7 @@ function syncStaff(s) {
     if (!b.staff) b.staff = [];
     for (const r of STAFF_KEYS) {
       let list = staffOf(b, r);
-      while (list.length < (b[r] || 0)) { b.staff.push(makeEmployee(r)); list = staffOf(b, r); }
+      while (list.length < (b[r] || 0)) { b.staff.push(makeEmployee(r, 1, null, b.id)); list = staffOf(b, r); }
       while (list.length > (b[r] || 0)) { const e = list.pop(); b.staff = b.staff.filter(x => x !== e); }
     }
   }

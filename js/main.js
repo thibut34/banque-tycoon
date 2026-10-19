@@ -216,10 +216,13 @@ const actions = {
     if (loadSave()) return confirmBox('⚠️', _t('Écraser la partie en cours ?'), _t('Votre partie sauvegardée sera perdue.'), 'newGameForce', _t('Nouvelle partie'));
     actions.newGameForce();
   },
-  newGameForce: () => {
+  newGameForce: () => { closeModal(true); ui.pickCC = null; showStartPicker(); },
+  pickCountry: el => { ui.pickCC = el.dataset.v; showStartPicker(); },
+  pickBack: () => { ui.pickCC = null; showStartPicker(); },
+  pickCity: el => {
     closeModal(true);
     const name = $('#bankName').value.trim() || randomBankName();
-    S = null; const s = newState(name); S = s;
+    S = null; const s = newState(name, el.dataset.v); S = s;
     startDay(s);
     startGame(s);
     setTimeout(() => { ui.modal = true; showModal(WELCOME()); }, 200);
@@ -229,6 +232,27 @@ const actions = {
   tutSkip: () => { S.tut = -1; updateCoach(true); },
   tutRestart: () => { S.tut = 0; closeModal(); updateCoach(true); },
 };
+
+// ---------- Où ouvrir sa banque : le pays, puis la ville ----------
+const starBar = n => '★'.repeat(n) + '☆'.repeat(5 - n);
+function showStartPicker() {
+  ui.modal = true;
+  const cc = ui.pickCC;
+  if (!cc) {
+    const list = START_COUNTRIES.map(([c, n]) => _l`<button class="pick-c" data-act="pickCountry" data-v="${c}"><span class="pick-flag">${flagSVG(c)}</span><b>${n}</b><small>${Object.values(CITIES).filter(x => x.cc === c && START_PRICE[x.tier] != null).length} villes</small></button>`).join('');
+    showModal(_l`<div class="m-ico">🌍</div><h2>Où ouvrir votre banque ?</h2><p class="center muted">Choisissez votre pays. Vos clients, vos employés et les entreprises du coin porteront des noms de là-bas. Vous partirez ensuite à la conquête du reste du monde.</p><div class="pick-grid">${list}</div>`);
+  } else {
+    const ids = Object.keys(CITIES).filter(id => CITIES[id].cc === cc && START_PRICE[CITIES[id].tier] != null).sort((a, b) => startCash(b) - startCash(a) || CITIES[a].name.localeCompare(CITIES[b].name));
+    const list = ids.map(id => { const c = CITIES[id], T = TIERS[c.tier]; return _l`<button class="pick-city" data-act="pickCity" data-v="${id}"><b>${c.name}</b><small>${T.label}</small>
+      <span class="pick-row"><span>Clients</span><span class="pick-stars">${starBar(T.traffic - 1)}</span></span>
+      <span class="pick-row"><span>Gros dossiers</span><span class="pick-stars">${starBar(Math.min(5, Math.round(T.loans * 2.5)))}</span></span>
+      <span class="pick-row"><span>Capital de départ</span><b>${money(startCash(id))}</b></span></button>`; }).join('');
+    const R = REGIONS[CITIES[ids[0]].region];
+    showModal(_l`<div class="m-ico">${flagSVG(cc, 48)}</div><h2>${countryName(cc)} : quelle ville ?</h2><p class="center muted">Une grande ville attire plus de clients et de plus gros prêts, mais s’y installer coûte plus cher : il vous reste moins de capital pour démarrer.${R.cost > 1.2 || R.wage > 1.2 ? _l` Ici, construire coûte <b>×${nf1.format(R.cost)}</b> et les salaires <b>×${nf1.format(R.wage)}</b>.` : ''}</p>
+      <div class="pick-grid cities">${list}</div><div class="choices"><button class="btn ghost" data-act="pickBack">← Changer de pays</button></div>`);
+  }
+  $('#modal .modal-box').classList.add('wide');
+}
 
 function randomBankName() {
   return pick([_t('Banque'), _t('Crédit'), _t('Caisse'), _t('Comptoir'), _t('Société Financière')]) + ' ' +
@@ -265,7 +289,7 @@ function confetti(n = 90) {
 
 // ---------- Tutoriel ----------
 const TUTO = [
-  { tab: 'dash', target: ['g', 0], txt: _t('Bienvenue, PDG ! Votre agence de <b>Montpellier</b> est vide. Cliquez sur le <b>＋</b> qui clignote pour construire votre premier <b>guichet</b>.'), done: s => getBranch(s, HQ).g >= 1 },
+  { tab: 'dash', target: ['g', 0], get txt() { return _l`Bienvenue, PDG ! Votre agence de <b>${hqName()}</b> est vide. Cliquez sur le <b>＋</b> qui clignote pour construire votre premier <b>guichet</b>.`; }, done: s => getBranch(s, HQ).g >= 1 },
   { tab: 'dash', target: ['g', 0], txt: _t('Il faut quelqu’un derrière ! Cliquez sur le guichet, puis sur <b>Embaucher</b>, et choisissez un <b>guichetier</b> parmi les candidats.'), done: s => getBranch(s, HQ).gs >= 1 },
   { tab: 'dash', reward: 2000, txt: _t('Les portes sont ouvertes ! Au-dessus de chaque client, ce qu’il veut : <b>🙋 ouvrir un compte</b>, <b>💬 une opération</b>, <b>🏧 retirer</b>. Regardez votre guichetier en servir quelques-uns.'), done: s => (s.today && s.today.served >= 3) || s.clients >= 3 },
   { tab: 'dash', target: ['g', 0], reward: 3000, txt: _t('Plus votre guichet est rapide, moins les clients attendent. <b>Cliquez sur votre guichet</b> et passez-le au <b>niveau 2</b>.'), done: s => s.branches.some(b => b.lv && b.lv.g && b.lv.g.some(x => x >= 2)) },
@@ -304,7 +328,7 @@ function updateCoach(force) {
 // ---------- Textes ----------
 const HELP = _l`<div class="m-ico">📘</div><h2>Comment jouer</h2>
 <ul>
-<li>🎯 <b>But</b> : terminer les chapitres, d’une agence vide à Montpellier jusqu’à la première banque interplanétaire.</li>
+<li>🎯 <b>But</b> : terminer les chapitres, d’une petite agence vide jusqu’à la première banque interplanétaire.</li>
 <li>🏦 <b>Votre agence</b> : les clients entrent, font la queue et se font servir. Construisez et améliorez guichets, bureaux de crédit, distributeurs et salles spéciales, et recrutez votre équipe. S’il n’y a pas assez de monde, les clients repartent fâchés.</li>
 <li>🤝 <b>Prêts</b> : vos conseillers signent seuls les petits prêts. Les gros dossiers arrivent sur votre bureau : choisissez le taux, et faites vérifier (🔎) les dossiers douteux : certains sont des escrocs.</li>
 <li>💳 <b>Produits</b> : comptes courants, livrets, assurance-vie et cartes attirent l’argent des clients et rapportent des frais.</li>
@@ -315,7 +339,7 @@ const HELP = _l`<div class="m-ico">📘</div><h2>Comment jouer</h2>
 <li>⏸️ <b>Espace</b> met le temps en pause, <b>Échap</b> ouvre le menu. La partie se sauvegarde toute seule.</li>
 </ul><div class="choices"><button class="btn primary" data-act="closeModal">Compris</button></div>`;
 const WELCOME = () => _l`<div class="m-ico">🎉</div><h2>Bienvenue, PDG !</h2>
-<p class="center"><b>${esc(S.name)}</b> s’installe à <b>Montpellier</b> avec <b>${money(equity(S))}</b> de capital. Le temps avance tout seul : <b>une journée toutes les 15 secondes</b>. Faites une pause quand vous voulez avec <b>⏸</b>.</p>
+<p class="center"><b>${esc(S.name)}</b> s’installe à <b>${hqName()}</b> avec <b>${money(equity(S))}</b> de capital. Le temps avance tout seul : <b>une journée toutes les 15 secondes</b>. Faites une pause quand vous voulez avec <b>⏸</b>.</p>
 <p class="center muted">Votre directrice adjointe va vous montrer les bases. Votre objectif : ouvrir des agences partout dans le monde… et au-delà.</p>
 <div class="choices"><button class="btn primary" data-act="closeModal">Ouvrir les portes</button></div>`;
 
@@ -330,7 +354,7 @@ function showStart() {
   $('#leaderboard').innerHTML = best.length ? _l`<div class="card"><header class="card-h"><h3>Meilleurs scores</h3></header>${bestTable(best)}</div>` : '';
 }
 function startGame(state) {
-  S = state; ui.acc = 0; ui.tab = 'dash'; ui.branch = HQ; ui.region = 'france'; ui.seen = new Set();
+  S = state; HQ = S.hq = S.hq || 'montpellier'; ui.acc = 0; ui.tab = 'dash'; ui.branch = HQ; ui.region = CITIES[HQ].region; ui.seen = new Set();
   floorReset(null);
   for (const k in AG) delete AG[k]; // les clients de l'agence d'une autre partie s'en vont
   $('#start').hidden = true; $('#game').hidden = false;

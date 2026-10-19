@@ -11,7 +11,7 @@ function newBranch(id, o = {}) {
   return Object.assign({ id, size: 1, g: 0, gs: 0, b: 0, bs: 0, dab: 0, vig: 0, deco: 0, cof: 0, ent: 0, vip: 0, sat: 50, since: S ? S.day : 0 }, o);
 }
 
-function newState(name) {
+function newState(name, hq = 'montpellier') {
   const market = {};
   for (const id in ASSETS) {
     const a = ASSETS[id]; const hist = [];
@@ -20,15 +20,15 @@ function newState(name) {
     market[id] = { price: p, hist };
   }
   return {
-    v: 2, name, day: 0, nextEmp: 0,
-    cash: START.cash, deposits: 0, depCC: 0, depLiv: 0, depX: 0, ovd: 0, depositRate: 1.5, clients: 0, cards: 0, cardsGold: 0, people: [], nextPid: 0, alerts: [],
+    v: 2, name, hq, day: 0, nextEmp: 0,
+    cash: startCash(hq), deposits: 0, depCC: 0, depLiv: 0, depX: 0, ovd: 0, depositRate: 1.5, clients: 0, cards: 0, cardsGold: 0, people: [], nextPid: 0, alerts: [],
     prod: { cc: { on: true, fee: 5, od: 0.25, agio: 14 }, liv: { on: false }, av: { on: false, fee: 1, aum: 0 }, carte: { on: false, fee: 45 } },
     loans: [], requests: [], nextId: 1,
     cbDebt: 0, policyRate: 3, rateHist: [3],
     economy: 'stable', econTimer: rint(8, 14), nextEcon: null,
     reputation: 50, surveillance: false, lowCap: 0,
     portfolio: {}, cost: {}, market,
-    branches: [newBranch(HQ)], upgrades: {},
+    branches: [newBranch(hq)], upgrades: {},
     fortune: 0, owned: [],
     history: [], lastPL: null, log: [],
     achievements: {}, flags: {},
@@ -46,7 +46,7 @@ const getBranch = (s, id) => s.branches.find(b => b.id === id);
 const regionCount = (s, r) => s.branches.filter(b => CITIES[b.id].region === r).length;
 const staffTotal = (s, k) => s.branches.reduce((a, b) => a + (b[k] || 0), 0);
 const chapterIdx = s => s.chapter;
-const regionUnlocked = (s, r) => s.chapter >= REGIONS[r].unlock;
+const regionUnlocked = (s, r) => s.chapter >= regionUnlock(s, r);
 function costMult(b) { const c = cityOf(b); return REGIONS[c.region].cost * (c.region === 'espace' ? 25 : 1); }
 function wageMult(s, b) { return REGIONS[cityOf(b).region].wage * (s.upgrades.rh ? 0.85 : 1); }
 const itemCost = (b, k) => (ITEMS[k].cost || ITEMS[k].hire) * costMult(b);
@@ -175,6 +175,8 @@ function floatMoney(amount, x, y) {
 }
 
 // ---------- Sauvegarde ----------
-function save() { if (!S || S.over) return; try { CG.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
+// Les nombres sont gardés avec 6 chiffres significatifs : la sauvegarde reste sous la limite de 1 Mo de CrazyGames
+const compact = (k, v) => typeof v === 'number' && !Number.isInteger(v) ? +v.toPrecision(6) : v;
+function save() { if (!S || S.over) return; try { CG.setItem(SAVE_KEY, JSON.stringify(S, compact)); } catch (e) { } }
 function loadSave() { try { const j = CG.getItem(SAVE_KEY); return j ? JSON.parse(j) : null; } catch (e) { return null; } }
 function loadBest() { try { return JSON.parse(CG.getItem(BEST_KEY)) || []; } catch (e) { return []; } }

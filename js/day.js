@@ -10,7 +10,7 @@
 
 const loansOpen = s => s.chapter >= 1;
 const lognorm = (mean, sd = 0.6) => Math.max(50, Math.round(mean * Math.exp(sd * gauss() - sd * sd / 2) / 10) * 10);
-const nameP = () => pick(FIRST) + ' ' + pick(LAST);
+const nameP = () => poolName(namePool(ui.branch || HQ), chance(0.5));
 const focusOn = (s, f) => s.flags.focus === f && s.flags.focusUntil > s.day;
 
 // ---------- Fréquentation ----------
@@ -80,14 +80,14 @@ function personLoanRequest(s, p) {
   const inc = pinc(p); if (p.u || inc < 900) return null;
   const type = !p.own && inc > 1900 && chance(0.55) ? 'immo' : weighted({ auto: 3, conso: 3 });
   const r = makeRequest(s, type);
-  r.name = pname(p); r.pid = p.i; r.income = inc; r.debt = Math.round(personDebt(s, p)); r.score = personScore(s, p);
+  r.name = pname(p); r.pid = p.i; r.reason = loanReason(type, p.br); r.income = inc; r.debt = Math.round(personDebt(s, p)); r.score = personScore(s, p);
   if (type === 'immo') {
     r.dur = rint(15, 25) * 12;
     const price = Math.round(inc * 12 * rnd(3, 5.5) / 1000) * 1000;
     r.apport = clamp((p.l || 0) / price, 0, 0.3); r.amount = Math.round(price * (1 - r.apport) / 1000) * 1000;
-    r.reason = p.l > price * 0.1 ? _t('acheter sa résidence principale') : _t('acheter un appartement sans apport');
+    r.reason = chance(0.4) ? loanReason('immo', p.br) : pick(p.l > price * 0.1 ? IMMO_APPORT : IMMO_SANS);
   } else if (type === 'auto') r.amount = Math.round(rnd(6e3, Math.min(45e3, inc * 14)) / 1000) * 1000;
-  else { r.amount = Math.round(rnd(2e3, Math.min(25e3, inc * 6)) / 500) * 500; if (p.own) r.reason = _t('des travaux dans sa maison'); }
+  else { r.amount = Math.round(rnd(2e3, Math.min(25e3, inc * 6)) / 500) * 500; if (p.own && chance(0.6)) r.reason = pick(WORKS); }
   r.amount = Math.min(r.amount, Math.max(30e3, equity(s) * 0.2));
   const T = LOAN_TYPES[type], base = s.policyRate + T.spread + reqPD(r, s.policyRate + T.spread) * (1 - T.rec) * 100;
   r.maxRate = Math.min(usure(r), base + rnd(-0.3, 1.2));
@@ -96,7 +96,7 @@ function personLoanRequest(s, p) {
 }
 function makeTask(s, kind, extra = {}) {
   const c = { id: ++ui.cardSeq, kind, task: true, ...extra };
-  if (kind === 'facture') { c.amt = Math.round(monthlyCosts(s) * rnd(0.03, 0.08) / 10) * 10; c.who = pick([_t('le fournisseur de café'), _t('l’entreprise de ménage'), _t('l’imprimeur des chéquiers'), _t('le dépanneur informatique'), _t('la société de transport de fonds')]); }
+  if (kind === 'facture') { c.amt = Math.round(monthlyCosts(s) * rnd(0.01, 0.03) / 10) * 10; c.who = pick([_t('le fournisseur de café'), _t('l’entreprise de ménage'), _t('l’imprimeur des chéquiers'), _t('le dépanneur informatique'), _t('la société de transport de fonds')]); }
   if (kind === 'courrier') c.letter = rint(0, COURRIER.length - 1);
   if (kind === 'fraudecb') { const [where, when] = pick(FRAUD_CB); c.where = where; c.when = when; c.amt = lognorm(1500); c.fraud = chance(0.85); }
   return c;
@@ -118,7 +118,7 @@ function startDay(s) {
   // Les visiteurs arrivent en direct dans l'agence (agency.js)
   // Tâches de bureau
   if (s.day % 7 === 1 && s.day > 1 && s.branches.some(b => b.gs || b.bs)) t.cards.unshift({ id: ++ui.cardSeq, kind: 'reunion', task: true });
-  if (s.clients > 20 && chance(0.2)) t.cards.push(makeTask(s, 'facture'));
+  if (s.clients > 20 && chance(0.12)) t.cards.push(makeTask(s, 'facture'));
   if (s.clients > 40 && chance(0.12)) t.cards.push(makeTask(s, 'courrier'));
   addStoryCards(s, t);
   t.total = t.cards.length;
@@ -157,6 +157,8 @@ const sale = s => { s.today.tally.ventes++; };
 // Découvert au-delà de l'autorisation : ce que fait l'équipe par défaut
 function autoOverdraft(s, p) { p.q -= 4; p.k = (p.k || 0) + 0.3; }
 
+// Une facture payée : comptée avec les charges du mois
+const bill = (s, v) => { s.cash -= v; s.flags.mBills = (s.flags.mBills || 0) + v; };
 function resolveCard(s, c, choice, manual = true) {
   const b = c.branch && getBranch(s, c.branch), p = c.pid && findPerson(s, c.pid);
   if (c.kind === 'story') return resolveStory(s, c, choice, manual);
@@ -228,8 +230,8 @@ function resolveCard(s, c, choice, manual = true) {
       msg = { accueil: _t('Cette semaine : priorité à l’accueil (+20 % de visiteurs servis).'), ventes: _t('Cette semaine : priorité aux ventes (+35 % de chances de vendre).'), prudence: _t('Cette semaine : priorité à la prudence (fraudes repérées).') }[choice];
       break;
     case 'facture':
-      if (choice === 'negocie') { if (chance(0.5)) { s.cash -= Math.round(c.amt * 0.7); msg = _l`Négociation réussie avec ${c.who} : -30 %.`; } else { s.cash -= Math.round(c.amt * 1.1); msg = _l`${c.who} refuse et ajoute des frais de retard.`; } }
-      else s.cash -= c.amt;
+      if (choice === 'negocie') { if (chance(0.5)) { bill(s, Math.round(c.amt * 0.7)); msg = _l`Négociation réussie avec ${c.who} : -30 %.`; } else { bill(s, Math.round(c.amt * 1.1)); msg = _l`${c.who} refuse et ajoute des frais de retard.`; } }
+      else bill(s, c.amt);
       break;
     case 'impaye': {
       const L = s.loans.find(l => l.id === c.loan); if (!L) break;

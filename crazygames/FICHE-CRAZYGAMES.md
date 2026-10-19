@@ -4,7 +4,7 @@ Tout ce qu'il faut est dans ce dossier `crazygames/` :
 
 | Fichier | À quoi il sert |
 |---|---|
-| `banque-tycoon-crazygames.zip` | Le jeu à envoyer (index.html à la racine, 232 Ko) |
+| `banque-tycoon-crazygames.zip` | Le jeu à envoyer (index.html à la racine) |
 | `cover-landscape-1920x1080.png` | Image de couverture paysage (16:9) |
 | `cover-portrait-800x1200.png` | Image de couverture portrait (2:3) |
 | `cover-square-800x800.png` | Image de couverture carrée (1:1) |
@@ -31,7 +31,7 @@ Banque Tycoon
 Build your own bank, from a tiny branch to an interplanetary empire!
 
 **Description**
-Open a small bank branch and watch your customers walk in, queue and get served in real time. Build teller desks, loan offices, ATMs, a vault room, a business lounge and a VIP lounge, then upgrade them to serve faster and earn more. Hire and train your team, sign big loans as the CEO, and handle tricky cases: scammers, angry customers, lottery winners and bank runs. Complete the chapters to expand across France, Europe, the Americas and Asia… and one day, open a bank on the Moon and on Mars!
+Pick your country and your city — France, Canada, Japan, Morocco, the USA and more — then open a small bank branch and watch your customers walk in, queue and get served in real time. Build teller desks, loan offices, ATMs, a vault room, a business lounge and a VIP lounge, then upgrade them to serve faster and earn more. Hire and train your team, sign big loans as the CEO, and handle tricky cases: scammers, angry customers, lottery winners and bank runs. Complete the chapters to expand across France, Europe, the Americas and Asia… and one day, open a bank on the Moon and on Mars!
 
 **Controls**
 - Mouse / touch: click a desk or room to build, hire and upgrade it

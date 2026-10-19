@@ -39,7 +39,7 @@ function vMissions() {
   })() : card(_t('Défis'), _l`<p class="muted">Aucun défi pour l’instant. Le prochain arrive dans environ ${Math.max(1, s.nextChallenge - s.day)} jours. Réussir un défi rapporte de l’argent et de la réputation.</p><p class="small">Défis réussis : <b>${s.stats.challenges}</b></p>`);
   const chs = CHAPTERS.map((ch, i) => {
     const done = i < s.chapter, cur = i === s.chapter;
-    const unl = Object.values(REGIONS).filter(r => r.unlock === i + 1).map(r => r.name);
+    const unl = Object.keys(REGIONS).filter(k => regionUnlock(s, k) === i + 1).map(k => REGIONS[k].name);
     return `<section class="card chapter ${done ? 'done' : cur ? 'current' : 'future'}">
       <div class="ch-num">${done ? ic('check') : i + 1}</div>
       <div class="grow"><div class="row"><h3 class="grow">${cur || done ? ch.name : _t('Chapitre ') + (i + 1)}</h3>${ch.reward ? `<span class="pill ${done ? '' : 'gold'}">${money(ch.reward)}</span>` : ''}</div>

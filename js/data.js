@@ -5,7 +5,7 @@
 
 const SAVE_KEY = 'banqueTycoon.save.v4';
 const BEST_KEY = 'banqueTycoon.best.v2';
-const HQ = 'montpellier';
+let HQ = 'montpellier'; // la ville du siège : choisie en début de partie (S.hq)
 const START = { cash: 1e6, deposits: 0 }; // 1 M€ de capital et une agence vide, pour tout le monde
 
 const ECON = {
@@ -17,17 +17,17 @@ const ECON = {
 
 const LOAN_TYPES = {
   conso: { label: _t('Crédit conso'), icon: '🛒', amt: [3e3, 40e3], dur: [12, 60], spread: 4.5, usure: 17, pd: 1.2, rec: 0.15, w: 3, rw: 0.75, who: 'p',
-    reasons: [_t('une télé 8K'), _t('un canapé en cuir'), _t('des vacances à Bali'), _t('une cuisine équipée'), _t('son mariage'), _t('un home cinéma'), _t('une PS7')] },
+    reasons: [_t('une télé 8K'), _t('un canapé en cuir'), _t('des vacances à Bali'), _t('une cuisine équipée'), _t('son mariage'), _t('un home cinéma'), _t('une PS7'), _t('un vélo électrique'), _t('un nouveau smartphone'), _t('une piscine hors-sol'), _t('les études de sa fille'), _t('un voyage au Japon'), _t('des meubles pour son nouvel appartement'), _t('son permis de conduire'), _t('des soins dentaires'), _t('un piano'), _t('une fête pour ses 50 ans')] },
   auto: { label: _t('Prêt auto'), icon: '🚗', amt: [8e3, 70e3], dur: [24, 72], spread: 2.8, usure: 8, pd: 1, rec: 0.4, w: 3, rw: 0.75, who: 'p',
-    reasons: [_t('une citadine électrique'), _t('un SUV'), _t('un camping-car'), _t('une moto'), _t('une Twingo de 1996 « de collection »')] },
+    reasons: [_t('une citadine électrique'), _t('un SUV'), _t('un camping-car'), _t('une moto'), _t('une Twingo de 1996 « de collection »'), _t('une voiture familiale'), _t('une voiture d’occasion'), _t('un utilitaire pour son travail'), _t('une voiture hybride'), _t('un cabriolet'), _t('un scooter')] },
   immo: { label: _t('Prêt immobilier'), icon: '🏠', amt: [80e3, 600e3], dur: [120, 300], spread: 1.6, usure: 3.2, pd: 0.5, rec: 0.65, w: 3, rw: 0.35, who: 'p',
-    reasons: [_t('un appartement en centre-ville'), _t('une maison avec jardin'), _t('un studio à louer'), _t('une longère en Bretagne'), _t('un loft'), _t('un chalet à la montagne')] },
+    reasons: [_t('un appartement en centre-ville'), _t('une maison avec jardin'), _t('un studio à louer'), _t('une longère en Bretagne'), _t('un loft'), _t('un chalet à la montagne'), _t('une maison de campagne'), _t('un appartement pour ses enfants étudiants'), _t('une maison à rénover'), _t('un pied-à-terre en ville'), _t('un petit immeuble à louer'), _t('une maison de plain-pied pour sa retraite')] },
   pro: { label: _t('Prêt professionnel'), icon: '🏭', amt: [50e3, 1.5e6], dur: [36, 120], spread: 3, usure: 9, pd: 1.3, rec: 0.3, w: 2, rw: 1, who: 'c',
-    reasons: [_t('de nouvelles machines'), _t('un entrepôt'), _t('une flotte de camions'), _t('son expansion à l’export'), _t('une usine de croissants')] },
+    reasons: [_t('de nouvelles machines'), _t('un entrepôt'), _t('une flotte de camions'), _t('son expansion à l’export'), _t('une usine de croissants'), _t('un nouveau magasin'), _t('la reprise d’un concurrent'), _t('des panneaux solaires'), _t('un site de vente en ligne'), _t('un camion frigorifique'), _t('des robots pour son atelier'), _t('la rénovation de son restaurant'), _t('un deuxième atelier')] },
   startup: { label: _t('Start-up'), icon: '🦄', amt: [200e3, 3e6], dur: [36, 84], spread: 6, usure: 14, pd: 3, rec: 0.05, w: 1, rw: 1.5, who: 's',
-    reasons: [_t('une IA qui écrit des poèmes pour chats'), _t('un Uber pour tondeuses'), _t('la blockchain du fromage'), _t('des chaussettes connectées'), _t('un métavers pour retraités'), _t('des drones livreurs de croissants')] },
+    reasons: [_t('une IA qui écrit des poèmes pour chats'), _t('un Uber pour tondeuses'), _t('la blockchain du fromage'), _t('des chaussettes connectées'), _t('un métavers pour retraités'), _t('des drones livreurs de croissants'), _t('une appli de covoiturage pour chiens'), _t('des lunettes qui traduisent les chats'), _t('un frigo qui fait les courses tout seul'), _t('un réseau social pour plantes vertes')] },
   farfelu: { label: _t('Projet farfelu'), icon: '🤪', amt: [20e3, 400e3], dur: [12, 48], spread: 7, usure: 15, pd: 2.5, rec: 0.1, w: 1, rw: 1, who: 'p',
-    reasons: [_t('un élevage d’escargots de course'), _t('un restaurant 100 % raclette à Dubaï'), _t('un parc d’attractions pour pigeons'), _t('un sous-marin en kit'), _t('une école de mimes'), _t('un musée de la chaussette perdue')] },
+    reasons: [_t('un élevage d’escargots de course'), _t('un restaurant 100 % raclette à Dubaï'), _t('un parc d’attractions pour pigeons'), _t('un sous-marin en kit'), _t('une école de mimes'), _t('un musée de la chaussette perdue'), _t('une chaîne de karaokés sous-marins'), _t('un hôtel pour hamsters'), _t('un festival de la moustache')] },
   souv: { label: _t('Dette souveraine'), icon: '🏛️', spread: 0, usure: 30, pd: 1, rec: 0.45, w: 0, rw: 1, who: 'g', reasons: [] },
 };
 
@@ -46,9 +46,6 @@ const COUNTRIES = [
   [_t('Argentine'), 'CCC', _t('rembourser… ses autres dettes')], [_t('République du Groland'), 'CCC', _t('la construction d’une statue géante de son président')],
 ];
 
-const FIRST = [_t('Gérard'), _t('Sophie'), _t('Kevin'), _t('Brigitte'), _t('Mohamed'), _t('Chloé'), _t('Jean-Michel'), _t('Léa'), _t('Patrick'), _t('Inès'), _t('Thierry'), _t('Manon'), _t('Rachid'), _t('Camille'), _t('Dédé'), _t('Josiane'), _t('Hugo'), _t('Fatou'), _t('Yannick'), _t('Clémence'), _t('Bernard'), _t('Lucas'), _t('Nadia'), _t('Gaston')];
-const LAST = [_t('Dupont'), _t('Martin'), _t('Lefèvre'), _t('Moreau'), _t('Bernard'), _t('Petit'), _t('Durand'), _t('Leroy'), _t('Roux'), _t('Fournier'), _t('Girard'), _t('Bonnet'), _t('Mercier'), _t('Blanc'), _t('Garcia'), _t('Benali'), _t('Nguyen'), _t('Lambert'), _t('Fontaine'), _t('Rousseau')];
-const COMPANY = [_t('SARL {L} & Fils'), _t('{L} Industries'), _t('Boulangeries {L}'), _t('Transports {L}'), _t('Garage {L}'), _t('Ets {L}'), _t('{L} BTP'), _t('Fromagerie {L}')];
 const STARTUP = [_t('Bloop'), 'Fromagr.io', _t('Kwakk'), _t('Zyglo'), 'ChatGPTruc', _t('Licornia'), _t('Pivotly'), 'SnailX', _t('Blockchouette'), _t('Disruptr')];
 
 const ASSETS = {
@@ -95,15 +92,45 @@ const CITY_LIST = [
   ['buenosaires', _t('Buenos Aires'), 'AR', 'ameriques', 'l', -34.6, -58.38],
   ['tokyo', _t('Tokyo'), 'JP', 'asie', 'w', 35.68, 139.69], ['seoul', _t('Séoul'), 'KR', 'asie', 'xl', 37.57, 126.98], ['shanghai', _t('Shanghai'), 'CN', 'asie', 'w', 31.23, 121.47],
   ['hongkong', _t('Hong Kong'), 'HK', 'asie', 'xl', 22.32, 114.17], ['singapour', _t('Singapour'), 'SG', 'asie', 'xl', 1.35, 103.82], ['mumbai', _t('Mumbai'), 'IN', 'asie', 'l', 19.08, 72.88],
-  ['casablanca', _t('Casablanca'), 'MA', 'afrique', 'm', 33.57, -7.59], ['dakar', _t('Dakar'), 'SN', 'afrique', 's', 14.72, -17.47], ['abidjan', _t('Abidjan'), 'CI', 'afrique', 'm', 5.36, -4.01],
+  ['casablanca', _t('Casablanca'), 'MA', 'afrique', 'm', 33.57, -7.59], ['dakar', _t('Dakar'), 'SN', 'afrique', 'm', 14.72, -17.47], ['abidjan', _t('Abidjan'), 'CI', 'afrique', 'm', 5.36, -4.01],
   ['lagos', _t('Lagos'), 'NG', 'afrique', 'l', 6.52, 3.38], ['nairobi', _t('Nairobi'), 'KE', 'afrique', 'm', -1.29, 36.82], ['lecap', _t('Le Cap'), 'ZA', 'afrique', 'm', -33.92, 18.42],
   ['istanbul', _t('Istanbul'), 'TR', 'moyenorient', 'l', 41.01, 28.98], ['dubai', _t('Dubaï'), 'AE', 'moyenorient', 'xl', 25.2, 55.27], ['doha', _t('Doha'), 'QA', 'moyenorient', 'l', 25.29, 51.53],
   ['sydney', _t('Sydney'), 'AU', 'oceanie', 'xl', -33.87, 151.21], ['auckland', _t('Auckland'), 'NZ', 'oceanie', 'l', -36.85, 174.76],
+  // Les autres villes des pays où l'on peut commencer
+  ['anvers', _t('Anvers'), 'BE', 'europe', 'm', 51.22, 4.4], ['gand', _t('Gand'), 'BE', 'europe', 'm', 51.05, 3.72], ['liege', _t('Liège'), 'BE', 'europe', 'm', 50.63, 5.57],
+  ['namur', _t('Namur'), 'BE', 'europe', 's', 50.47, 4.87], ['charleroi', _t('Charleroi'), 'BE', 'europe', 's', 50.41, 4.44], ['bruges', _t('Bruges'), 'BE', 'europe', 's', 51.21, 3.22],
+  ['lausanne', _t('Lausanne'), 'CH', 'europe', 'm', 46.52, 6.63], ['zurich', _t('Zurich'), 'CH', 'europe', 'xl', 47.37, 8.54], ['berne', _t('Berne'), 'CH', 'europe', 'm', 46.95, 7.45],
+  ['bale', _t('Bâle'), 'CH', 'europe', 'm', 47.56, 7.59], ['lugano', _t('Lugano'), 'CH', 'europe', 's', 46.0, 8.95], ['neuchatel', _t('Neuchâtel'), 'CH', 'europe', 's', 46.99, 6.93],
+  ['quebec', _t('Québec'), 'CA', 'ameriques', 'm', 46.81, -71.21], ['toronto', _t('Toronto'), 'CA', 'ameriques', 'xl', 43.65, -79.38], ['vancouver', _t('Vancouver'), 'CA', 'ameriques', 'l', 49.28, -123.12],
+  ['ottawa', _t('Ottawa'), 'CA', 'ameriques', 'm', 45.42, -75.7], ['halifax', _t('Halifax'), 'CA', 'ameriques', 's', 44.65, -63.58], ['winnipeg', _t('Winnipeg'), 'CA', 'ameriques', 'm', 49.9, -97.14],
+  ['sherbrooke', _t('Sherbrooke'), 'CA', 'ameriques', 's', 45.4, -71.89],
+  ['manchester', _t('Manchester'), 'GB', 'europe', 'l', 53.48, -2.24], ['birmingham', _t('Birmingham'), 'GB', 'europe', 'l', 52.49, -1.89], ['edimbourg', _t('Édimbourg'), 'GB', 'europe', 'm', 55.95, -3.19],
+  ['liverpool', _t('Liverpool'), 'GB', 'europe', 'm', 53.41, -2.98], ['bristol', _t('Bristol'), 'GB', 'europe', 'm', 51.45, -2.59], ['leeds', _t('Leeds'), 'GB', 'europe', 'm', 53.8, -1.55],
+  ['cardiff', _t('Cardiff'), 'GB', 'europe', 's', 51.48, -3.18],
+  ['chicago', _t('Chicago'), 'US', 'ameriques', 'xl', 41.88, -87.63], ['sanfrancisco', _t('San Francisco'), 'US', 'ameriques', 'xl', 37.77, -122.42], ['houston', _t('Houston'), 'US', 'ameriques', 'l', 29.76, -95.37],
+  ['boston', _t('Boston'), 'US', 'ameriques', 'l', 42.36, -71.06], ['seattle', _t('Seattle'), 'US', 'ameriques', 'l', 47.61, -122.33], ['lasvegas', _t('Las Vegas'), 'US', 'ameriques', 'm', 36.17, -115.14],
+  ['nouvelleorleans', _t('La Nouvelle-Orléans'), 'US', 'ameriques', 'm', 29.95, -90.07], ['nashville', _t('Nashville'), 'US', 'ameriques', 's', 36.16, -86.78],
+  ['barcelone', _t('Barcelone'), 'ES', 'europe', 'xl', 41.39, 2.17], ['valencia', _t('Valence (Espagne)'), 'ES', 'europe', 'm', 39.47, -0.38], ['seville', _t('Séville'), 'ES', 'europe', 'm', 37.39, -5.98],
+  ['bilbao', _t('Bilbao'), 'ES', 'europe', 'm', 43.26, -2.93], ['malaga', _t('Malaga'), 'ES', 'europe', 'm', 36.72, -4.42], ['saragosse', _t('Saragosse'), 'ES', 'europe', 'm', 41.65, -0.88],
+  ['grenade', _t('Grenade'), 'ES', 'europe', 's', 37.18, -3.6],
+  ['naples', _t('Naples'), 'IT', 'europe', 'l', 40.85, 14.27], ['turin', _t('Turin'), 'IT', 'europe', 'm', 45.07, 7.69], ['florence', _t('Florence'), 'IT', 'europe', 'm', 43.77, 11.25],
+  ['bologne', _t('Bologne'), 'IT', 'europe', 'm', 44.49, 11.34], ['venise', _t('Venise'), 'IT', 'europe', 'm', 45.44, 12.32], ['palerme', _t('Palerme'), 'IT', 'europe', 's', 38.12, 13.36],
+  ['munich', _t('Munich'), 'DE', 'europe', 'xl', 48.14, 11.58], ['hambourg', _t('Hambourg'), 'DE', 'europe', 'l', 53.55, 9.99], ['cologne', _t('Cologne'), 'DE', 'europe', 'm', 50.94, 6.96],
+  ['francfort', _t('Francfort'), 'DE', 'europe', 'xl', 50.11, 8.68], ['stuttgart', _t('Stuttgart'), 'DE', 'europe', 'm', 48.78, 9.18], ['dresde', _t('Dresde'), 'DE', 'europe', 's', 51.05, 13.74],
+  ['leipzig', _t('Leipzig'), 'DE', 'europe', 'm', 51.34, 12.37],
+  ['rabat', _t('Rabat'), 'MA', 'afrique', 'm', 34.02, -6.84], ['marrakech', _t('Marrakech'), 'MA', 'afrique', 'm', 31.63, -8.0], ['fes', _t('Fès'), 'MA', 'afrique', 'm', 34.03, -5.0],
+  ['tanger', _t('Tanger'), 'MA', 'afrique', 'm', 35.76, -5.83], ['agadir', _t('Agadir'), 'MA', 'afrique', 's', 30.43, -9.6], ['meknes', _t('Meknès'), 'MA', 'afrique', 's', 33.9, -5.55],
+  ['oujda', _t('Oujda'), 'MA', 'afrique', 's', 34.68, -1.91],
+  ['thies', _t('Thiès'), 'SN', 'afrique', 's', 14.79, -16.93], ['saintlouis', _t('Saint-Louis'), 'SN', 'afrique', 's', 16.03, -16.49], ['kaolack', _t('Kaolack'), 'SN', 'afrique', 's', 14.15, -16.07],
+  ['ziguinchor', _t('Ziguinchor'), 'SN', 'afrique', 's', 12.57, -16.27], ['touba', _t('Touba'), 'SN', 'afrique', 's', 14.86, -15.88], ['mbour', _t('Mbour'), 'SN', 'afrique', 's', 14.42, -16.96],
+  ['osaka', _t('Osaka'), 'JP', 'asie', 'xl', 34.69, 135.5], ['kyoto', _t('Kyoto'), 'JP', 'asie', 'l', 35.01, 135.77], ['nagoya', _t('Nagoya'), 'JP', 'asie', 'l', 35.18, 136.91],
+  ['yokohama', _t('Yokohama'), 'JP', 'asie', 'l', 35.44, 139.64], ['fukuoka', _t('Fukuoka'), 'JP', 'asie', 'l', 33.59, 130.4], ['hiroshima', _t('Hiroshima'), 'JP', 'asie', 'm', 34.39, 132.46],
+  ['sendai', _t('Sendai'), 'JP', 'asie', 'm', 38.27, 140.87],
 ];
 const CITIES = {};
 for (const [id, name, cc, region, t, lat, lon] of CITY_LIST) {
   const T = TIERS[t], R = REGIONS[region];
-  CITIES[id] = { id, name, cc, region, tier: t, lat, lon, cost: id === HQ ? 0 : T.cost * R.cost, rent: T.rent * R.cost, cap: T.cap, loans: T.loans, traffic: T.traffic, build: T.cost * R.cost };
+  CITIES[id] = { id, name, cc, region, tier: t, lat, lon, cost: T.cost * R.cost, rent: T.rent * R.cost, cap: T.cap, loans: T.loans, traffic: T.traffic, build: T.cost * R.cost };
 }
 CITIES.lune = { id: 'lune', name: _t('Base lunaire'), cc: '☾', region: 'espace', tier: 'w', cost: 250e6, rent: 1e6, cap: 1.5e9, loans: 6, traffic: 4, build: 60e6, desc: _t('Les premiers colons ont besoin d’une banque. Et peut-être d’autres clients…') };
 CITIES.mars = { id: 'mars', name: _t('Colonie martienne'), cc: '♂', region: 'espace', tier: 'w', cost: 1.5e9, rent: 5e6, cap: 6e9, loans: 10, traffic: 5, build: 300e6, desc: _t('Trois ans de voyage, mais zéro concurrent.') };
@@ -169,23 +196,42 @@ const RIVALS = [
 
 // ---------- Campagne : chapitres et objectifs ----------
 const G = (txt, cur, goal, fmt) => ({ txt, cur, goal, fmt });
+const GD = (txt, cur, goal, fmt) => ({ get txt() { return txt(); }, cur, goal, fmt }); // un objectif dont le texte dépend de la partie
+// L'ordre des conquêtes dépend du pays de départ : d'abord sa région, puis les autres
+const REGION_ORDER = ['france', 'europe', 'ameriques', 'asie', 'afrique', 'moyenorient', 'oceanie'];
+const NEXT_REGIONS = { france: ['europe', 'ameriques', 'asie'], europe: ['france', 'ameriques', 'asie'], ameriques: ['europe', 'france', 'asie'], asie: ['ameriques', 'europe', 'france'], afrique: ['france', 'europe', 'ameriques'] };
+function regionOrder(s) { const home = CITIES[(s && s.hq) || HQ].region, next = NEXT_REGIONS[home] || []; return [home, ...next, ...REGION_ORDER.filter(r => r !== home && !next.includes(r))]; }
+function regionUnlock(s, r) { if (r === 'espace') return 8; const i = regionOrder(s).indexOf(r); return i <= 0 ? 0 : i <= 3 ? 3 + i : 7; }
+const homeCC = s => CITIES[(s && s.hq) || HQ].cc;
+const countryCount = s => s.branches.filter(b => CITIES[b.id].cc === homeCC(s)).length;
+const hqName = () => CITIES[HQ].name;
+const targetRegion = n => regionOrder(S)[n];
+const REGION_CH = {
+  france: [_t('Cap sur la France'), _t('Paris, Lyon, Marseille… La France vous ouvre ses portes.')],
+  europe: [_t('Cap sur l’Europe'), _t('Londres, Genève, Berlin… L’Europe vous ouvre ses portes.')],
+  ameriques: [_t('Le Nouveau Monde'), _t('Traversez l’Atlantique. Les États vous demandent maintenant de l’argent.')],
+  asie: [_t('Le dragon asiatique'), _t('Tokyo, Shanghai, Singapour : le centre du monde se déplace.')],
+};
+const conquest = (n, reward, goals) => ({ get name() { return REGION_CH[targetRegion(n)][0]; }, get desc() { return REGION_CH[targetRegion(n)][1]; }, reward, goals });
+const regionGoal = (n, k) => GD(() => _l`Agences : ${REGIONS[targetRegion(n)].name}`, s => regionCount(s, regionOrder(s)[n]), k);
+const countryGoal = k => GD(() => _l`Agences : ${countryName(homeCC(S))}`, countryCount, k);
 const CHAPTERS = [
-  { name: _t('L’ouverture'), desc: _t('Votre agence de Montpellier est vide. Installez un guichet, recrutez, et ouvrez vos premiers comptes.'), reward: 20e3, goals: [
+  { name: _t('L’ouverture'), get desc() { return _l`Votre agence de ${hqName()} est vide. Installez un guichet, recrutez, et ouvrez vos premiers comptes.`; }, reward: 20e3, goals: [
     G(_t('Recruter un guichetier'), s => staffTotal(s, 'gs'), 1), G(_t('Clients avec un compte'), s => s.clients, 25), G(_t('Argent déposé par les clients'), s => s.deposits, 50e3, money)] },
   { name: _t('Les premiers crédits'), desc: _t('Vous avez l’argent des clients : il est temps de prêter. Installez un bureau et recrutez un conseiller.'), reward: 60e3, goals: [
-    G(_t('Recruter un conseiller'), s => staffTotal(s, 'bs'), 1), G(_t('Prêts accordés'), s => s.stats.granted, 10), G(_t('Clients avec un compte'), s => s.clients, 150), G(_t('Épargne sur les livrets'), s => s.depLiv, 60e3, money)] },
-  { name: _t('Banque de quartier'), desc: _t('Montpellier vous fait confiance. Distributeurs, cartes, et une deuxième agence.'), reward: 200e3, goals: [
-    G(_t('Clients avec un compte'), s => s.clients, 1200), G(_t('Prêts accordés'), s => s.stats.granted, 40), G(_t('Installer un distributeur'), s => staffTotal(s, 'dab'), 1), G(_t('Posséder 2 agences'), s => s.branches.length, 2), G(_t('Fonds propres'), s => equity(s), 1.2e6, money)] },
-  { name: _t('Le réseau régional'), desc: _t('Couvrez la France et devenez une banque qui compte. À la clé : la licence européenne.'), reward: 600e3, goals: [
-    G(_t('Agences en France'), s => regionCount(s, 'france'), 5), G(_t('Conseillers embauchés'), s => staffTotal(s, 'bs'), 6), G(_t('Réputation'), s => s.reputation, 60), G(_t('Fonds propres'), s => equity(s), 3e6, money)] },
-  { name: _t('Cap sur l’Europe'), desc: _t('Londres, Genève, Berlin… L’Europe vous ouvre ses portes.'), reward: 2e6, goals: [
-    G(_t('Agences en Europe'), s => regionCount(s, 'europe'), 3), G(_t('Agences en France'), s => regionCount(s, 'france'), 8), G(_t('Grande agence (niveau 3)'), s => s.branches.filter(b => b.size >= 3).length, 1), G(_t('Fonds propres'), s => equity(s), 8e6, money)] },
-  { name: _t('Le Nouveau Monde'), desc: _t('Traversez l’Atlantique. Les États vous demandent maintenant de l’argent.'), reward: 6e6, goals: [
-    G(_t('Agences aux Amériques'), s => regionCount(s, 'ameriques'), 3), G(_t('Prêter à un pays'), s => s.stats.souv, 1), G(_t('Classement (top 5)'), s => rankOf(s) <= 5 ? 1 : 0, 1), G(_t('Fonds propres'), s => equity(s), 25e6, money)] },
-  { name: _t('Le dragon asiatique'), desc: _t('Tokyo, Shanghai, Singapour : le centre du monde se déplace.'), reward: 15e6, goals: [
-    G(_t('Agences en Asie'), s => regionCount(s, 'asie'), 3), G(_t('Prêts accordés'), s => s.stats.granted, 600), G(_t('Défis réussis'), s => s.stats.challenges, 5), G(_t('Fonds propres'), s => equity(s), 80e6, money)] },
+    G(_t('Recruter un conseiller'), s => staffTotal(s, 'bs'), 1), G(_t('Prêts accordés'), s => s.stats.granted, 10), G(_t('Clients avec un compte'), s => s.clients, 120), G(_t('Épargne sur les livrets'), s => s.depLiv, 50e3, money)] },
+  { name: _t('Banque de quartier'), get desc() { return _l`${hqName()} vous fait confiance. Distributeurs, cartes, et une deuxième agence.`; }, reward: 200e3, goals: [
+    G(_t('Clients avec un compte'), s => s.clients, 450), G(_t('Prêts accordés'), s => s.stats.granted, 30), G(_t('Installer un distributeur'), s => staffTotal(s, 'dab'), 1), G(_t('Posséder 2 agences'), s => s.branches.length, 2), G(_t('Bénéfices cumulés'), s => s.stats.profit, 150e3, money)] },
+  { name: _t('Le réseau régional'), desc: _t('Couvrez tout le pays et devenez une banque qui compte. À la clé : votre licence pour l’étranger.'), reward: 600e3, goals: [
+    countryGoal(4), G(_t('Conseillers embauchés'), s => staffTotal(s, 'bs'), 5), G(_t('Réputation'), s => s.reputation, 60), G(_t('Bénéfices cumulés'), s => s.stats.profit, 500e3, money)] },
+  conquest(1, 2e6, [
+    regionGoal(1, 3), countryGoal(6), G(_t('Grande agence (niveau 3)'), s => s.branches.filter(b => b.size >= 3).length, 1), G(_t('Fonds propres'), s => equity(s), 4e6, money)]),
+  conquest(2, 6e6, [
+    regionGoal(2, 3), G(_t('Prêter à un pays'), s => s.stats.souv, 1), G(_t('Classement (top 5)'), s => rankOf(s) <= 5 ? 1 : 0, 1), G(_t('Fonds propres'), s => equity(s), 12e6, money)]),
+  conquest(3, 15e6, [
+    regionGoal(3, 3), G(_t('Prêts accordés'), s => s.stats.granted, 500), G(_t('Défis réussis'), s => s.stats.challenges, 5), G(_t('Fonds propres'), s => equity(s), 40e6, money)]),
   { name: _t('Partout sur Terre'), desc: _t('Une agence sur chaque continent. Plus aucun pays ne vous échappe.'), reward: 60e6, goals: [
-    G(_t('Régions couvertes'), s => Object.keys(REGIONS).filter(r => r !== 'espace' && regionCount(s, r) > 0).length, 7), G(_t('Agences'), s => s.branches.length, 30), G(_t('Classement (top 3)'), s => rankOf(s) <= 3 ? 1 : 0, 1), G(_t('Fonds propres'), s => equity(s), 300e6, money)] },
+    G(_t('Régions couvertes'), s => Object.keys(REGIONS).filter(r => r !== 'espace' && regionCount(s, r) > 0).length, 7), G(_t('Agences'), s => s.branches.length, 30), G(_t('Classement (top 3)'), s => rankOf(s) <= 3 ? 1 : 0, 1), G(_t('Fonds propres'), s => equity(s), 150e6, money)] },
   { name: _t('Au-delà du ciel'), desc: _t('La Terre est trop petite. Devenez la première banque interplanétaire.'), reward: 0, goals: [
     G(_t('Traverser la Grande Crise'), s => s.flags.bigCrisisDone ? 1 : 0, 1), G(_t('Base lunaire'), s => s.branches.some(b => b.id === 'lune') ? 1 : 0, 1), G(_t('Colonie martienne'), s => s.branches.some(b => b.id === 'mars') ? 1 : 0, 1), G(_t('Numéro 1 mondial'), s => rankOf(s) === 1 ? 1 : 0, 1), G(_t('Fonds propres'), s => equity(s), 2e9, money)] },
 ];

@@ -439,6 +439,19 @@ details.more[open] summary { margin-bottom: 14px; color: var(--text); }
 .cand-foot { margin-top: auto; padding-top: 8px; width: 100%; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
 .cand-foot b { color: var(--gold); font-size: 15px; }
 @media (max-width: 640px) { .cands { grid-template-columns: minmax(0, 1fr); } }
+/* Choix du pays et de la ville de départ */
+.pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 14px; padding: 2px; }
+.pick-grid.cities { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.pick-c, .pick-city { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 10px; border-radius: 16px; border: 1px solid var(--line, rgba(255,255,255,.12)); background: rgba(123,92,255,.08); color: inherit; font: inherit; cursor: pointer; transition: transform .12s, background .12s, border-color .12s; }
+.pick-c:hover, .pick-city:hover, .pick-c:focus-visible, .pick-city:focus-visible { transform: translateY(-2px); background: rgba(123,92,255,.2); border-color: rgba(123,92,255,.6); }
+.pick-flag { font-size: 34px; line-height: 1.1; }
+.flag { display: block; border-radius: 4px; box-shadow: 0 0 0 1px rgba(255,255,255,.18), 0 2px 6px rgba(0,0,0,.3); }
+.m-ico .flag { margin: auto; }
+.pick-c small, .pick-city small { color: var(--muted); }
+.pick-city { align-items: stretch; text-align: left; }
+.pick-city > b { font-size: 16px; }
+.pick-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.pick-stars { color: #fbbf24; letter-spacing: 1px; }
 
 /* ---------- Personnalisation ---------- */
 .floor-h .btn { margin-left: auto; }

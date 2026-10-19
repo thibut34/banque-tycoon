@@ -17,15 +17,17 @@ const JOBS = [
   [_t('Chef d’entreprise'), 2500, 9000, 0.85], [_t('Agriculteur'), 1200, 2400, 0.9], [_t('Fonctionnaire'), 1800, 3000, 1], [_t('Intérimaire'), 1300, 1900, 0.75],
 ];
 const JOB_W = [6, 8, 6, 6, 5, 5, 10, 5, 1.5, 5, 4, 5, 2, 2, 7, 4];
-const MAX_PEOPLE = 6000; // au-delà, chaque fiche représente plusieurs clients semblables
+const MAX_PEOPLE = 3000; // au-delà, chaque fiche représente plusieurs clients semblables
 
-const pname = p => FIRST[(p.i * 7 + 3) % FIRST.length] + ' ' + LAST[(p.i * 13 + 5) % LAST.length];
+// Le nom d'un client dépend du pays de son agence (et ne change jamais : il est tiré de son numéro)
+const pfem = p => (p.i * 7 + 3) % 2 === 1;
+function pname(p) { const P = namePool(p.br, p.i), fn = pfem(p) ? P.f : P.m; return fn[Math.floor((p.i * 7 + 3) / 2) % fn.length] + ' ' + P.l[(p.i * 13 + 5) % P.l.length]; }
 const pjob = p => JOBS[p.j][0];
 const pinc = p => Math.round(p.u ? p.s * 0.57 : p.s); // au chômage : allocation
 const pw = p => p.w || 1;
 const findPerson = (s, id) => s.people.find(p => p.i == id);
 const branchPeople = (s, id) => s.people.filter(p => p.br === id);
-function personFace(p) { const k = (p.i * 7 + 3) % FIRST.length; return { female: [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 22].includes(k), skin: SKINS[p.i % SKINS.length], hair: HAIRS[(p.i * 3) % HAIRS.length], style: p.i % 4, bg: AV_BG[p.i % AV_BG.length] }; }
+function personFace(p) { const sk = namePool(p.br, p.i).skin || SKINS; return { female: pfem(p), skin: sk[p.i % sk.length], hair: HAIRS[(p.i * 3) % HAIRS.length], style: p.i % 4, bg: AV_BG[p.i % AV_BG.length] }; }
 function personLoans(s, p) { return s.loans.filter(l => l.pid === p.i); }
 const personDebt = (s, p) => personLoans(s, p).reduce((a, l) => a + l.pmt, 0);
 

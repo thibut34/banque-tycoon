@@ -92,10 +92,10 @@ function dailyEstimate(s) {
   const fees = (s.clients || 0) * s.prod.cc.fee + (s.flags.entAcc || 0) * 35 + ((s.cards || 0) * s.prod.carte.fee + (s.cardsGold || 0) * s.prod.carte.fee * 2.5) / 12 + (s.prod.av.aum || 0) * s.prod.av.fee / 1200 + (s.ovd || 0) * (s.prod.cc.agio || 14) / 1200;
   // frais de dossier encaissés depuis le début du mois, distributeurs, réserves placées et obligations
   const dom = s.day % 30 + 1, dossier = (s.flags.mExtraFees || 0) / dom * 30;
-  let other = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1) / 1200 + holdingValue(s, 'oat') * (s.policyRate + 0.4) / 1200;
+  let other = Math.max(0, s.cash) * Math.max(0, s.policyRate - 0.5) / 1200 + holdingValue(s, 'oat') * (s.policyRate + 0.4) / 1200;
   for (const b of s.branches) other += dabIncome(b);
   const livret = (s.depLiv || 0) * s.depositRate / 1200;
-  const costs = monthlyCosts(s) + s.cbDebt * cbRate(s) / 1200 + (s.fixed || 0) / 60;
+  const costs = monthlyCosts(s) + s.cbDebt * cbRate(s) / 1200 + (s.fixed || 0) / 120;
   const f = fees + dossier;
   return { interest: interest / 30, fees: f / 30, other: other / 30, livret: livret / 30, costs: costs / 30, net: (n => n > 0 ? n * 0.75 : n)((interest + f + other - livret - costs) / 30) }; // après impôt (25 %)
 }

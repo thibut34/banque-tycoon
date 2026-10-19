@@ -4,17 +4,18 @@
    ===================================================================== */
 
 // ---------- Demandes de prêt ----------
-function personName() { return pick(FIRST) + ' ' + pick(LAST); }
+function personName(br) { return poolName(namePool(br || randomOwnBranch()), chance(0.5)); }
+const randomOwnBranch = () => S && S.branches.length ? pick(S.branches).id : HQ;
 function loanScale(s) { return Math.pow(Math.max(1, equity(s) / 1e6), 0.75); } // la taille des dossiers suit la taille de la banque
 function makeRequest(s, forcedType) {
   const types = {}; for (const t in LOAN_TYPES) if (LOAN_TYPES[t].w) types[t] = LOAN_TYPES[t].w;
   const type = forcedType || weighted(types);
   const T = LOAN_TYPES[type];
   const amount = Math.round(Math.min(Math.exp(rnd(Math.log(T.amt[0]), Math.log(T.amt[1]))) * loanScale(s), Math.max(30e3, equity(s) * 0.2)) / 1000) * 1000;
-  const name = T.who === 'p' ? personName() : T.who === 'c' ? pick(COMPANY).replace('{L}', pick(LAST)) : pick(STARTUP);
+  const br = randomOwnBranch(), name = T.who === 'p' ? personName(br) : T.who === 'c' ? companyName(br) : pick(STARTUP);
   const score = clamp(Math.round(640 + gauss() * 110), 300, 850);
   const dur = rint(T.dur[0] / 6, T.dur[1] / 6) * 6;
-  const r = { id: s.nextId++, type, name, reason: pick(T.reasons), amount, dur, score, expires: s.day + rint(40, 70) };
+  const r = { id: s.nextId++, type, name, reason: loanReason(type, br), amount, dur, score, expires: s.day + rint(40, 70) };
   const base = s.policyRate + T.spread + annualPD(score, type) * (1 - T.rec) * 100;
   if (T.who === 'p') r.income = Math.round(payment(amount, base, dur) / clamp(0.26 + gauss() * 0.07, 0.12, 0.48) / 10) * 10;
   if (type === 'immo') r.apport = rint(0, 30) / 100;
@@ -42,7 +43,7 @@ function grantLoan(s, r) {
   if (s.upgrades.ia && !souv) pdA *= 0.75;
   if (s.flags.genius && !souv) pdA *= 0.9;
   s.cash -= r.amount;
-  if (!souv) { const fee = Math.round(r.amount * 0.01); s.cash += fee; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + fee; } // frais de dossier : 1 %
+  if (!souv) { const fee = Math.round(r.amount * 0.015); s.cash += fee; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + fee; } // frais de dossier : 1,5 %
   const L = { id: r.id, type: r.type, name: r.name, out: r.amount, amount: r.amount, rate: r.offer, left: r.dur, dur: r.dur, pmt: payment(r.amount, r.offer, r.dur), pdA, grade: reqGrade(r), since: s.day };
   if (souv) { L.rw = RATINGS[r.rating].rw; s.stats.souv++; }
   if (r.fraud) L.fraud = true;
@@ -193,7 +194,7 @@ function monthEnd(s) {
   pl.depInt = cm.depInt; pl.agios = cm.agios;
   const penalty = s.flags.penalty > s.day ? 3 : 0;
   pl.cbInt = s.cbDebt * (cbRate(s) + penalty) / 1200; s.cash -= pl.cbInt;
-  pl.costs = monthlyCosts(s); s.cash -= pl.costs;
+  const mc = monthlyCosts(s); s.cash -= mc; pl.costs = mc + (s.flags.mBills || 0); s.flags.mBills = 0; // salaires, loyers et factures du mois
   // frais de compte, cotisations et agios sont prélevés sur les comptes ; l'assurance-vie et les distributeurs rapportent du cash
   const avFee = s.prod.av.aum * s.prod.av.fee / 1200;
   let cashFees = avFee; for (const b of s.branches) cashFees += dabIncome(b);
@@ -204,9 +205,9 @@ function monthEnd(s) {
   s.flags.mExtraFees = 0; s.flags.mGifts = 0;
   if (s.flags.seizeLoss) { pl.losses += s.flags.seizeLoss; s.flags.seizeLoss = 0; }
   pl.coupons = holdingValue(s, 'oat') * (s.policyRate + 0.4) / 1200; s.cash += pl.coupons;
-  pl.reserves = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1) / 1200; s.cash += pl.reserves;
+  pl.reserves = Math.max(0, s.cash) * Math.max(0, s.policyRate - 0.5) / 1200; s.cash += pl.reserves;
 
-  pl.amort = (s.fixed || 0) / 60; s.fixed = (s.fixed || 0) - pl.amort; // équipements amortis sur 5 ans
+  pl.amort = (s.fixed || 0) / 120; s.fixed = (s.fixed || 0) - pl.amort; // équipements amortis sur 10 ans
   const profit = pl.interest + pl.fees + pl.coupons + pl.reserves - pl.depInt - pl.cbInt - pl.costs - pl.losses - pl.amort;
   if (profit > 0) { pl.tax = profit * 0.25; s.cash -= pl.tax; }
   pl.net = profit - pl.tax;
@@ -326,7 +327,7 @@ function checkChapter(s) {
   if (s.chapter === 8 && !s.flags.bigCrisis) s.flags.bigCrisisPending = true;
   s.cash += ch.reward;
   log(_l`🏁 Chapitre terminé : ${ch.name} (+${money(ch.reward)})`, 'good');
-  const unl = Object.values(REGIONS).filter(r => r.unlock === s.chapter).map(r => r.name);
+  const unl = Object.keys(REGIONS).filter(k => regionUnlock(s, k) === s.chapter).map(k => REGIONS[k].name);
   const next = CHAPTERS[s.chapter];
   SFX.play('level'); confetti(140);
   CG.happy(); // un vrai moment fort : on le fête aussi côté CrazyGames

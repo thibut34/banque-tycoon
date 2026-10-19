@@ -60,7 +60,7 @@ function pickIntent(s, b, mine) {
   if (b.ent && chance(0.1)) return 'entreprise';
   if (b.cof && mine.length > 10 && chance(0.07)) return 'coffre';
   if (b.dab && r < 0.1 + 0.12 * c) return 'dab';
-  if (b.bs && loansOpen(s) && r < 0.32) return chance(0.35) || mine.length < 5 ? 'pro' : 'pret'; // les demandes de crédit
+  if (b.bs && loansOpen(s) && r < 0.4) return chance(0.35) || mine.length < 5 ? 'pro' : 'pret'; // les demandes de crédit
   if (b.gs && mine.length > 3 && r < 0.6) return 'op';
   let k = pickKind(s, b, mine.length);
   if (INTENTS[k].st === 'b' && !b.bs) k = mine.length > 3 ? 'op' : 'compte';
