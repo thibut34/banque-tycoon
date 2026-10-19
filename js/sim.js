@@ -198,7 +198,8 @@ function monthEnd(s) {
   const avFee = s.prod.av.aum * s.prod.av.fee / 1200;
   let cashFees = avFee; for (const b of s.branches) cashFees += dabIncome(b);
   s.cash += cashFees;
-  pl.fees = cm.fees + cm.cards + cm.agios + (s.flags.mExtraFees || 0) + cashFees - (s.flags.mGifts || 0);
+  const entFees = (s.flags.entAcc || 0) * 35; s.cash += entFees; // frais des comptes professionnels
+  pl.fees = cm.fees + cm.cards + cm.agios + (s.flags.mExtraFees || 0) + cashFees + entFees - (s.flags.mGifts || 0);
   pl.prod = { cc: cm.fees, carte: cm.cards, agios: cm.agios, av: avFee };
   s.flags.mExtraFees = 0; s.flags.mGifts = 0;
   if (s.flags.seizeLoss) { pl.losses += s.flags.seizeLoss; s.flags.seizeLoss = 0; }

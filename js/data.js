@@ -117,11 +117,14 @@ const ITEMS = {
   dab: { name: 'Distributeur', icon: '🏧', cost: 45e3, maint: 600, desc: 'Commissions mensuelles et clients plus satisfaits.' },
   vig: { name: 'Vigile', icon: '💂', hire: 2e3, wage: 2000, desc: 'Empêche les braquages dans cette agence.' },
   deco: { name: 'Décoration', icon: '🪴', cost: 10e3, desc: 'Plantes et canapés : + satisfaction des clients.' },
+  cof: { name: 'Salle des coffres', icon: '🔐', cost: 60e3, maint: 600, desc: 'Des coffres-forts à louer : chaque client qui en loue un paie sa location.' },
+  ent: { name: 'Espace entreprises', icon: '🏢', cost: 90e3, maint: 3800, desc: 'Un chargé d’affaires reçoit les dirigeants : comptes pros, commissions et gros prêts.' },
+  vip: { name: 'Salon VIP', icon: '🥂', cost: 150e3, maint: 4500, desc: 'Un banquier privé reçoit les clients fortunés : gros placements et honoraires.' },
 };
 const SIZES = [null,
-  { name: 'Petite agence', g: 3, b: 2, dab: 1, vig: 1, deco: 2 },
-  { name: 'Agence', g: 5, b: 4, dab: 2, vig: 2, deco: 4, cost: 0.6 },
-  { name: 'Grande agence', g: 7, b: 5, dab: 3, vig: 2, deco: 6, cost: 1.2 },
+  { name: 'Petite agence', g: 3, b: 2, dab: 1, vig: 1, deco: 2, cof: 1, ent: 1, vip: 0 },
+  { name: 'Agence', g: 5, b: 4, dab: 2, vig: 2, deco: 4, cof: 1, ent: 1, vip: 1, cost: 0.6 },
+  { name: 'Grande agence', g: 7, b: 5, dab: 3, vig: 2, deco: 6, cof: 1, ent: 2, vip: 1, cost: 1.2 },
 ];
 
 const UPGRADES = {
@@ -286,6 +289,9 @@ const ITEM_UNLOCK = {
   dab: s => s.chapter >= 1,
   vig: s => s.chapter >= 1 || !!s.flags.robbed,
   size: s => s.chapter >= 2,
+  cof: s => s.chapter >= 1,
+  ent: s => s.chapter >= 2,
+  vip: s => s.chapter >= 3 || (s.chapter >= 2 && s.reputation >= 60),
 };
 
 // ---------- Employés ----------

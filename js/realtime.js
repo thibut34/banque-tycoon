@@ -87,7 +87,7 @@ function expireCard(s, c) {
 // ---------- Résultat en direct ----------
 function dailyEstimate(s) {
   const interest = s.loans.reduce((a, L) => a + L.out * L.rate / 1200, 0);
-  const fees = (s.clients || 0) * s.prod.cc.fee + ((s.cards || 0) * s.prod.carte.fee + (s.cardsGold || 0) * s.prod.carte.fee * 2.5) / 12 + (s.prod.av.aum || 0) * s.prod.av.fee / 1200 + (s.ovd || 0) * (s.prod.cc.agio || 14) / 1200;
+  const fees = (s.clients || 0) * s.prod.cc.fee + (s.flags.entAcc || 0) * 35 + ((s.cards || 0) * s.prod.carte.fee + (s.cardsGold || 0) * s.prod.carte.fee * 2.5) / 12 + (s.prod.av.aum || 0) * s.prod.av.fee / 1200 + (s.ovd || 0) * (s.prod.cc.agio || 14) / 1200;
   // frais de dossier encaissés depuis le début du mois, distributeurs, réserves placées et obligations
   const dom = s.day % 30 + 1, dossier = (s.flags.mExtraFees || 0) / dom * 30;
   let other = Math.max(0, s.cash) * Math.max(0, s.policyRate - 1) / 1200 + holdingValue(s, 'oat') * (s.policyRate + 0.4) / 1200;
@@ -108,10 +108,11 @@ function growthOptions(s) {
     if (b.b > b.bs) out.push({ k: 'bs', ico: '👔', name: 'Recruter un conseiller', fx: '+3 dossiers de prêt par jour', cost: itemCost(b, 'bs'), hot: true });
     else if (b.b < lim.b && itemUnlocked('b')) out.push({ k: 'b', ico: '🗂️', name: 'Bureau de conseil', fx: 'Pour recevoir les demandes de prêt', cost: itemCost(b, 'b') });
   }
+  for (const k of ROOM_KINDS) if (itemUnlocked(k) && (b[k] || 0) < (lim[k] || 0)) out.push({ k, ico: ITEMS[k].icon, name: (b[k] ? 'Un 2ᵉ ' : 'Ouvrir : ') + ITEMS[k].name.charAt(0).toLowerCase() + ITEMS[k].name.slice(1), fx: { cof: 'Des coffres à louer à vos clients', ent: 'Les entreprises : trésorerie, commissions, gros prêts', vip: 'Les clients fortunés : gros placements, honoraires' }[k], cost: itemCost(b, k), hot: !b[k] });
   for (const k of ['liv', 'carte', 'av']) if (!s.prod[k].on && PROD_UNLOCK[k](s)) out.push({ launch: k, ico: PRODUCTS[k].icon, name: `Lancer : ${PRODUCTS[k].name}`, fx: PRODUCTS[k].desc.split('.')[0], cost: 0, hot: true });
   // les améliorations de postes les moins chères
   const ups = [];
-  for (const k of ['g', 'b', 'dab']) for (let i = 0; i < (k === 'dab' ? b.dab : b[k + 's']); i++) { const lv = stLv(b, k, i); if (lv < ST_MAX) ups.push({ st: [k, i], ico: '⬆️', name: `${ST_NAME[k]} ${i + 1} : niveau ${lv + 1}`, fx: k === 'g' ? 'Plus rapide, vend plus' : k === 'b' ? 'Plus rapide, meilleure marge' : 'Plus rapide', cost: stCost(b, k, lv), hot: lost > 0.5 }); }
+  for (const k of ['g', 'b', 'dab', ...ROOM_KINDS]) for (let i = 0; i < stCount(b, k); i++) { const lv = stLv(b, k, i); if (lv < ST_MAX) ups.push({ st: [k, i], ico: '⬆️', name: `${ST_NAME[k]}${stCount(b, k) > 1 || k === 'g' || k === 'b' ? ' ' + (i + 1) : ''} : niveau ${lv + 1}`, fx: k === 'g' ? 'Plus rapide, vend plus' : k === 'b' ? 'Plus rapide, meilleure marge' : k === 'dab' ? 'Plus rapide' : 'Plus rapide, rapporte plus', cost: stCost(b, k, lv), hot: lost > 0.5 }); }
   ups.sort((x, y) => x.cost - y.cost).slice(0, 2).forEach(u => out.push(u));
   if (!(s.flags.sponsorUntil > s.day) && s.clients >= 5) out.push({ pub: 1, ico: '📣', name: 'Campagne de publicité', fx: '+15 % de visiteurs pendant 30 jours', cost: 8000 });
   const emp = s.branches.flatMap(x => (x.staff || []).map(e => [x, e])).filter(([, e]) => canTrain(s, e)).sort((a, c) => a[1].lvl - c[1].lvl)[0];

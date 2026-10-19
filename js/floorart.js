@@ -34,7 +34,7 @@ function drawPerson(c, v, a, role) {
   const s = v.s, moving = a.path && a.path.length;
   const [fx, fy0] = isoP(v, a.x, a.y, 0), bob = moving ? Math.abs(Math.sin(a.walk)) * s * 0.05 : 0, fy = fy0 - bob;
   c.fillStyle = 'rgba(15,23,42,.22)'; c.beginPath(); c.ellipse(fx, fy0, s * 0.3, s * 0.15, 0, 0, 7); c.fill();
-  const body = role === 'g' ? '#1e3a8a' : role === 'b' ? '#0f766e' : role === 'vig' ? '#111827' : a.col;
+  const body = role === 'g' ? '#1e3a8a' : role === 'b' ? '#0f766e' : role === 'p' ? '#1f1147' : role === 'vig' ? '#111827' : a.col;
   // jambes
   const sw = moving ? Math.sin(a.walk) * s * 0.07 : 0;
   c.fillStyle = role ? '#1f2937' : shade(a.col, -0.55);
@@ -44,9 +44,9 @@ function drawPerson(c, v, a, role) {
   c.fillStyle = body; c.beginPath();
   c.roundRect ? c.roundRect(fx - s * 0.21, fy - s * 0.98, s * 0.42, s * 0.64, s * 0.14) : c.rect(fx - s * 0.21, fy - s * 0.98, s * 0.42, s * 0.64);
   c.fill();
-  if (role === 'g' || role === 'b' || role === 'vig') { // col de chemise et cravate
+  if (role === 'g' || role === 'b' || role === 'p' || role === 'vig') { // col de chemise et cravate
     c.fillStyle = '#f8fafc'; c.beginPath(); c.moveTo(fx - s * 0.1, fy - s * 0.97); c.lineTo(fx + s * 0.1, fy - s * 0.97); c.lineTo(fx, fy - s * 0.8); c.fill();
-    c.fillStyle = role === 'vig' ? '#fbbf24' : '#dc2626'; c.fillRect(fx - s * 0.025, fy - s * 0.86, s * 0.05, s * 0.2);
+    c.fillStyle = role === 'vig' || role === 'p' ? '#fbbf24' : '#dc2626'; c.fillRect(fx - s * 0.025, fy - s * 0.86, s * 0.05, s * 0.2);
   }
   if (a.bag) { c.fillStyle = '#78350f'; c.fillRect(fx + s * 0.2, fy - s * 0.6, s * 0.16, s * 0.2); }
   // tête
@@ -105,6 +105,23 @@ function drawDab(c, v, s) {
   poly(c, v, [[s.x - 0.18, yf, 0.55], [s.x + 0.18, yf, 0.55], [s.x + 0.18, yf, 0.82], [s.x - 0.18, yf, 0.82]], '#94a3b8');
   boxC(c, v, s.x, s.y, s.w, s.d, 1.55, 0.12, '#16a34a');
 }
+function drawVault(c, v, s) { // coffre-fort géant, porte ronde côté salle
+  boxC(c, v, s.x, s.y, s.w, s.d, 0, 1.75, '#64748b');
+  boxC(c, v, s.x, s.y, s.w + 0.08, s.d + 0.08, 1.75, 0.08, '#94a3b8');
+  const [px, py] = isoP(v, s.x + s.w / 2 + 0.01, s.y, 0.9), r = v.s * 0.42;
+  c.fillStyle = '#cbd5e1'; c.beginPath(); c.ellipse(px, py, r * 0.55, r, -0.5, 0, 7); c.fill();
+  c.strokeStyle = '#475569'; c.lineWidth = Math.max(2, v.s * 0.06); c.stroke();
+  c.strokeStyle = '#fbbf24'; c.beginPath(); for (let k = 0; k < 3; k++) { const a = k * 2.1; c.moveTo(px, py); c.lineTo(px + Math.cos(a) * r * 0.35, py + Math.sin(a) * r * 0.6); } c.stroke();
+  boxC(c, v, s.cli[0] + 0.35, s.cli[1], 0.5, 0.9, 0, 0.75, '#475569'); // petite table de consultation
+}
+function drawRoomDesk(c, v, s, top, base, chair) { // bureau face à la salle, l'employé dos à la vitre
+  boxC(c, v, s.cli[0] - 0.05, s.cli[1], 0.45, 0.45, 0, 0.42, chair);
+  boxC(c, v, s.cli[0] - 0.24, s.cli[1], 0.1, 0.45, 0.42, 0.42, chair);
+  boxC(c, v, s.x, s.y, s.w, s.d, 0, 0.72, base);
+  boxC(c, v, s.x, s.y, s.w + 0.06, s.d + 0.06, 0.72, 0.05, top);
+  boxC(c, v, s.x + 0.15, s.y - 0.3, 0.05, 0.42, 0.77, 0.28, '#1e293b');
+}
+function drawRug(c, v, x, y, w, d, col) { poly(c, v, [[x - w / 2, y - d / 2], [x + w / 2, y - d / 2], [x + w / 2, y + d / 2], [x - w / 2, y + d / 2]], col, shade(col, -0.3), 1.5); }
 function drawPlant(c, v, s) {
   boxC(c, v, s.x, s.y, 0.42, 0.42, 0, 0.42, '#c2410c');
   const [px, py] = isoP(v, s.x, s.y, 0.95), r = v.s * 0.36;
@@ -201,7 +218,7 @@ function drawFloor(cv, b, lay) {
     for (const k of MOVABLE) for (let i = 0; i < b[k]; i++) { const sl = lay[k][i]; const isD = d && d.kind === k && d.i === i, isH = eh && eh.kind === k && eh.i === i;
       foot(sl, sl.x, sl.y, isD ? (d.ok ? 'rgba(52,211,153,.35)' : 'rgba(248,113,113,.4)') : isH ? 'rgba(99,102,241,.3)' : 'rgba(99,102,241,.08)', isD ? (d.ok ? '#10b981' : '#ef4444') : '#6366f1'); }
   }
-  if (!ui.editPlan && !cv.dataset.mini) for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) lay[kind].forEach((sl, i) => {
+  if (!ui.editPlan && !cv.dataset.mini) for (const kind of ALL_KINDS) lay[kind].forEach((sl, i) => {
     if (!slotVisible(b, kind, i)) return;
     const built = i < b[kind], isH = hv && hv.kind === kind && hv.i === i;
     if (built && !isH) return;
@@ -217,6 +234,9 @@ function drawFloor(cv, b, lay) {
   lay.g.forEach((sl, i) => { if (i < b.g) { add(sl.x + sl.y, () => drawCounter(c, v, sl, i < b.gs)); if (i < b.gs) { const e = staffOf(b, 'gs')[i]; add(sl.staff[0] + sl.staff[1], () => drawPerson(c, v, { x: sl.staff[0], y: sl.staff[1], skin: e ? e.face.skin : SKINS[i % 6], hair: e ? e.face.hair : HAIRS[i % 7], emp: e }, 'g')); } } });
   lay.b.forEach((sl, i) => { if (i < b.b) { add(sl.x + sl.y, () => drawDesk(c, v, sl, i < b.bs)); if (i < b.bs) { const e = staffOf(b, 'bs')[i]; add(sl.staff[0] + sl.staff[1], () => drawPerson(c, v, { x: sl.staff[0], y: sl.staff[1], skin: e ? e.face.skin : SKINS[(i + 3) % 6], hair: e ? e.face.hair : HAIRS[(i + 2) % 7], emp: e }, 'b')); } } });
   lay.dab.forEach((sl, i) => { if (i < b.dab) add(sl.x + sl.y, () => drawDab(c, v, sl)); });
+  lay.cof.forEach((sl, i) => { if (i < (b.cof || 0)) add(sl.x + sl.y, () => drawVault(c, v, sl)); });
+  lay.ent.forEach((sl, i) => { if (i < (b.ent || 0)) { add(sl.x + sl.y - 0.6, () => drawRoomDesk(c, v, sl, '#e2e8f0', '#1e3a8a', '#334155')); add(sl.staff[0] + sl.staff[1], () => drawPerson(c, v, { x: sl.staff[0], y: sl.staff[1], skin: SKINS[(i + 4) % 6], hair: HAIRS[(i + 1) % 7] }, 'b')); } });
+  lay.vip.forEach((sl, i) => { if (i < (b.vip || 0)) { drawRug(c, v, sl.cli[0] + 0.4, sl.y, 2.2, 1.9, '#9f1239'); add(sl.x + sl.y - 0.6, () => drawRoomDesk(c, v, sl, '#fde68a', '#7c2d12', '#b91c1c')); add(sl.staff[0] + sl.staff[1], () => drawPerson(c, v, { x: sl.staff[0], y: sl.staff[1], skin: SKINS[(i + 2) % 6], hair: '#111827' }, 'p')); } });
   lay.vig.forEach((sl, i) => { if (i < b.vig) { const e = staffOf(b, 'vig')[i]; add(sl.x + sl.y, () => drawPerson(c, v, { x: sl.x, y: sl.y, skin: e ? e.face.skin : SKINS[(i + 2) % 6], hair: '#111827', emp: e }, 'vig')); } });
   lay.deco.forEach((sl, i) => { if (i < b.deco) add(sl.x + sl.y, () => sl.t === 'plant' ? drawPlant(c, v, sl) : drawSofa(c, v, sl, ACC)); });
   for (let y = 3.2; y < RD - 1.2; y += 1.3) for (const x of [mid - 0.85, mid + 0.85]) add(x + y, () => drawPost(c, v, x, y));
@@ -249,8 +269,8 @@ function drawFloor(cv, b, lay) {
     c.globalAlpha = 1;
   }
   // Boutons « + » flottants sur les emplacements libres
-  for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) lay[kind].forEach((sl, i) => {
-    if (ui.editPlan || cv.dataset.mini || !slotVisible(b, kind, i) || i < b[kind]) return;
+  for (const kind of ALL_KINDS) lay[kind].forEach((sl, i) => {
+    if (ui.editPlan || cv.dataset.mini || !slotVisible(b, kind, i) || i < (b[kind] || 0)) return;
     const [px, py] = isoP(v, sl.x, sl.y, 1.1 + Math.sin(floor.t * 3 + i) * 0.08);
     c.fillStyle = '#6366f1'; c.beginPath(); c.arc(px, py, s * 0.32, 0, 7); c.fill();
     c.strokeStyle = '#fff'; c.lineWidth = Math.max(2, s * 0.08); c.beginPath(); c.moveTo(px - s * 0.14, py); c.lineTo(px + s * 0.14, py); c.moveTo(px, py - s * 0.14); c.lineTo(px, py + s * 0.14); c.stroke();
@@ -260,8 +280,17 @@ function drawFloor(cv, b, lay) {
   lay.b.forEach((sl, i) => { if (i < b.b && i >= b.bs) { const [px, py] = isoP(v, sl.x, sl.y, 1.6 + Math.sin(floor.t * 3) * 0.06); c.font = `700 ${Math.max(10, s * 0.32)}px Inter, system-ui`; c.textAlign = 'center'; const t = 'Embaucher'; const tw = c.measureText(t).width + 12; c.fillStyle = '#f59e0b'; c.beginPath(); c.roundRect ? c.roundRect(px - tw / 2, py - s * 0.28, tw, s * 0.5, 6) : c.rect(px - tw / 2, py - s * 0.28, tw, s * 0.5); c.fill(); c.fillStyle = '#1f1300'; c.textBaseline = 'middle'; c.fillText(t, px, py - s * 0.03); } });
 
   // Niveau de chaque poste
-  if (!cv.dataset.mini && !ui.editPlan) for (const k of ['g', 'b', 'dab']) lay[k].forEach((sl, i) => {
-    if (i >= b[k]) return;
+  // Le nom des salles spéciales
+  if (!ui.editPlan) for (const k of ROOM_KINDS) lay[k].forEach((sl, i) => {
+    if (i >= (b[k] || 0)) return;
+    const [px, py] = isoP(v, sl.x, sl.y, 2.15), txt = { cof: '🔐 Coffres', ent: '🏢 Entreprises', vip: '🥂 Salon VIP' }[k];
+    c.font = `600 ${Math.max(10, s * 0.26)}px Fredoka, Inter, system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const tw = c.measureText(txt).width + 14;
+    c.fillStyle = k === 'vip' ? '#7c2d12' : k === 'ent' ? '#1e3a8a' : '#334155'; c.beginPath(); c.roundRect ? c.roundRect(px - tw / 2, py - s * 0.2, tw, s * 0.4, 8) : c.rect(px - tw / 2, py - s * 0.2, tw, s * 0.4); c.fill();
+    c.fillStyle = k === 'vip' ? '#fde68a' : '#fff'; c.fillText(txt, px, py + 0.5);
+  });
+  if (!cv.dataset.mini && !ui.editPlan) for (const k of ['g', 'b', 'dab', ...ROOM_KINDS]) lay[k].forEach((sl, i) => {
+    if (i >= (b[k] || 0)) return;
     const lv = stLv(b, k, i), [px, py] = isoP(v, sl.x + (k === 'b' ? 0 : sl.w / 2), sl.y + (k === 'b' ? sl.d / 2 : 0), 1.05);
     const r = Math.max(8, s * 0.2);
     c.fillStyle = lv >= ST_MAX ? '#f43f5e' : lv >= 5 ? '#f59e0b' : '#6366f1'; c.beginPath(); c.arc(px, py, r, 0, 7); c.fill();

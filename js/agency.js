@@ -9,7 +9,7 @@
    ===================================================================== */
 
 const AG = {}; // état en mémoire de chaque agence (non sauvegardé)
-const ag = b => AG[b.id] || (AG[b.id] = { agents: [], busy: {}, pops: [], spawnAcc: 0, rateKey: '', rate: 0, day: { arr: 0, served: 0, lost: 0 } });
+const ag = b => AG[b.id] || (ROOM_KINDS.forEach(k => { if (b[k] == null) b[k] = 0; }), AG[b.id] = { agents: [], busy: {}, pops: [], spawnAcc: 0, rateKey: '', rate: 0, day: { arr: 0, served: 0, lost: 0 } });
 
 // Ce que veut chaque visiteur, le poste où il va et le temps qu'il y passe (en secondes)
 const INTENTS = {
@@ -22,17 +22,23 @@ const INTENTS = {
   pro: { ico: '🏭', st: 'b', t: 3.8, name: 'Un prêt pro' },
   av: { ico: '☂️', st: 'b', t: 2.6, name: 'Placer son épargne' },
   dab: { ico: '🏧', st: 'dab', t: 0.9, name: 'Retirer des billets' },
+  coffre: { ico: '🔐', st: 'cof', t: 1.8, name: 'Louer un coffre' },
+  entreprise: { ico: '💼', st: 'ent', t: 3.4, name: 'Un chef d’entreprise' },
+  vip: { ico: '💎', st: 'vip', t: 3.8, name: 'Un client fortuné' },
 };
+const DEF_INTENT = { g: 'op', b: 'pret', dab: 'dab', cof: 'coffre', ent: 'entreprise', vip: 'vip' };
+const stCount = (b, k) => k === 'g' ? b.gs : k === 'b' ? b.bs : (b[k] || 0);
 
 // ---------- Niveaux des postes ----------
 const ST_MAX = 10;
-const ST_NAME = { g: 'Guichet', b: 'Bureau de crédit', dab: 'Distributeur' };
+const ST_NAME = { g: 'Guichet', b: 'Bureau de crédit', dab: 'Distributeur', cof: 'Salle des coffres', ent: 'Espace entreprises', vip: 'Salon VIP' };
+const ST_ICO = { g: '🪟', b: '🗂️', dab: '🏧', cof: '🔐', ent: '🏢', vip: '🥂' };
 const stLv = (b, k, i) => (b.lv && b.lv[k] && b.lv[k][i]) || 1;
 const stCost = (b, k, lv) => Math.round(itemCost(b, k) * 0.3 * Math.pow(1.65, lv - 1) / 100) * 100;
 function stTime(b, k, i, intent) { // durée moyenne d'un rendez-vous à ce poste
   let m = Math.pow(0.88, stLv(b, k, i) - 1);
-  if (k !== 'dab') { const e = staffOf(b, k + 's')[i]; if (e) m /= empEff(e); }
-  return INTENTS[intent || (k === 'g' ? 'op' : k === 'b' ? 'pret' : 'dab')].t * m;
+  if (k === 'g' || k === 'b') { const e = staffOf(b, k + 's')[i]; if (e) m /= empEff(e); }
+  return INTENTS[intent || DEF_INTENT[k]].t * m;
 }
 function upgradeStation(b, k, i) {
   const lv = stLv(b, k, i); if (lv >= ST_MAX) return false;
@@ -50,6 +56,9 @@ function upgradeStation(b, k, i) {
 // ---------- Arrivées ----------
 function pickIntent(s, b, mine) {
   const c = Math.min(1, mine.length / 20), r = Math.random();
+  if (b.vip && chance(0.04 + s.reputation / 2500)) return 'vip';
+  if (b.ent && chance(0.1)) return 'entreprise';
+  if (b.cof && mine.length > 10 && chance(0.07)) return 'coffre';
   if (b.dab && r < 0.1 + 0.12 * c) return 'dab';
   if (b.bs && loansOpen(s) && r < 0.32) return chance(0.35) || mine.length < 5 ? 'pro' : 'pret'; // les demandes de crédit
   if (b.gs && mine.length > 3 && r < 0.6) return 'op';
@@ -61,7 +70,7 @@ function pickIntent(s, b, mine) {
 }
 function spawnRate(s, b, A) {
   const key = `${s.day}|${b.gs}|${b.bs}|${b.dab}|${Math.round(s.reputation)}`;
-  if (A.rateKey !== key) { A.rateKey = key; A.rate = (b.gs || b.bs || b.dab) ? dayArrivals(s, b) * (0.85 + 0.08 * (b.g + b.b + b.dab)) + (b.dab ? 1.5 : 0) : 0; } // une agence bien équipée attire du monde
+  if (A.rateKey !== key) { A.rateKey = key; A.rate = (b.gs || b.bs || b.dab) ? dayArrivals(s, b) * (0.85 + 0.08 * (b.g + b.b + b.dab) + 0.12 * ((b.cof || 0) + (b.ent || 0) + (b.vip || 0))) + (b.dab ? 1.5 : 0) : 0; } // une agence bien équipée attire du monde
   return A.rate / (DAY_MS / 1000);
 }
 
@@ -117,7 +126,7 @@ function branchTick(s, b, dt) {
   A.pops = A.pops.filter(p => p.t > 0);
 }
 function assign(a, b, lay, A) {
-  const k = INTENTS[a.intent].st, n = k === 'g' ? b.gs : k === 'b' ? b.bs : b.dab;
+  const k = INTENTS[a.intent].st, n = stCount(b, k);
   for (let i = 0; i < n; i++) {
     if (A.busy[k + i]) continue;
     const [tx, ty] = lay[k][i].cli;
@@ -143,7 +152,8 @@ function completeVisit(s, b, a, lay, A) {
   const t0 = { ...s.today.tally }, mine = branchPeople(s, b.id);
   let txt = null, col = '#fbbf24';
   try {
-    if (a.intent === 'dab') { s.cash += 1.5; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + 1.5; txt = '+1,5 €'; }
+    if (INTENTS[a.intent].st === 'cof' || INTENTS[a.intent].st === 'ent' || INTENTS[a.intent].st === 'vip') [txt, col] = roomVisit(s, b, a.intent, mine);
+    else if (a.intent === 'dab') { s.cash += 1.5; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + 1.5; txt = '+1,5 €'; }
     else if (a.intent === 'op') { const p = mine.length ? pick(mine) : null; txt = p ? opVisit(s, p) : null; }
     else { const c = makeCard(s, b, a.intent, mine); if (c) [txt, col] = processVisit(s, b, c); }
   } finally { ui.stBonus = 1; ui.stLv = 1; }
@@ -185,6 +195,40 @@ function processVisit(s, b, c) {
   if (c.kind === 'demande') return ['✓', '#86efac'];
   return [null, null];
 }
+// Les salles spéciales : coffres, entreprises, clients fortunés
+const fees = (s, v) => { v = Math.round(v * (ui.stBonus || 1)); s.cash += v; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + v; return v; };
+function roomVisit(s, b, intent, mine) {
+  const big = Math.max(1, loanScale(s));
+  if (intent === 'coffre') { const v = fees(s, rnd(120, 260)); s.stats.coffres = (s.stats.coffres || 0) + 1; return [`🔐 Coffre loué +${money(v)}`, '#fde68a']; }
+  if (intent === 'entreprise') {
+    const r = Math.random();
+    if (r < 0.45) { // un compte pro : l'entreprise dépose sa trésorerie
+      const amt = Math.round(rnd(20, 150) * big) * 1000; s.depX = (s.depX || 0) + amt; s.cash += amt; s.flags.entAcc = (s.flags.entAcc || 0) + 1; recomputeAgg(s);
+      return [`🏢 Compte pro +${money(amt)}`, '#93c5fd'];
+    }
+    if (r < 0.75) { const c = makeCard(s, b, 'pro', mine); if (c) return processVisit(s, b, c); }
+    const v = fees(s, rnd(150, 600)); return [`💱 Commission +${money(v)}`, '#86efac']; // change de devises, affacturage…
+  }
+  // salon VIP
+  const r = Math.random();
+  if (r < 0.5) {
+    const amt = Math.round(rnd(60, 400) * big) * 1000, p = newPersonFor(s, b);
+    p.j = 12; p.s = rint(10, 30) * 1000; p.sp = Math.round(p.s * 0.4); p.b = Math.round(amt * 0.1); p.save0 = Math.round(amt * 0.9); p.q = 90; p.c = 2;
+    if (s.prod.av.on) { const sv = p.save0; openPersonAccount(s, p); p.a = sv; } // l’assurance-vie est gérée hors bilan : la banque touche des frais dessus
+    else if (s.prod.liv.on) openPersonAccount(s, p, { livret: true });
+    else { const sv = p.save0; openPersonAccount(s, p); p.b += sv; s.cash += sv; }
+    p.c = 2; recomputeAgg(s); s.today.tally.comptes++;
+    return [`💎 +${money(amt)} confiés`, '#fde68a'];
+  }
+  if (r < 0.8) { const v = fees(s, rnd(500, 2000)); return [`🥂 Honoraires +${money(v)}`, '#fde68a']; }
+  // un très gros crédit : c'est vous qui signez
+  const req = makeRequest(s, 'immo');
+  Object.assign(req, { name: pname(newPersonFor(s, b)), amount: Math.round(rnd(300, 1200) * big) * 1000, score: rint(720, 820), fraud: false, apport: 0.3, reason: pick(['une villa avec vue sur la mer', 'un vignoble dans l’Hérault', 'un hôtel particulier', 'un chalet à Megève']) });
+  req.income = Math.round(payment(req.amount, req.offer, req.dur) / 0.22 / 10) * 10; req.branch = b.id;
+  toDesk(s, { id: ++ui.cardSeq, kind: 'pret', branch: b.id, name: req.name, req, vip: 1 });
+  return ['📥 Gros dossier pour vous', '#fde68a'];
+}
+
 // Un dossier important arrive sur votre bureau (sans arrêter le jeu)
 function toDesk(s, c) {
   c.exp = s.day + (c.kind === 'pret' || c.kind === 'pro' ? 7 : 6);
@@ -207,15 +251,15 @@ function agencyDayEnd(s) {
 
 // ---------- Fenêtre d'un poste (clic sur le plan) ----------
 function showStPop(b, k, i, x, y) {
-  const lv = stLv(b, k, i), staffed = k === 'dab' || i < b[k + 's'], e = k !== 'dab' && staffOf(b, k + 's')[i];
+  const lv = stLv(b, k, i), people = k === 'g' || k === 'b', staffed = !people || i < b[k + 's'], e = people && staffOf(b, k + 's')[i];
   const cost = lv < ST_MAX ? stCost(b, k, lv) : 0;
   let el = $('#stpop'); if (!el) { el = document.createElement('div'); el.id = 'stpop'; document.body.appendChild(el); }
   el.dataset.k = k; el.dataset.i = i; el.dataset.b = b.id;
   el.innerHTML = `<button class="sp-x" data-act="stClose" aria-label="Fermer">×</button>
-    <div class="sp-h"><span class="sp-ico">${k === 'g' ? '🪟' : k === 'b' ? '🗂️' : '🏧'}</span><div><b>${ST_NAME[k]} ${i + 1}</b><small>Niveau ${lv} / ${ST_MAX}</small></div></div>
-    ${e ? `<p class="sp-emp">${avatar(e, 28)}<span><b>${esc(e.name)}</b><small>${empTitle(e)} · niveau ${e.lvl}</small></span></p>` : k !== 'dab' && !staffed ? `<p class="sp-warn">Personne ne travaille ici.</p><button class="btn success full" data-act="stHire">Embaucher · ${money(itemCost(b, k + 's'))}</button>` : ''}
-    <div class="sp-stats"><span>⏱ Temps par client</span><b>${nf1.format(stTime(b, k, i))} s</b>${k !== 'dab' ? `<span>${k === 'b' ? '📈 Marge sur les prêts' : '💳 Ventes et commissions'}</span><b>+${k === 'b' ? nf1.format(0.1 * (lv - 1)) + ' pt' : Math.round(0.1 * (lv - 1) * 100) + ' %'}</b>` : ''}</div>
-    ${lv < ST_MAX ? `<button class="btn gold full" data-act="stUp" ${S.cash < cost ? 'disabled' : ''}>⬆ Niveau ${lv + 1} · ${money(cost)}<small>−12 % de temps${k === 'g' ? ', +10 % de ventes et commissions' : k === 'b' ? ', +0,1 pt de marge sur les prêts' : ''}</small></button>` : '<p class="center gold-t"><b>Niveau maximum !</b></p>'}`;
+    <div class="sp-h"><span class="sp-ico">${ST_ICO[k]}</span><div><b>${ST_NAME[k]}${k === 'g' || k === 'b' || stCount(b, k) > 1 ? ' ' + (i + 1) : ''}</b><small>Niveau ${lv} / ${ST_MAX}</small></div></div>
+    ${ROOM_KINDS.includes(k) ? `<p class="small muted">${ITEMS[k].desc}</p>` : ''}${e ? `<p class="sp-emp">${avatar(e, 28)}<span><b>${esc(e.name)}</b><small>${empTitle(e)} · niveau ${e.lvl}</small></span></p>` : people && !staffed ? `<p class="sp-warn">Personne ne travaille ici.</p><button class="btn success full" data-act="stHire">Embaucher · ${money(itemCost(b, k + 's'))}</button>` : ''}
+    <div class="sp-stats"><span>⏱ Temps par client</span><b>${nf1.format(stTime(b, k, i))} s</b>${k !== 'dab' ? `<span>${k === 'b' ? '📈 Marge sur les prêts' : k === 'g' ? '💳 Ventes et commissions' : '💰 Revenus par visite'}</span><b>+${k === 'b' ? nf1.format(0.1 * (lv - 1)) + ' pt' : Math.round(0.1 * (lv - 1) * 100) + ' %'}</b>` : ''}</div>
+    ${lv < ST_MAX ? `<button class="btn gold full" data-act="stUp" ${S.cash < cost ? 'disabled' : ''}>⬆ Niveau ${lv + 1} · ${money(cost)}<small>−12 % de temps${k === 'g' ? ', +10 % de ventes et commissions' : k === 'b' ? ', +0,1 pt de marge sur les prêts' : k === 'dab' ? '' : ', +10 % de revenus'}</small></button>` : '<p class="center gold-t"><b>Niveau maximum !</b></p>'}`;
   el.hidden = false;
   const w = 260, h = el.offsetHeight || 220;
   el.style.left = clamp(x - w / 2, 8, innerWidth - w - 8) + 'px';

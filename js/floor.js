@@ -7,7 +7,9 @@
    ===================================================================== */
 
 const ROOMS = [null, { W: 10, D: 8 }, { W: 13, D: 10 }, { W: 17, D: 12 }];
-const SLOT_LABEL = { g: 'guichet', b: 'bureau de conseil', dab: 'distributeur', vig: 'vigile', deco: 'décoration' };
+const SLOT_LABEL = { g: 'guichet', b: 'bureau de conseil', dab: 'distributeur', vig: 'vigile', deco: 'décoration', cof: 'salle des coffres', ent: 'espace entreprises', vip: 'salon VIP' };
+const ROOM_KINDS = ['cof', 'ent', 'vip'];
+const ALL_KINDS = ['g', 'b', 'dab', 'vig', 'deco', 'cof', 'ent', 'vip'];
 const CLIENT_COLORS = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#64748b', '#e11d48', '#0ea5e9'];
 const SKINS = ['#f1c9a5', '#e0ac69', '#c68642', '#8d5524', '#ffdbac', '#d9a47c'];
 const HAIRS = ['#2b1d14', '#4a3222', '#a0522d', '#d4a017', '#111827', '#9ca3af', '#7c2d12'];
@@ -26,9 +28,13 @@ function layout(size) {
     b: Array.from({ length: L.b }, (_, j) => { const y = 3.7 + j * 1.75; return { x: 1.25, y, w: 0.75, d: 1.3, staff: [0.5, y], cli: [2.25, y] }; }),
     dab: Array.from({ length: L.dab }, (_, k) => { const x = gEnd + 0.9 + k * 1.15; return { x, y: 0.45, w: 0.65, d: 0.5, cli: [x, 1.45] }; }),
     vig: [{ x: mid - 1.5, y: D - 0.7, w: 0.6, d: 0.6 }, { x: mid + 1.5, y: D - 0.7, w: 0.6, d: 0.6 }],
+    // salles spéciales, alignées le long de la façade vitrée de droite
+    cof: [{ x: W - 0.75, y: 2.6, w: 0.9, d: 1.1, cli: [W - 1.8, 2.6] }],
+    ent: Array.from({ length: L.ent }, (_, j) => { const y = 2.6 + (j + 1) * 1.85; return { x: W - 1.0, y, w: 0.75, d: 1.3, staff: [W - 0.38, y], cli: [W - 1.9, y] }; }),
+    vip: Array.from({ length: L.vip }, (_, j) => { const y = 2.6 + (L.ent + 1 + j) * 1.85; return { x: W - 1.0, y, w: 0.8, d: 1.4, staff: [W - 0.38, y], cli: [W - 1.95, y] }; }),
     deco: [
-      { t: 'plant', x: W - 0.6, y: 2.4 }, { t: 'sofa', x: W - 2.2, y: 4.2 }, { t: 'plant', x: mid - 2.6, y: D - 0.5 },
-      { t: 'sofa', x: W - 3.3, y: 4.2 }, { t: 'plant', x: W - 0.6, y: D - 0.6 }, { t: 'plant', x: mid + 2.6, y: D - 0.5 },
+      { t: 'plant', x: W - 0.6, y: 1.4 }, { t: 'sofa', x: W - 2.9, y: D - 2.3 }, { t: 'plant', x: mid - 2.6, y: D - 0.5 },
+      { t: 'sofa', x: W - 4.0, y: D - 2.3 }, { t: 'plant', x: W - 0.6, y: D - 0.6 }, { t: 'plant', x: mid + 2.6, y: D - 0.5 },
     ].map(o => ({ ...o, w: o.t === 'sofa' ? 0.8 : 0.6, d: o.t === 'sofa' ? 1.6 : 0.6 })),
     queue: [],
   };
@@ -53,14 +59,14 @@ function doBuild(k, cand) {
   else if (k === 'gs') { if (b.gs >= b.g) return toast('Construisez d’abord un guichet', 'bad'), false; cost = itemCost(b, 'gs'); msg = 'Guichetier embauché'; }
   else if (k === 'bs') { if (b.bs >= b.b) return toast('Construisez d’abord un bureau', 'bad'), false; cost = itemCost(b, 'bs'); msg = 'Conseiller embauché'; }
   else {
-    if (b[k] >= lim[k]) return toast('Plus de place : agrandissez l’agence', 'bad'), false;
+    if ((b[k] || 0) >= (lim[k] || 0)) return toast('Plus de place : agrandissez l’agence', 'bad'), false;
     cost = itemCost(b, k); msg = `${ITEMS[k].name} ${k === 'vig' ? 'embauché' : 'installé'}`;
   }
   if (cand) { cost = hireCost(b, cand); msg = `${cand.name} rejoint l’équipe`; }
   if (S.cash < cost) return toast('Liquidités insuffisantes', 'bad'), false;
   S.cash -= cost;
   if (!cand && !STAFF_KEYS.includes(k)) S.fixed = (S.fixed || 0) + cost; // un équipement : il garde sa valeur (amortie)
-  if (k === 'size') b.size++; else b[k]++;
+  if (k === 'size') b.size++; else b[k] = (b[k] || 0) + 1;
   if (cand) { syncStaff(S); const list = staffOf(b, k); const auto = list[list.length - 1]; delete cand.cand; Object.assign(auto, cand, { since: S.day }); }
   if (MOVABLE.includes(k)) autoPlace(b, k, b[k] - 1);
   SFX.play(k === 'size' ? 'level' : 'build');
@@ -83,11 +89,11 @@ function slotAction(b, kind, i) {
     return { k: kind, label: `Construire un ${SLOT_LABEL[kind]} — ${money(itemCost(b, kind))}` };
   }
   if (kind === 'vig' && i < b.vig) { const e = staffOf(b, 'vig')[i]; return e ? { emp: e.id, label: `${e.name} — ${empTitle(e)} (voir la fiche)` } : { label: 'Vigile' }; }
-  if (i < b[kind]) return { label: ITEMS[kind].name };
+  if (i < (b[kind] || 0)) return { label: ITEMS[kind].name };
   return { k: kind, label: `${kind === 'vig' ? 'Embaucher un vigile' : 'Installer : ' + SLOT_LABEL[kind]} — ${money(itemCost(b, kind))}` };
 }
 // Un emplacement est visible s'il est construit, ou si c'est le prochain à construire
-const slotVisible = (b, kind, i) => i <= b[kind] && i < SIZES[b.size][kind] && itemUnlocked(kind);
+const slotVisible = (b, kind, i) => i <= (b[kind] || 0) && i < (SIZES[b.size][kind] || 0) && itemUnlocked(kind);
 
 function newPerson(o) {
   return Object.assign({ col: pick(CLIENT_COLORS), skin: pick(SKINS), hair: pick(HAIRS), sp: rnd(1.7, 2.3), wait: 0, walk: rnd(0, 6), bag: chance(0.3) }, o);
@@ -117,7 +123,7 @@ function slotAt(px, py) {
   const lay = blay(b);
   // On teste le sol, le meuble, le bouton « + » et l'étiquette « Embaucher » : tout est cliquable
   let best = null, bd = v.s * 0.75;
-  for (const kind of ['g', 'b', 'dab', 'vig', 'deco']) {
+  for (const kind of ALL_KINDS) {
     lay[kind].forEach((s, i) => {
       if (!slotVisible(b, kind, i)) return;
       for (const z of [0, 0.5, 1.1, 1.6, 1.9]) {
@@ -145,7 +151,7 @@ function floorMount() {
     const r = cv.getBoundingClientRect(), h = slotAt(e.clientX - r.left, e.clientY - r.top);
     if (!h) return;
     const bb = getBranch(S, ui.branch), act = slotAction(bb, h.kind, h.i);
-    if (['g', 'b', 'dab'].includes(h.kind) && h.i < bb[h.kind]) { showStPop(bb, h.kind, h.i, e.clientX, e.clientY); if (act.emp && ui.tab === 'plan') { ui.emp = act.emp; renderPlanSide(); } return; }
+    if (['g', 'b', 'dab', ...ROOM_KINDS].includes(h.kind) && h.i < (bb[h.kind] || 0)) { showStPop(bb, h.kind, h.i, e.clientX, e.clientY); if (act.emp && ui.tab === 'plan') { ui.emp = act.emp; renderPlanSide(); } return; }
     if (act.emp && ui.tab === 'plan') { ui.emp = act.emp; renderPlanSide(); const el = $(`[data-emp="${act.emp}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     if (act.k && doBuild(act.k)) { renderTop(); if (ui.tab === 'plan') renderPlanSide(); else ui.dirty = true; }
   });

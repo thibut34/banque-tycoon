@@ -135,6 +135,9 @@ function renderPlanSide() {
     ['dab', b.dab, lim.dab, b.dab >= lim.dab, `+${money(cityOf(b).traffic * 1500)}/mois`],
     ['vig', b.vig, lim.vig, b.vig >= lim.vig, 'Anti-braquage'],
     ['deco', b.deco, lim.deco, b.deco >= lim.deco, '+ satisfaction'],
+    ['cof', b.cof || 0, lim.cof, (b.cof || 0) >= lim.cof, `${money(ITEMS.cof.maint)}/mois`],
+    ['ent', b.ent || 0, lim.ent, (b.ent || 0) >= lim.ent, lim.ent ? `${money(ITEMS.ent.maint)}/mois` : 'Agence plus grande'],
+    ['vip', b.vip || 0, lim.vip, (b.vip || 0) >= lim.vip, lim.vip ? `${money(ITEMS.vip.maint)}/mois` : 'Agrandissez l’agence'],
   ].filter(([k]) => itemUnlocked(k)).map(([k, n, max, full, sub]) => {
     const cost = itemCost(b, k), dis = full || s.cash < cost;
     const staffFull = (k === 'gs' || k === 'bs') && full && n >= SIZES[b.size][k[0]];
