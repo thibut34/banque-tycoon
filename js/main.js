@@ -96,7 +96,7 @@ const actions = {
   upgrade: el => {
     const u = UPGRADES[el.dataset.id];
     if (S.cash < u.cost) return toast(_t('Liquidités insuffisantes'), 'bad');
-    S.cash -= u.cost; S.upgrades[el.dataset.id] = true; SFX.play('build');
+    S.cash -= u.cost; outlay(S, 'amel', -u.cost); S.upgrades[el.dataset.id] = true; SFX.play('build');
     log(_l`${u.icon} ${u.name} installé(e).`, 'good'); toast(_l`${u.icon} ${u.name} : c’est parti !`, 'good');
     renderPanel(true);
   },
@@ -115,7 +115,7 @@ const actions = {
     const amt = equity(S) * +el.dataset.f;
     if (S.surveillance) return toast(_t('⚠️ Interdit sous surveillance du régulateur'), 'bad');
     if (amt <= 0 || S.cash < amt) return toast(_t('Liquidités insuffisantes'), 'bad');
-    S.cash -= amt; S.fortune += amt * 0.7; S.stats.bonus += amt; SFX.play('coin');
+    S.cash -= amt; outlay(S, 'bonus', -amt); S.fortune += amt * 0.7; S.stats.bonus += amt; SFX.play('coin');
     if (+el.dataset.f >= 0.05) { S.reputation = clamp(S.reputation - 8, 0, 100); toast(_t('📰 « Scandale des bonus ! » titre la presse. Réputation -8'), 'bad'); }
     log(_l`😎 Vous vous versez un bonus de ${money(amt)} (${money(amt * 0.7)} après impôts).`);
     renderPanel(true);
@@ -132,7 +132,9 @@ const actions = {
   choice: el => {
     const c = ui.event.choices[+el.dataset.i];
     closeModal();
-    const res = c.fn ? c.fn(S) : null;
+    const e0 = equity(S), res = c.fn ? c.fn(S) : null;
+    reconcile(S); // les dépôts apportés ou retirés par l'événement sont répartis entre les clients
+    outlay(S, 'evt', equity(S) - e0);
     S.reputation = clamp(S.reputation, 0, 100);
     if (res) { toast(res, 'gold'); log(res); }
     ui.dirty = true; renderPanel(true);
@@ -330,6 +332,7 @@ function showStart() {
 function startGame(state) {
   S = state; ui.acc = 0; ui.tab = 'dash'; ui.branch = HQ; ui.region = 'france'; ui.seen = new Set();
   floorReset(null);
+  for (const k in AG) delete AG[k]; // les clients de l'agence d'une autre partie s'en vont
   $('#start').hidden = true; $('#game').hidden = false;
   $('#muteBtn').innerHTML = ic(prefs.mute ? 'mute' : 'vol');
   migrateProducts(S); syncStaff(S); checkUnlocks(S, true); if (!S.today) startDay(S);

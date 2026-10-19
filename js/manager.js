@@ -77,7 +77,8 @@ function makeBilan(s, eq0) {
   if (eq0 == null) eq0 = eq1 - pl.net; // première fois : pas de point de départ connu
   s.flags.eqM = eq1;
   toast(_l`📊 Bilan du mois : <b class="${pl.net >= 0 ? 'pos' : 'neg'}">${pl.net >= 0 ? '+' : '−'}${money(Math.abs(pl.net))}</b> — détails à droite de votre bureau`, pl.net >= 0 ? 'good' : 'bad');
-  s.flags.bilan = { month: Math.floor((s.day - 1) / 30), pl: { ...pl }, eq0, eq1, other: (eq1 - eq0) - pl.net, cash: s.cash, deposits: s.deposits, seen: false };
+  s.flags.bilan = { month: Math.floor((s.day - 1) / 30), pl: { ...pl }, eq0, eq1, other: (eq1 - eq0) - pl.net, out: s.flags.mOut || {}, cash: s.cash, deposits: s.deposits, seen: false };
+  s.flags.mOut = {};
 }
 function bilanTip(s, B) {
   const p = B.pl, inc = p.interest + p.fees + p.coupons + (p.reserves || 0);
@@ -85,8 +86,21 @@ function bilanTip(s, B) {
   if (p.costs > inc) return _l`👥 Vos salaires et loyers (${money(p.costs)}) coûtent plus que ce que vous gagnez. Accordez plus de prêts : ce sont eux qui rapportent le plus.`;
   if (p.depInt > p.interest * 0.5 && p.depInt > 500) return _t('🐷 Votre livret coûte cher. Baissez un peu son taux dans Produits.');
   if (B.cash > B.deposits * 0.35 && B.deposits > 5e4) return _l`💤 ${money(B.cash)} dorment dans vos caisses. Prêtez-les : un prêt rapporte bien plus.`;
-  if (B.other < -Math.max(5000, Math.abs(p.net))) return _t('🧾 Vos achats et les événements du mois ont pesé lourd. C’est normal si vous investissez pour grandir.');
+  if (B.other < -Math.max(5000, Math.abs(p.net))) {
+    const o = B.out || {};
+    if ((o.dec || 0) < -Math.max(5000, Math.abs(p.net) * 0.5)) return _t('🧾 Les décisions de direction (campagnes, primes, mécénat…) sont facultatives : quand vos bénéfices sont faibles, n’hésitez pas à les refuser.');
+    return _t('🧾 Vos achats et les événements du mois ont pesé lourd. C’est normal si vous investissez pour grandir.');
+  }
   return p.net > 0 ? _t('🎉 Belle gestion ! Continuez à prêter prudemment et à fidéliser vos clients.') : _t('📉 Patience : une banque met plusieurs mois à devenir rentable.');
+}
+// Le détail de ce qui a fait bouger les fonds propres en dehors du résultat du mois
+function outRows(B) {
+  if (Math.abs(B.other) < 1) return '';
+  const o = B.out || {}, sgn = v => `<b class="${v >= 0 ? 'pos' : 'neg'}">${v >= 0 ? '+' : '−'}${money(Math.abs(v))}</b>`;
+  const list = [[_t('👥 Recrutements, formations et promotions'), o.rh], [_t('🧾 Décisions de direction et publicité'), o.dec], [_t('⚡ Événements'), o.evt], [_t('🛠️ Améliorations'), o.amel], [_t('💰 Votre bonus'), o.bonus]].filter(([, v]) => Math.abs(v || 0) >= 1);
+  const rest = B.other - list.reduce((a, [, v]) => a + v, 0);
+  if (Math.abs(rest) >= 1) list.push([_t('📈 Bourse, récompenses et divers'), rest]);
+  return _l`<small>En dehors du résultat du mois : ${sgn(B.other)}</small><div class="bl-out">${list.map(([l, v]) => `<div><span>${l}</span>${sgn(v)}</div>`).join('')}</div>`;
 }
 function showBilan() {
   const s = S, B = s.flags.bilan, p = B.pl; B.seen = true;
@@ -103,7 +117,7 @@ function showBilan() {
     <p class="center muted">Résultat net du mois</p>
     <h3 class="sec">💰 Ce que vous avez gagné</h3>${rows(ins, 'in')}
     <h3 class="sec">💸 Ce que vous avez dépensé</h3>${rows(outs, 'out')}
-    <div class="bl-eq"><span>Vos fonds propres</span><b>${money(B.eq0)} → ${money(B.eq1)}</b>${Math.abs(B.other) >= 1 ? _l`<small>dont ${B.other >= 0 ? '+' : '−'}${money(Math.abs(B.other))} d’achats, d’événements, de récompenses et de variations des marchés</small>` : ''}</div>
+    <div class="bl-eq"><span>Vos fonds propres</span><b>${money(B.eq0)} → ${money(B.eq1)}</b>${outRows(B)}</div>
     <div class="bl-tip">${bilanTip(s, B)}</div>
     <div class="choices"><button class="btn primary" data-act="closeModal">Continuer</button></div></div>`);
   $('#modal .modal-box').classList.add('wide');

@@ -12,7 +12,7 @@ const freeCity = s => {
 const EVENTS = [
   { id: 'hack', w: 3, make: s => {
     if (s.upgrades.cyber) return { icon: '🛡️', title: _t('Cyberattaque repoussée'), text: _t('Des hackers ont tenté de pirater vos serveurs… votre équipe cybersécurité les a renvoyés jouer à Minecraft.'), choices: [{ label: _t('Bien joué l’équipe !'), sub: _t('+3 réputation'), fn: s => { s.reputation += 3; } }] };
-    const loss = Math.max(20e3, Math.min(s.cash * rnd(0.04, 0.1), equity(s) * 0.05));
+    const loss = Math.max(5e3, Math.min(s.cash * rnd(0.02, 0.05), equity(s) * 0.025));
     return { icon: '💻', title: _t('Cyberattaque !'), text: _l`Des hackers ont siphonné <b>${money(loss)}</b> de vos comptes ! Ils réclament une rançon pour en rendre la moitié.`, choices: [
       { label: _l`Payer la rançon (${money(loss * 0.15)})`, sub: _t('Vous récupérez la moitié, mais ça se saura peut-être…'), fn: s => { s.cash -= loss * 0.15 + loss * 0.5; if (chance(0.4)) { s.reputation -= 10; return _t('La presse l’a appris. Réputation -10.'); } return _t('Discret. Vous récupérez la moitié.'); } },
       { label: _t('Refuser et porter plainte'), sub: _t('Perte totale, mais réputation intacte.'), fn: s => { s.cash -= loss; s.reputation += 2; return _t('La police enquête. Vous perdez tout, mais votre honnêteté plaît.'); } },
@@ -21,7 +21,7 @@ const EVENTS = [
   { id: 'braquage', w: 2.5, make: s => {
     const b = randomBranch(s), c = cityOf(b);
     if (b.vig) return { icon: '💂', title: _l`Braquage raté à ${c.name}`, text: _t('Trois malfrats déguisés en Daft Punk ont tenté leur chance. Votre vigile les a plaqués avant la porte.'), choices: [{ label: _t('Prime pour le vigile (5 k€)'), sub: _t('+3 réputation'), fn: s => { s.cash -= 5e3; s.reputation += 3; } }, { label: _t('Un grand merci suffira'), fn: () => { } }] };
-    let loss = Math.min(s.cash * 0.3, Math.max(30e3, equity(s) * rnd(0.02, 0.05)));
+    let loss = Math.min(s.cash * 0.3, Math.max(8e3, equity(s) * rnd(0.01, 0.025)));
     if (s.upgrades.coffre) loss /= 2;
     return { icon: '🦹', title: _l`Braquage à ${c.name} !`, text: _l`Des braqueurs déguisés en Daft Punk sont repartis avec <b>${money(loss)}</b>${s.upgrades.coffre ? _t(' (vos coffres blindés ont limité la casse)') : ''}. Un vigile les aurait arrêtés…`, choices: [{ label: _t('Embaucher un vigile la prochaine fois'), fn: s => { s.cash -= loss; s.flags.robbed = true; } }] };
   } },
@@ -48,10 +48,10 @@ const EVENTS = [
       { label: _t('Ignorer'), sub: _t('-12 réputation'), fn: s => { s.reputation -= 12; } },
     ] };
   } },
-  { id: 'bug', w: 1.5, make: () => ({ icon: '🐛', title: _t('Bug informatique'), text: _t('Un bug a crédité <b>1 milliard d’euros</b> sur le compte de Gérard, retraité à Limoges. Il a déjà commandé trois tracteurs et un flamant rose gonflable.'), choices: [
-    { label: _t('Annuler l’opération (30 k€ de frais)'), sub: _t('-3 réputation'), fn: s => { s.cash -= 30e3; s.reputation -= 3; return _t('Gérard est triste. Le flamant est remboursé.'); } },
-    { label: _t('Annuler mais lui offrir 10 k€'), sub: _t('+8 réputation, la France adore Gérard'), fn: s => { s.cash -= 40e3; s.reputation += 8; return _t('Gérard passe au JT de 20 h. Tout le monde vous aime.'); } },
-  ] }) },
+  { id: 'bug', w: 1.5, make: s => { const f = Math.round(Math.max(5e3, Math.min(30e3, equity(s) * 0.02)) / 1e3) * 1e3; return { icon: '🐛', title: _t('Bug informatique'), text: _t('Un bug a crédité <b>1 milliard d’euros</b> sur le compte de Gérard, retraité à Limoges. Il a déjà commandé trois tracteurs et un flamant rose gonflable.'), choices: [
+    { label: _l`Annuler l’opération (${money(f)} de frais)`, sub: _t('-3 réputation'), fn: s => { s.cash -= f; s.reputation -= 3; return _t('Gérard est triste. Le flamant est remboursé.'); } },
+    { label: _l`Annuler mais lui offrir ${money(f / 3)}`, sub: _t('+8 réputation, la France adore Gérard'), fn: s => { s.cash -= f * 4 / 3; s.reputation += 8; return _t('Gérard passe au JT de 20 h. Tout le monde vous aime.'); } },
+  ] }; } },
   { id: 'greve', w: 1.5, cond: s => staffTotal(s, 'gs') + staffTotal(s, 'bs') >= 4, make: s => {
     const cost = monthlyCosts(s);
     return { icon: '✊', title: _t('Grève du personnel'), text: _t('Vos employés réclament une hausse de salaire et des croissants le vendredi.'), choices: [
@@ -61,7 +61,7 @@ const EVENTS = [
   } },
   { id: 'inspection', w: 2, make: s => {
     const ok = capRatio(s) >= minRatio(s) + 2;
-    const base = Math.max(50e3, equity(s) * 0.03), fine = s.upgrades.conformite ? base / 3 : base;
+    const base = Math.max(10e3, equity(s) * 0.015), fine = s.upgrades.conformite ? base / 3 : base;
     if (ok && (s.upgrades.conformite || chance(0.5))) return { icon: '🧐', title: _t('Inspection du régulateur'), text: _t('Les inspecteurs ont épluché vos comptes pendant 3 semaines. Verdict : rien à signaler.'), choices: [{ label: _t('Ouf !'), sub: _t('+3 réputation'), fn: s => { s.reputation += 3; } }] };
     return { icon: '🧐', title: _t('Inspection du régulateur'), text: _l`Les inspecteurs ont trouvé des « irrégularités » (un tableur nommé « vrais_comptes_FINAL_v3.xlsx »). Amende : <b>${money(fine)}</b>.`, choices: [{ label: _t('Payer'), sub: _t('-4 réputation'), fn: s => { s.cash -= fine; s.reputation -= 4; } }] };
   } },
@@ -95,7 +95,7 @@ const EVENTS = [
     ] };
   } },
   { id: 'don', w: 1.2, make: s => {
-    const amt = Math.max(30e3, Math.round(equity(s) * 0.01 / 1e3) * 1e3);
+    const amt = Math.max(5e3, Math.round(equity(s) * 0.01 / 1e3) * 1e3);
     return { icon: '❤️', title: _t('Appel aux dons'), text: _l`Une association caritative vous demande un don de <b>${money(amt)}</b> pour l’hiver.`, choices: [
       { label: _t('Donner'), sub: _t('+7 réputation'), fn: s => { s.cash -= amt; s.reputation += 7; } },
       { label: _t('Refuser'), sub: _t('-2 réputation'), fn: s => { s.reputation -= 2; } },
@@ -141,7 +141,7 @@ const EVENTS = [
   } },
   // ----- Nouveaux événements -----
   { id: 'tempete', w: 1.2, make: s => {
-    const b = randomBranch(s), c = cityOf(b), cost = Math.max(20e3, c.build * 0.1);
+    const b = randomBranch(s), c = cityOf(b), cost = Math.max(5e3, c.build * 0.05);
     return { icon: '🌊', title: _l`Inondation à ${c.name}`, text: _l`Une tempête a inondé votre agence de ${c.name}. Les clients pataugent entre les guichets.`, choices: [
       { label: _l`Réparer tout de suite (${money(cost)})`, fn: s => { s.cash -= cost; return _t('Tout est sec et repeint à neuf.'); } },
       { label: _t('Mettre des seaux et attendre'), sub: _t('Satisfaction de l’agence en chute'), fn: s => { const x = getBranch(s, b.id); if (x) x.sat = 5; s.reputation -= 3; return _t('Les clients ne sont pas ravis.'); } },
@@ -169,7 +169,7 @@ const EVENTS = [
     ] };
   } },
   { id: 'stagiaire', w: 1, make: s => {
-    const cost = Math.max(25e3, monthlyCosts(s) * 0.5);
+    const cost = Math.max(5e3, monthlyCosts(s) * 0.3);
     return { icon: '🙈', title: _t('Le stagiaire a tout effacé'), text: _t('En voulant « faire de la place », le stagiaire a supprimé la base de données des clients.'), choices: [
       { label: _l`Restaurer la sauvegarde (${money(cost)})`, fn: s => { s.cash -= cost; return _t('Tout est revenu. Le stagiaire est muté à la photocopieuse.'); } },
       { label: _t('Demander aux clients de tout ressaisir'), sub: _t('-8 réputation'), fn: s => { s.reputation -= 8; } },

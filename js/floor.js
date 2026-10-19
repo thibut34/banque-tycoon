@@ -66,6 +66,7 @@ function doBuild(k, cand) {
   if (S.cash < cost) return toast(_t('Liquidités insuffisantes'), 'bad'), false;
   S.cash -= cost;
   if (!cand && !STAFF_KEYS.includes(k)) S.fixed = (S.fixed || 0) + cost; // un équipement : il garde sa valeur (amortie)
+  else outlay(S, 'rh', -cost);
   if (k === 'size') b.size++; else b[k] = (b[k] || 0) + 1;
   if (cand) { syncStaff(S); const list = staffOf(b, k); const auto = list[list.length - 1]; delete cand.cand; Object.assign(auto, cand, { since: S.day }); }
   if (MOVABLE.includes(k)) autoPlace(b, k, b[k] - 1);

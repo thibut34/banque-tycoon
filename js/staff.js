@@ -60,7 +60,7 @@ function promoteEmp(id) {
   const [b, e] = findEmp(id); if (!e || e.xp < xpNeed(e.lvl) || e.lvl >= MAX_LVL) return;
   const cost = promoCost(S, b, e);
   if (S.cash < cost) return toast(_t('Liquidités insuffisantes'), 'bad');
-  S.cash -= cost; e.lvl++; e.xp = 0; e.ready = 0; e.warned = false; S.stats.promos = (S.stats.promos || 0) + 1;
+  S.cash -= cost; outlay(S, 'rh', -cost); e.lvl++; e.xp = 0; e.ready = 0; e.warned = false; S.stats.promos = (S.stats.promos || 0) + 1;
   SFX.play('level'); confetti(50);
   log(_l`⭐ ${e.name} est promu(e) ${empTitle(e)} (${CITIES[b.id].name}).`, 'good');
   toast(_l`⭐ <b>${esc(e.name)}</b> devient <b>${empTitle(e)}</b> !`, 'good');
@@ -69,7 +69,7 @@ function trainEmp(id) {
   const [b, e] = findEmp(id); if (!e || !canTrain(S, e)) return;
   const cost = trainCost(S, b, e);
   if (S.cash < cost) return toast(_t('Liquidités insuffisantes'), 'bad');
-  S.cash -= cost; e.trained = S.day; e.xp = Math.min(xpNeed(e.lvl), e.xp + 40 * (e.trait === 'ambitieux' ? 1.5 : 1));
+  S.cash -= cost; outlay(S, 'rh', -cost); e.trained = S.day; e.xp = Math.min(xpNeed(e.lvl), e.xp + 40 * (e.trait === 'ambitieux' ? 1.5 : 1));
   if (e.xp >= xpNeed(e.lvl) && !e.ready) e.ready = S.day;
   SFX.play('coin'); toast(_l`🎓 ${esc(e.name)} suit une formation (+XP)`, 'good');
 }

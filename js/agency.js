@@ -160,7 +160,8 @@ function completeVisit(s, b, a, lay, A) {
   const tl = s.today.tally;
   if (!txt && tl.comptes > t0.comptes) txt = _t('+1 client');
   if (tl.ventes > t0.ventes) { txt = txt && !txt.startsWith(_t('+1 client')) ? txt : (txt ? txt + ' · ' : '') + _t('💳 Vente'); col = '#86efac'; }
-  if (txt) { const sl = lay[a.k][a.idx]; A.pops.push({ x: sl.x, y: sl.y, z: 1.9, t: 1.7, txt, col }); }
+  const sl = lay[a.k] && lay[a.k][a.idx];
+  if (txt && sl) { A.pops.push({ x: sl.x, y: sl.y, z: 1.9, t: 1.7, txt, col }); }
   if (tl.prets > t0.prets || tl.ventes > t0.ventes) SFX.play('coin');
 }
 // Un client déjà chez vous vient pour une opération : votre guichetier tente une vente

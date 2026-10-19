@@ -96,6 +96,8 @@ function rankOf(s) { const eq = equity(s); return 1 + s.rivals.filter(r => !r.go
 const loansOut = s => s.loans.reduce((a, l) => a + l.out, 0);
 function holdingValue(s, id) { return (s.portfolio[id] || 0) * s.market[id].price; }
 function portfolioValue(s) { let v = 0; for (const id in s.portfolio) v += holdingValue(s, id); return v; }
+// Dépenses hors compte de résultat du mois, par catégorie (montants signés : négatif = dépense), détaillées dans le bilan
+function outlay(s, k, v) { const o = s.flags.mOut = s.flags.mOut || {}; o[k] = (o[k] || 0) + v; }
 const equity = s => s.cash + loansOut(s) + (s.ovd || 0) + portfolioValue(s) + (s.fixed || 0) - s.deposits - s.cbDebt; // fixed : agences et équipements (amortis)
 const loanRW = l => l.rw != null ? l.rw : LOAN_TYPES[l.type].rw;
 function rwa(s) {

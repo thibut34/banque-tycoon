@@ -107,7 +107,7 @@ function tickDay() {
     if (s.reputation < 25 && chance(0.02)) bankRun(s, 0.25);
   }
 
-  if (s.day > 20 && !ui.modal && chance(1 / 25)) triggerEvent();
+  if (s.day > 20 && !ui.modal && chance(1 / 40)) triggerEvent(); // un gros événement environ tous les 40 jours
   updateChallenge(s);
   if (s.day % 30 === 0) monthEnd(s);
   if (!s.over) { checkChapter(s); checkAchievements(s); checkUnlocks(s); }
@@ -116,7 +116,7 @@ function tickDay() {
 
 function bankRun(s, frac) {
   const out = s.deposits * frac;
-  s.deposits -= out; s.cash -= out;
+  s.deposits -= out; s.cash -= out; reconcile(s);
   s.reputation = clamp(s.reputation - 8, 0, 100);
   log(_l`🏃 Panique bancaire ! Les clients retirent ${money(out)}.`, 'bad');
   toast(_l`🏃 PANIQUE BANCAIRE ! ${money(out)} retirés`, 'bad');

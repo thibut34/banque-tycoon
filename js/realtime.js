@@ -141,7 +141,7 @@ Object.assign(actions, {
     ui.branch = HQ;
     if (g.k) { if (doBuild(g.k)) { renderTop(); SFX.play('build'); } }
     else if (g.launch) actions.launch({ dataset: { p: g.launch } });
-    else if (g.pub) { if (S.cash < 8000) return; S.cash -= 8000; S.flags.sponsorUntil = S.day + 30; toast(_t('📣 Campagne lancée : plus de visiteurs pendant 30 jours !'), 'good'); }
+    else if (g.pub) { if (S.cash < 8000) return; S.cash -= 8000; outlay(S, 'dec', -8000); S.flags.sponsorUntil = S.day + 30; toast(_t('📣 Campagne lancée : plus de visiteurs pendant 30 jours !'), 'good'); }
     else if (g.train) trainEmp(g.train);
     else if (g.st) upgradeStation(getBranch(S, HQ), g.st[0], g.st[1]);
     else if (g.world) return actions.tab({ dataset: { tab: 'world' } });

@@ -8,7 +8,7 @@
 
 const sat = (s, v) => { for (const b of s.branches) b.sat = clamp(b.sat + v, 0, 100); };
 const rep = (s, v) => { s.reputation = clamp(s.reputation + v, 0, 100); };
-const pay = (s, v) => { s.cash -= v; s.flags.mExtraCosts = (s.flags.mExtraCosts || 0) + v; };
+const pay = (s, v) => { s.cash -= v; outlay(s, 'dec', -v); };
 const he = p => personFace(p).female ? _t('elle') : _t('il');
 const He = p => personFace(p).female ? _t('Elle') : _t('Il');
 
@@ -215,7 +215,7 @@ function addStoryCards(s, t) {
     t.cards.push(storyCard(s, 'quartier', 0, null, { q: q.id }));
   }
   // Une décision de direction (presque chaque jour au début, pour que le bureau ne soit jamais vide)
-  if (chance(s.chapter === 0 ? 0.12 : 0.07)) addDirectionCard(s, t);
+  if (chance(s.chapter === 0 ? 0.07 : 0.035)) addDirectionCard(s, t); // une décision tous les mois environ
   // Alerte de liquidités
   if (s.deposits > 1e5 && s.cash < s.deposits * 0.1 && !(s.flags.liqAlert > s.day - 15)) {
     s.flags.liqAlert = s.day;
@@ -280,7 +280,7 @@ const DIRECTION = [
   { id: 'mecenat', ico: '🎭', title: _t('Mécénat culturel'), txt: () => _t('Le festival Montpellier Danse cherche un mécène : <b>15 000 €</b>.'),
     ch: [[_t('Devenir mécène'), _t('+5 réputation'), 'success', s => { pay(s, 15000); rep(s, 5); return _t('Votre nom en grand sur l’affiche du festival !'); }, s => s.cash < 15000], [_t('Décliner'), '', 'ghost', () => null]], auto: 1 },
   { id: 'informatique', ico: '💻', title: _t('Informatique vieillissante'), txt: () => _t('Votre logiciel bancaire date de 2009 et plante deux fois par semaine.'),
-    ch: [[_t('Moderniser (20 000 €)'), _t('Équipe plus efficace'), 'success', s => { pay(s, 20000); sat(s, 5); rep(s, 1); for (const b of s.branches) for (const e of b.staff || []) if (e.lvl < MAX_LVL) e.xp = Math.min(xpNeed(e.lvl), e.xp + 15); return _t('Nouveau système installé : tout va plus vite.'); }, s => s.cash < 20000], [_t('Encore un an'), _t('Clients agacés'), 'ghost', s => { sat(s, -3); return _t('Écran bleu au guichet… encore.'); }]], auto: 1 },
+    ch: [[_t('Moderniser (20 000 €)'), _t('Équipe plus efficace · un investissement amorti sur 5 ans'), 'success', s => { s.cash -= 20000; s.fixed = (s.fixed || 0) + 20000; sat(s, 5); rep(s, 1); for (const b of s.branches) for (const e of b.staff || []) if (e.lvl < MAX_LVL) e.xp = Math.min(xpNeed(e.lvl), e.xp + 15); return _t('Nouveau système installé : tout va plus vite.'); }, s => s.cash < 20000], [_t('Encore un an'), _t('Clients agacés'), 'ghost', s => { sat(s, -3); return _t('Écran bleu au guichet… encore.'); }]], auto: 1 },
   { id: 'jeunes', once: true, ico: '🧑‍🎓', title: _t('Une offre pour les jeunes'), txt: () => _t('Votre équipe propose une offre « compte jeune » : carte gratuite pour les 18-25 ans.'),
     ch: [[_t('Lancer l’offre (5 000 €)'), _t('+ de visiteurs, + réputation'), 'success', s => { pay(s, 5000); s.flags.jeunes = true; rep(s, 2); return _t('Les étudiants affluent !'); }, s => s.cash < 5000], [_t('Non'), '', 'ghost', () => null]], auto: 1 },
 ];
