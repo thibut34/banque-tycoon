@@ -9,7 +9,7 @@
    ===================================================================== */
 
 const AG = {}; // état en mémoire de chaque agence (non sauvegardé)
-const ag = b => AG[b.id] || (ROOM_KINDS.forEach(k => { if (b[k] == null) b[k] = 0; }), AG[b.id] = { agents: [], busy: {}, pops: [], spawnAcc: 0, rateKey: '', rate: 0, day: { arr: 0, served: 0, lost: 0 } });
+const ag = b => AG[b.id] || (ROOM_KINDS.forEach(k => { if (b[k] == null) b[k] = 0; }), AG[b.id] = { agents: [], busy: {}, pops: [], coins: [], spawnAcc: 0, rateKey: '', rate: 0, day: { arr: 0, served: 0, lost: 0 } });
 
 // Ce que veut chaque visiteur, le poste où il va et le temps qu'il y passe (en secondes)
 const INTENTS = {
@@ -124,6 +124,7 @@ function branchTick(s, b, dt) {
   for (const k in A.busy) if (!A.agents.includes(A.busy[k])) delete A.busy[k];
   A.pops.forEach(p => { p.t -= dt; p.z += dt * 0.7; });
   A.pops = A.pops.filter(p => p.t > 0);
+  A.coins = (A.coins || []).filter(c => (c.t -= dt) > 0);
 }
 function assign(a, b, lay, A) {
   const k = INTENTS[a.intent].st, n = stCount(b, k);
@@ -141,6 +142,28 @@ function leaveBank(a, lay, angry) {
   a.st = 'out'; a.angry = angry; a.intent = angry ? a.intent : null;
   if (angry) { a.emote = '💢'; a.emoteT = 2.5; }
   a.path = [[lay.mid, a.y], lay.entry.slice(), lay.porch.slice(), [chance(0.5) ? -2 : lay.W + 2, lay.D + 1.7]];
+}
+
+// ---------- Les pièces à ramasser ----------
+// Après une visite, une pièce flotte parfois au-dessus du poste : un clic, et elle file dans vos caisses.
+const COIN_LIFE = 8;
+const coinValue = s => Math.round(Math.max(200, monthlyCosts(s) * 0.004) / 10) * 10;
+function maybeCoin(s, sl, A) {
+  const early = s.tut >= 0 && s.tut < 2; // au début, il en tombe beaucoup : on apprend vite à cliquer
+  if ((A.coins = A.coins || []).length >= 3 || !chance(early ? 0.55 : 0.18)) return;
+  A.coins.push({ x: sl.x + rnd(-0.3, 0.3), y: sl.y + rnd(-0.3, 0.3), z: 2.9, t: COIN_LIFE, v: coinValue(s), ph: rnd(0, 6) });
+}
+function coinAt(b, px, py) {
+  const v = floor.view, A = b && AG[b.id]; if (!v || !A || !A.coins) return null;
+  let best = null, bd = Math.max(22, v.s * 0.75);
+  for (const c of A.coins) { const [x, y] = isoP(v, c.x, c.y, c.z), d = Math.hypot(px - x, py - y); if (d < bd) { bd = d; best = c; } }
+  return best;
+}
+function collectCoin(s, b, c, cx, cy) {
+  const A = AG[b.id]; A.coins = A.coins.filter(x => x !== c);
+  s.cash += c.v; s.flags.mExtraFees = (s.flags.mExtraFees || 0) + c.v; s.stats.coins = (s.stats.coins || 0) + 1;
+  SFX.play('coin'); coinBurst(cx, cy, 6); floatText(cx, cy - 24, '+' + money(c.v), 'big');
+  renderTop(); updateCoach();
 }
 
 // ---------- Ce que rapporte une visite ----------
@@ -161,7 +184,7 @@ function completeVisit(s, b, a, lay, A) {
   if (!txt && tl.comptes > t0.comptes) txt = _t('+1 client');
   if (tl.ventes > t0.ventes) { txt = txt && !txt.startsWith(_t('+1 client')) ? txt : (txt ? txt + ' · ' : '') + _t('💳 Vente'); col = '#86efac'; }
   const sl = lay[a.k] && lay[a.k][a.idx];
-  if (txt && sl) { A.pops.push({ x: sl.x, y: sl.y, z: 1.9, t: 1.7, txt, col }); }
+  if (txt && sl) { A.pops.push({ x: sl.x, y: sl.y, z: 1.9, t: 1.7, txt, col }); if (a.k !== 'dab') maybeCoin(s, sl, A); }
   if (tl.prets > t0.prets || tl.ventes > t0.ventes) SFX.play('coin');
 }
 // Un client déjà chez vous vient pour une opération : votre guichetier tente une vente

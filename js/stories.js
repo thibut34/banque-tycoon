@@ -168,6 +168,7 @@ const QUARTIER = [
 
 // ---------- Journées spéciales ----------
 function specialDay(s) {
+  if (s.day < 30) return null;
   const dom = s.day % 30 + 1, m = Math.floor(s.day / 30) % 12;
   if ((m === 0 || m === 6) && dom <= 7) return { ico: '🛍️', name: m ? _t('Soldes d’été') : _t('Soldes d’hiver'), desc: _t('Vos clients dépensent beaucoup : attention aux découverts !'), vis: 1.1, spend: 1.4 };
   if (m === 8 && dom <= 6) return { ico: '🎒', name: _t('La rentrée'), desc: _t('Étudiants et nouveaux arrivants : beaucoup d’ouvertures de comptes.'), vis: 1.3, compte: 1.8 };
@@ -201,7 +202,7 @@ function addStoryCards(s, t) {
   }
   // Une nouvelle histoire commence
   const active = s.people.filter(p => p.saga).length;
-  if (s.people.length >= 15 && active < 4 && chance(0.06 * (sdMod(s, 'vis') > 1 ? 1.2 : 1))) {
+  if (s.day >= 15 && s.people.length >= 15 && active < 4 && chance(0.06 * (sdMod(s, 'vis') > 1 ? 1.2 : 1))) {
     const sid = s.today.sd && s.today.sd.name === _t('Saint-Valentin') ? 'mariage' : pick(Object.keys(STORIES));
     const cands = s.people.filter(p => !p.saga && pw(p) === 1 && STORIES[sid].pick(p));
     if (cands.length) { const p = pick(cands); p.saga = sid; t.cards.push(storyCard(s, sid, 0, p.i)); }
@@ -215,7 +216,7 @@ function addStoryCards(s, t) {
     t.cards.push(storyCard(s, 'quartier', 0, null, { q: q.id }));
   }
   // Une décision de direction (presque chaque jour au début, pour que le bureau ne soit jamais vide)
-  if (chance(s.chapter === 0 ? 0.07 : 0.035)) addDirectionCard(s, t); // une décision tous les mois environ
+  if (s.day >= 25 && chance(s.chapter === 0 ? 0.07 : 0.035)) addDirectionCard(s, t); // une décision tous les mois environ (pas pendant les premiers jours)
   // Alerte de liquidités
   if (s.deposits > 1e5 && s.cash < s.deposits * 0.1 && !(s.flags.liqAlert > s.day - 15)) {
     s.flags.liqAlert = s.day;

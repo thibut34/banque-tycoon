@@ -33,7 +33,7 @@ Banque Tycoon
 Build your own bank, from a tiny branch to an interplanetary empire!
 
 **Description**
-Pick your country and your city — France, Canada, Japan, Morocco, the USA and more — then open a small bank branch and watch your customers walk in, queue and get served in real time. Build teller desks, loan offices, ATMs, a vault room, a business lounge and a VIP lounge, then upgrade them to serve faster and earn more. Hire and train your team, sign big loans as the CEO, and handle tricky cases: scammers, angry customers, lottery winners and bank runs. Complete the chapters to expand across France, Europe, the Americas and Asia… and one day, open a bank on the Moon and on Mars!
+Pick your country and your city — France, Canada, Japan, Morocco, the USA and more — then open your first bank branch. Customers walk in right away: tap the coins they leave behind, upgrade your desks and watch your bank fill up in real time. Build teller desks, loan offices, ATMs, a vault room, a business lounge and a VIP lounge, then upgrade them to serve faster and earn more. Hire and train your team, sign big loans as the CEO, and handle tricky cases: scammers, angry customers, lottery winners and bank runs. Complete the chapters to expand across France, Europe, the Americas and Asia… and one day, open a bank on the Moon and on Mars!
 
 **Controls**
 - Mouse / touch: click a desk or room to build, hire and upgrade it

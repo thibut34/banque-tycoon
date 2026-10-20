@@ -39,7 +39,7 @@ function i18nStatic(root) {
   if (!TR) return;
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   for (let n = w.nextNode(); n; n = w.nextNode()) {
-    const k = n.nodeValue.trim(); if (!k || TR[k] == null) continue;
+    const k = n.nodeValue.trim(); if (!k || TR[k] == null || n.parentElement.closest('[data-brand]')) continue; // le nom du jeu ne se traduit pas
     n.nodeValue = n.nodeValue.replace(k, TR[k]);
   }
   for (const el of root.querySelectorAll('[title],[aria-label],[placeholder]')) for (const a of ['title', 'aria-label', 'placeholder']) {

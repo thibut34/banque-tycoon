@@ -31,7 +31,16 @@ const CG = {
   loadingStart() { this.call(s => s.game.loadingStart()); },
   loadingStop() { this.call(s => s.game.loadingStop()); },
   // À appeler quand le jeu tourne ou s'arrête (pause, menu, fenêtre)
-  gameplay(on) { if (this.playing === on) return; this.playing = on; this.call(s => on ? s.game.gameplayStart() : s.game.gameplayStop()); },
+  // Le SDK refuse deux signaux à moins d'une seconde d'écart : on n'envoie l'état qu'une fois stable
+  gameplay(on) {
+    this.want = on; if (!this.sdk || this.gpTimer) return;
+    const send = () => {
+      this.gpTimer = null;
+      if (this.playing !== this.want) { this.playing = this.want; this.lastGp = Date.now(); this.call(s => this.playing ? s.game.gameplayStart() : s.game.gameplayStop()); }
+    };
+    const wait = 1100 - (Date.now() - (this.lastGp || 0));
+    if (wait <= 0) send(); else this.gpTimer = setTimeout(send, wait);
+  },
   happy() { this.call(s => s.game.happytime()); },
   locale() { try { return (this.sdk && this.sdk.user.systemInfo.locale) || navigator.language || 'en'; } catch (e) { return navigator.language || 'en'; } },
 

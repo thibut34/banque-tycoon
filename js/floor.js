@@ -115,7 +115,7 @@ function visualStep(dt, b, lay) {
     if (d <= step) a.gone = true; else { a.x += dx / d * step; a.y += dy / d * step; }
   }
   floor.walkers = floor.walkers.filter(a => !a.gone);
-  const A = ag(b); floor.agents = A.agents; floor.busy = A.busy; floor.pops = A.pops;
+  const A = ag(b); floor.agents = A.agents; floor.busy = A.busy; floor.pops = A.pops; floor.coins = A.coins;
 }
 
 // ---------- Interaction ----------
@@ -141,7 +141,9 @@ function floorMount() {
   if (cv.dataset.mini) { cv.addEventListener('click', () => actions.tab({ dataset: { tab: 'plan' } })); return; }
   dragMount(cv);
   cv.addEventListener('pointermove', e => {
-    const r = cv.getBoundingClientRect(), h = slotAt(e.clientX - r.left, e.clientY - r.top);
+    const r = cv.getBoundingClientRect();
+    if (!ui.editPlan && coinAt(getBranch(S, ui.branch), e.clientX - r.left, e.clientY - r.top)) { floor.hover = null; cv.style.cursor = 'pointer'; return; }
+    const h = slotAt(e.clientX - r.left, e.clientY - r.top);
     floor.hover = h ? { ...h, px: e.clientX - r.left, py: e.clientY - r.top } : null;
     const sa = h && slotAction(getBranch(S, ui.branch), h.kind, h.i);
     cv.style.cursor = sa && (sa.k || sa.emp) ? 'pointer' : 'default';
@@ -149,7 +151,9 @@ function floorMount() {
   cv.addEventListener('pointerleave', () => { floor.hover = null; });
   cv.addEventListener('click', e => {
     if (ui.editPlan) return;
-    const r = cv.getBoundingClientRect(), h = slotAt(e.clientX - r.left, e.clientY - r.top);
+    const r = cv.getBoundingClientRect(), cb = getBranch(S, ui.branch), coin = coinAt(cb, e.clientX - r.left, e.clientY - r.top);
+    if (coin) return collectCoin(S, cb, coin, e.clientX, e.clientY);
+    const h = slotAt(e.clientX - r.left, e.clientY - r.top);
     if (!h) return;
     const bb = getBranch(S, ui.branch), act = slotAction(bb, h.kind, h.i);
     if (['g', 'b', 'dab', ...ROOM_KINDS].includes(h.kind) && h.i < (bb[h.kind] || 0)) { showStPop(bb, h.kind, h.i, e.clientX, e.clientY); if (act.emp && ui.tab === 'plan') { ui.emp = act.emp; renderPlanSide(); } return; }

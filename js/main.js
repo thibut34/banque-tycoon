@@ -289,13 +289,10 @@ function confetti(n = 90) {
 
 // ---------- Tutoriel ----------
 const TUTO = [
-  { tab: 'dash', target: ['g', 0], get txt() { return _l`Bienvenue, PDG ! Votre agence de <b>${hqName()}</b> est vide. Cliquez sur le <b>＋</b> qui clignote pour construire votre premier <b>guichet</b>.`; }, done: s => getBranch(s, HQ).g >= 1 },
-  { tab: 'dash', target: ['g', 0], txt: _t('Il faut quelqu’un derrière ! Cliquez sur le guichet, puis sur <b>Embaucher</b>, et choisissez un <b>guichetier</b> parmi les candidats.'), done: s => getBranch(s, HQ).gs >= 1 },
-  { tab: 'dash', reward: 2000, txt: _t('Les portes sont ouvertes ! Au-dessus de chaque client, ce qu’il veut : <b>🙋 ouvrir un compte</b>, <b>💬 une opération</b>, <b>🏧 retirer</b>. Regardez votre guichetier en servir quelques-uns.'), done: s => (s.today && s.today.served >= 3) || s.clients >= 3 },
-  { tab: 'dash', target: ['g', 0], reward: 3000, txt: _t('Plus votre guichet est rapide, moins les clients attendent. <b>Cliquez sur votre guichet</b> et passez-le au <b>niveau 2</b>.'), done: s => s.branches.some(b => b.lv && b.lv.g && b.lv.g.some(x => x >= 2)) },
-  { tab: 'dash', target: ['g', 1], reward: 5000, txt: _t('Un seul guichet, c’est peu : construisez un <b>2ᵉ guichet</b> (le ＋ qui clignote) et embauchez quelqu’un. Deux fois plus de clients servis !'), done: s => getBranch(s, HQ).gs >= 2 },
-  { tab: 'dash', el: '.profit', btn: _t('Compris !'), txt: _t('À droite, <b>votre résultat</b> : pour l’instant, la banque dépense plus qu’elle ne gagne. C’est normal ! Il faut d’abord des clients et leur argent avant de pouvoir <b>prêter</b>.') },
-  { tab: 'dash', el: '.side-box.chap', txt: _t('Votre premier objectif est à droite : <b>25 clients</b> et <b>50 000 €</b> déposés. Laissez tourner, et faites une pause avec <b>⏸</b> (ou Espace) quand vous voulez.'), done: s => s.chapter >= 1 },
+  { tab: 'dash', reward: 2000, get txt() { return _l`Bienvenue à <b>${hqName()}</b> ! Vos premiers clients arrivent. <b>Touchez les pièces 🪙</b> au-dessus du guichet pour les ramasser.`; }, done: s => (s.stats.coins || 0) >= 3 },
+  { tab: 'dash', target: ['g', 0], reward: 3000, txt: _t('Bien joué ! Maintenant, <b>cliquez sur votre guichet</b> et passez-le au <b>niveau 2</b> : il servira plus vite.'), done: s => s.branches.some(b => b.lv && b.lv.g && b.lv.g.some(x => x >= 2)) },
+  { tab: 'dash', target: ['g', 1], reward: 5000, txt: _t('Construisez un <b>2ᵉ guichet</b> (le ＋ qui clignote) et embauchez quelqu’un : deux fois plus de clients servis !'), done: s => getBranch(s, HQ).gs >= 2 },
+  { tab: 'dash', el: '.side-box.chap', txt: _t('Votre objectif est à droite. Continuez à <b>ramasser les pièces</b> ! Faites une pause avec <b>⏸</b> ou Espace quand vous voulez.'), done: s => s.chapter >= 1 },
   { tab: 'dash', target: ['b', 0], reward: 5000, txt: _t('🎉 Les <b>prêts</b> sont débloqués : c’est là que la banque gagne vraiment sa vie ! Construisez un <b>bureau de crédit</b> (le ＋ à gauche) et recrutez un <b>conseiller</b>.'), done: s => getBranch(s, HQ).bs >= 1 },
   { tab: 'dash', el: '.grow-box', reward: 3000, txt: _t('Lancez le <b>livret d’épargne</b> dans <b>« Développer ma banque »</b> : il attire l’argent des épargnants, que vous pourrez prêter.'), done: s => s.prod.liv.on },
   { tab: 'dash', el: '.inbox', reward: 5000, txt: _t('Vos conseillers signent seuls les petits prêts. Les <b>gros dossiers</b> arrivent dans <b>« Dossiers du PDG »</b> : ouvrez-les et décidez. Objectif : <b>3 prêts signés</b>.'), done: s => s.stats.granted >= 3 },
@@ -338,10 +335,9 @@ const HELP = _l`<div class="m-ico">📘</div><h2>Comment jouer</h2>
 <li>❓ Les petits <b>?</b> expliquent chaque terme. <b>⚙️ Options</b> : langue, taille du texte, animations réduites, contraste, mode daltonien et mode détente.</li>
 <li>⏸️ <b>Espace</b> met le temps en pause, <b>Échap</b> ouvre le menu. La partie se sauvegarde toute seule.</li>
 </ul><div class="choices"><button class="btn primary" data-act="closeModal">Compris</button></div>`;
-const WELCOME = () => _l`<div class="m-ico">🎉</div><h2>Bienvenue, PDG !</h2>
-<p class="center"><b>${esc(S.name)}</b> s’installe à <b>${hqName()}</b> avec <b>${money(equity(S))}</b> de capital. Le temps avance tout seul : <b>une journée toutes les 15 secondes</b>. Faites une pause quand vous voulez avec <b>⏸</b>.</p>
-<p class="center muted">Votre directrice adjointe va vous montrer les bases. Votre objectif : ouvrir des agences partout dans le monde… et au-delà.</p>
-<div class="choices"><button class="btn primary" data-act="closeModal">Ouvrir les portes</button></div>`;
+const WELCOME = () => _l`<div class="m-ico">🏦</div><h2>Bienvenue, PDG !</h2>
+<p class="center"><b>${esc(S.name)}</b> ouvre ses portes à <b>${hqName()}</b>. Les clients arrivent déjà !</p>
+<div class="choices"><button class="btn primary big" data-act="closeModal">C’est parti !</button></div>`;
 
 // ---------- Démarrage ----------
 function showStart() {

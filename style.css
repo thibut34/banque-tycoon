@@ -1123,3 +1123,6 @@ body { overflow-x: hidden; }
   .nav-btn { justify-content: center; position: relative; padding: 9px 6px; }
   .nav-btn .badge, .nav-btn .dot { position: absolute; top: 2px; right: 2px; padding: 0 5px; font-size: 10px; }
 }
+
+/* La bulle du tutoriel passe toujours au-dessus du reste */
+#coach { z-index: 90; background: #241f5c; }

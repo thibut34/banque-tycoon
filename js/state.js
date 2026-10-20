@@ -28,7 +28,7 @@ function newState(name, hq = 'montpellier') {
     economy: 'stable', econTimer: rint(8, 14), nextEcon: null,
     reputation: 50, surveillance: false, lowCap: 0,
     portfolio: {}, cost: {}, market,
-    branches: [newBranch(hq)], upgrades: {},
+    branches: [newBranch(hq, { g: 1, gs: 1 })], upgrades: {},
     fortune: 0, owned: [],
     history: [], lastPL: null, log: [],
     achievements: {}, flags: {},

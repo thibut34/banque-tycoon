@@ -111,7 +111,7 @@ function vToday() {
   const dossiers = left.length ? _l`<section class="inbox"><h3>📥 Dossiers du PDG <span class="badge">${left.length}</span></h3>${left.map(c => {
     const [ico, title] = cmeta(s, c), d = Math.max(0, c.exp - s.day);
     return `<button class="ib-item ${c.esc ? 'esc' : ''}" data-act="openCard" data-id="${c.id}">${cardFace(s, c, 40)}<span class="grow"><small>${c.esc ? _t('Remonté par l’équipe · ') : ''}${c.kind === 'story' ? (c.sid === 'direction' ? _t('Décision de direction') : c.pid ? _t('Histoire de client') : c.sid === 'liquidite' ? _t('Alerte') : _t('Vie du quartier')) : title}</small><b>${esc(cardWho(s, c))}</b>${c.req ? `<em>${money(c.req.amount)} · ${LOAN_TYPES[c.req.type].label}</em>` : ''}</span><span class="ib-exp ${d <= 1 ? 'neg' : ''}">⏳ ${d} j</span></button>`;
-  }).join('')}</section>` : (noStaff ? '' : _l`<section class="inbox calm"><h3>📥 Dossiers du PDG</h3><p class="muted small">Rien pour l’instant. Les gros prêts, les cas délicats et les décisions importantes arriveront ici, sans arrêter le jeu.</p></section>`);
+  }).join('')}</section>` : (noStaff || s.chapter < 1 ? '' : _l`<section class="inbox calm"><h3>📥 Dossiers du PDG</h3><p class="muted small">Rien pour l’instant. Les gros prêts, les cas délicats et les décisions importantes arriveront ici, sans arrêter le jeu.</p></section>`);
 
   // Le résultat, en direct
   const E = dailyEstimate(s), dom = s.day % 30 + 1;
@@ -139,6 +139,6 @@ function vToday() {
       <div><dt>Prêts en cours</dt><dd>${money(loansOut(s))}</dd></div><div><dt>Peut prêter</dt><dd>${money(Math.max(0, s.cash - s.deposits * 0.1))}</dd></div></dl></section>` : '';
   const bil = s.flags.bilan ? _l`<button class="side-box chap bil" data-act="bilan"><small>Dernier bilan mensuel</small><b class="${s.flags.bilan.pl.net >= 0 ? 'pos' : 'neg'}">${s.flags.bilan.pl.net >= 0 ? '+' : '−'}${money(Math.abs(s.flags.bilan.pl.net))}</b><span class="muted">Voir d’où vient l’argent</span></button>` : '';
 
-  return _l`<div class="dash-grid"><div class="dash-left">${scene}</div><aside class="dash-right">${dossiers}${profit}${noStaff ? '' : growthHTML(s)}${chap}${team}${figures}${bil}</aside></div>
+  return _l`<div class="dash-grid"><div class="dash-left">${scene}</div><aside class="dash-right">${dossiers}${chap}${noStaff ? '' : growthHTML(s)}${profit}${team}${figures}${bil}</aside></div>
     <details class="more dash-more"><summary>Votre banque en détail</summary>${vDash()}</details>`;
 }
