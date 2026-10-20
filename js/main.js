@@ -211,8 +211,9 @@ const actions = {
   toStart: () => { save(); closeModal(true); S = null; showStart(); },
   help: () => { ui.modal = true; showModal(HELP); },
   mute: () => { prefs.mute = !prefs.mute; savePrefs(); $('#muteBtn').innerHTML = ic(prefs.mute ? 'mute' : 'vol'); if (!prefs.mute) SFX.play('click'); },
-  continue: () => { const s = loadSave(); if (s) startGame(s); },
+  continue: () => { const s = loadSave(); if (s) { CG.preroll(); startGame(s); } },
   newGame: () => {
+    CG.preroll();
     if (loadSave()) return confirmBox('⚠️', _t('Écraser la partie en cours ?'), _t('Votre partie sauvegardée sera perdue.'), 'newGameForce', _t('Nouvelle partie'));
     actions.newGameForce();
   },

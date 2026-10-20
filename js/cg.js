@@ -42,6 +42,7 @@ const CG = {
     if (wait <= 0) send(); else this.gpTimer = setTimeout(send, wait);
   },
   happy() { this.call(s => s.game.happytime()); },
+  preroll() { }, // pub d'ouverture : seulement sur GameDistribution (gd.js)
   locale() { try { return (this.sdk && this.sdk.user.systemInfo.locale) || navigator.language || 'en'; } catch (e) { return navigator.language || 'en'; } },
 
   // ---------- Sauvegarde ----------
