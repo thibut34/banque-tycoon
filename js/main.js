@@ -29,7 +29,7 @@ const confirmBox = (icon, title, text, act, label, id = '') => { ui.modal = true
 
 // ---------- Actions ----------
 const actions = {
-  tab: el => { ui.tab = el.dataset.tab; if (ui.tab === 'missions') S.flags.goalSeen = true; if (S.newTabs) S.newTabs = S.newTabs.filter(t => t !== ui.tab); renderTabs(); renderPanel(true); $('#panel').scrollTop = 0; },
+  tab: el => { ui.tab = el.dataset.tab; if (S.newTabs) S.newTabs = S.newTabs.filter(t => t !== ui.tab); renderTabs(); renderPanel(true); $('#panel').scrollTop = 0; },
   offer: (el, ev) => {
     const r = S.requests.find(x => x.id == el.dataset.id); if (!r) return;
     if (S.surveillance) return toast(_t('⚠️ Sous surveillance : prêts interdits'), 'bad');
@@ -292,7 +292,6 @@ const TUTO = [
   { tab: 'dash', reward: 2000, get txt() { return _l`Bienvenue à <b>${hqName()}</b> ! Vos premiers clients arrivent. <b>Touchez les pièces 🪙</b> au-dessus du guichet pour les ramasser.`; }, done: s => (s.stats.coins || 0) >= 3 },
   { tab: 'dash', target: ['g', 0], reward: 3000, txt: _t('Bien joué ! Maintenant, <b>cliquez sur votre guichet</b> et passez-le au <b>niveau 2</b> : il servira plus vite.'), done: s => s.branches.some(b => b.lv && b.lv.g && b.lv.g.some(x => x >= 2)) },
   { tab: 'dash', target: ['g', 1], reward: 5000, txt: _t('Construisez un <b>2ᵉ guichet</b> (le ＋ qui clignote) et embauchez quelqu’un : deux fois plus de clients servis !'), done: s => getBranch(s, HQ).gs >= 2 },
-  { tab: 'dash', el: '.side-box.chap:not(.bil)', once: 'goalSeen', txt: _t('Votre objectif est à droite. Pour l’atteindre plus vite, achetez des améliorations dans <b>« Développer ma banque »</b> et <b>ramassez les pièces</b> !'), done: s => s.chapter >= 1 },
   { tab: 'dash', target: ['b', 0], reward: 5000, txt: _t('🎉 Les <b>prêts</b> sont débloqués : c’est là que la banque gagne vraiment sa vie ! Construisez un <b>bureau de crédit</b> (le ＋ à gauche) et recrutez un <b>conseiller</b>.'), done: s => getBranch(s, HQ).bs >= 1 },
   { tab: 'dash', el: '.grow-box', reward: 3000, txt: _t('Lancez le <b>livret d’épargne</b> dans <b>« Développer ma banque »</b> : il attire l’argent des épargnants, que vous pourrez prêter.'), done: s => s.prod.liv.on },
   { tab: 'dash', el: '.inbox', reward: 5000, txt: _t('Vos conseillers signent seuls les petits prêts. Les <b>gros dossiers</b> arrivent dans <b>« Dossiers du PDG »</b> : ouvrez-les et décidez. Objectif : <b>3 prêts signés</b>.'), done: s => s.stats.granted >= 3 },
@@ -312,7 +311,7 @@ function updateCoach(force) {
   const st = TUTO[s.tut];
   if (st.done && st.done(s)) { if (el.dataset.step == s.tut) tutReward(s, st); s.tut++; SFX.play('click'); return updateCoach(true); }
   if (ui.coachTab !== st.tab) { ui.coachTab = st.tab; renderTabs(); }
-  const want = st.el && ui.tab === st.tab && !(st.once && s.flags[st.once]) ? $$(st.el) : []; // une fois l'objectif consulté, il ne clignote plus // on ne relance pas l'animation à chaque image
+  const want = st.el && ui.tab === st.tab ? $$(st.el) : []; // on ne relance pas l'animation à chaque image
   $$('.tut-glow').forEach(x => { if (!want.includes(x)) x.classList.remove('tut-glow'); });
   want.forEach(x => x.classList.add('tut-glow'));
   if (!force && el.dataset.step == s.tut && !el.hidden) return;
@@ -399,6 +398,7 @@ let lastRender = 0;
 setInterval(() => {
   if (!S || S.over) return;
   if (S.over) return;
+  if (!ui.modal) checkChapter(S); // un chapitre se termine dès que ses objectifs sont remplis, sans attendre la fin de la journée
   checkUnlocks(S);
   renderTop();
   updateCoach();
