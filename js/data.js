@@ -38,12 +38,12 @@ const RATINGS = {
 };
 const COUNTRIES = [
   [_t('Allemagne'), 'AAA', _t('ses ponts et ses autoroutes')], [_t('Pays-Bas'), 'AAA', _t('ses digues')], [_t('Suisse'), 'AAA', _t('ses tunnels alpins')],
-  [_t('États-Unis'), 'AA', _t('son nouveau porte-avions')], [_t('France'), 'AA', _t('ses TGV')], [_t('Canada'), 'AA', _t('ses routes du Grand Nord')],
+  [_t('États-Unis'), 'AA', _t('ses parcs nationaux')], [_t('France'), 'AA', _t('ses TGV')], [_t('Canada'), 'AA', _t('ses routes du Grand Nord')],
   [_t('Japon'), 'A', _t('ses robots d’aide aux seniors')], [_t('Espagne'), 'A', _t('ses fermes solaires')], [_t('Chili'), 'A', _t('ses mines de cuivre')],
   [_t('Italie'), 'BBB', _t('la rénovation du Colisée')], [_t('Inde'), 'BBB', _t('son programme spatial')], [_t('Mexique'), 'BBB', _t('son métro')],
   [_t('Brésil'), 'BB', _t('la protection de l’Amazonie')], [_t('Grèce'), 'BB', _t('ses îles')], [_t('Afrique du Sud'), 'BB', _t('ses centrales électriques')],
-  [_t('Turquie'), 'B', _t('son nouvel aéroport')], [_t('Égypte'), 'B', _t('l’élargissement du canal')], [_t('Principauté de Bananie'), 'B', _t('son palais présidentiel en or')],
-  [_t('Argentine'), 'CCC', _t('rembourser… ses autres dettes')], [_t('République du Groland'), 'CCC', _t('la construction d’une statue géante de son président')],
+  [_t('Turquie'), 'B', _t('son nouvel aéroport')], [_t('Égypte'), 'B', _t('l’élargissement du canal')], [_t('Principauté de Bananie'), 'B', _t('son parc d’attractions en or')],
+  [_t('Argentine'), 'CCC', _t('ses barrages hydroélectriques')], [_t('République du Groland'), 'CCC', _t('la construction d’une statue géante de banane')],
 ];
 
 const STARTUP = [_t('Bloop'), 'Fromagr.io', _t('Kwakk'), _t('Zyglo'), 'ChatGPTruc', _t('Licornia'), _t('Pivotly'), 'SnailX', _t('Blockchouette'), _t('Disruptr')];

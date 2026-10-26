@@ -295,6 +295,7 @@ setInterval(() => {
   funHUD();
   if (ui.modal || S.over || ui.bannerUntil > Date.now()) return;
   const m = M(S);
+  if (S.tut >= 0 && S.tut < 4) return; // pas de fenêtre pendant les premières minutes : le joueur découvre son agence
   if (ui.loginPending && m.login && !m.login.claimed && S.day > 0) { ui.loginPending = false; return showLogin(); }
   if (m.pendingPerk > 0) return showPerkModal();
   if (m.chests > 0) return showChest();

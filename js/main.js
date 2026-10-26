@@ -225,8 +225,7 @@ const actions = {
     const name = $('#bankName').value.trim() || randomBankName();
     S = null; const s = newState(name, el.dataset.v); S = s;
     startDay(s);
-    startGame(s);
-    setTimeout(() => { ui.modal = true; showModal(WELCOME()); }, 200);
+    startGame(s); // pas de fenêtre de bienvenue : on joue tout de suite, Gisèle guide le joueur
   },
   randName: () => { $('#bankName').value = randomBankName(); },
   tutNext: () => { const st = tutStep(S); if (st) tutReward(S, st); S.tut++; updateCoach(true); },
@@ -336,9 +335,6 @@ const HELP = _l`<div class="m-ico">📘</div><h2>Comment jouer</h2>
 <li>❓ Les petits <b>?</b> expliquent chaque terme. <b>⚙️ Options</b> : langue, taille du texte, animations réduites, contraste, mode daltonien et mode détente.</li>
 <li>⏸️ <b>Espace</b> met le temps en pause, <b>Échap</b> ouvre le menu. La partie se sauvegarde toute seule.</li>
 </ul><div class="choices"><button class="btn primary" data-act="closeModal">Compris</button></div>`;
-const WELCOME = () => _l`<div class="m-ico">🏦</div><h2>Bienvenue, PDG !</h2>
-<p class="center"><b>${esc(S.name)}</b> ouvre ses portes à <b>${hqName()}</b>. Les clients arrivent déjà !</p>
-<div class="choices"><button class="btn primary big" data-act="closeModal">C’est parti !</button></div>`;
 
 // ---------- Démarrage ----------
 function showStart() {

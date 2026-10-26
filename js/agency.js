@@ -125,6 +125,8 @@ function branchTick(s, b, dt) {
   A.pops.forEach(p => { p.t -= dt; p.z += dt * 0.7; });
   A.pops = A.pops.filter(p => p.t > 0);
   A.coins = (A.coins || []).filter(c => (c.t -= dt) > 0);
+  // Première étape du tutoriel : une pièce brille tout de suite au-dessus du guichet, sans attendre les clients
+  if (s.tut === 0 && b.id === HQ && b.g && !A.coins.length && (A.kick = (A.kick || 0) + dt) > 0.8) { A.kick = 0; maybeCoin(s, lay.g[0], A, true); }
 }
 function assign(a, b, lay, A) {
   const k = INTENTS[a.intent].st, n = stCount(b, k);
@@ -148,9 +150,9 @@ function leaveBank(a, lay, angry) {
 // Après une visite, une pièce flotte parfois au-dessus du poste : un clic, et elle file dans vos caisses.
 const COIN_LIFE = 8;
 const coinValue = s => Math.round(Math.max(200, monthlyCosts(s) * 0.004) / 10) * 10;
-function maybeCoin(s, sl, A) {
+function maybeCoin(s, sl, A, force) {
   const early = s.tut >= 0 && s.tut < 2; // au début, il en tombe beaucoup : on apprend vite à cliquer
-  if ((A.coins = A.coins || []).length >= 3 || !chance(early ? 0.55 : 0.18)) return;
+  if ((A.coins = A.coins || []).length >= 3 || !(force || chance(early ? 0.55 : 0.18))) return;
   A.coins.push({ x: sl.x + rnd(-0.3, 0.3), y: sl.y + rnd(-0.3, 0.3), z: 2.9, t: COIN_LIFE, v: coinValue(s), ph: rnd(0, 6) });
 }
 function coinAt(b, px, py) {

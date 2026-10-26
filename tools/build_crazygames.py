@@ -3,12 +3,13 @@
 - itch/banque-tycoon-itch.zip : pour itch.io et Newgrounds (sans le SDK CrazyGames)
 - gamedistribution/banque-tycoon-gamedistribution.zip : pour GameDistribution, avec leurs pubs
   (il faut d'abord mettre le « Game ID » donné par GameDistribution dans tools/gamedistribution-id.txt)
-Chaque zip contient seulement ce dont le jeu a besoin (index.html à la racine, style.css, js/).
+Chaque zip contient seulement ce dont le jeu a besoin (index.html à la racine, style.css, js/, fonts/).
 Usage : python tools/build_crazygames.py"""
 import os, re, zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FILES = ['index.html', 'style.css'] + ['js/' + f for f in sorted(os.listdir(os.path.join(ROOT, 'js'))) if f.endswith('.js')]
+FILES = ['index.html', 'style.css'] + ['js/' + f for f in sorted(os.listdir(os.path.join(ROOT, 'js'))) if f.endswith('.js')] \
+    + ['fonts/' + f for f in sorted(os.listdir(os.path.join(ROOT, 'fonts')))]
 
 def build(out, strip_sdk, gd_id=None):
     os.makedirs(os.path.dirname(out), exist_ok=True)

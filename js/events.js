@@ -192,7 +192,7 @@ const EVENTS = [
   } },
   { id: 'restructuration', w: 1.5, cond: s => s.loans.some(l => l.type === 'souv'), make: s => {
     const L = pick(s.loans.filter(l => l.type === 'souv'));
-    return { icon: '🏛️', title: _l`${L.name} demande un délai`, text: _l`Le ministre des Finances de <b>${esc(L.name)}</b> vous demande d’effacer 20 % de sa dette (<b>${money(L.out * 0.2)}</b>) pour éviter le défaut.`, choices: [
+    return { icon: '🏛️', title: _l`${L.name} demande un délai`, text: _l`Le Trésor de <b>${esc(L.name)}</b> vous demande d’effacer 20 % de sa dette (<b>${money(L.out * 0.2)}</b>) pour éviter le défaut.`, choices: [
       { label: _t('Accepter la restructuration'), sub: _t('Perte certaine, mais risque de défaut divisé par 2'), fn: s => { const x = s.loans.find(l => l.id === L.id); if (x) { x.out *= 0.8; x.pdA /= 2; x.pmt = payment(x.out, x.rate, Math.max(1, x.left)); } s.cash -= 0; s.reputation += 2; return _t('Le pays vous remercie.'); } },
       { label: _t('Refuser'), sub: _t('Risque de défaut doublé'), fn: s => { const x = s.loans.find(l => l.id === L.id); if (x) x.pdA *= 2; } },
     ] };

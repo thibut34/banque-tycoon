@@ -37,6 +37,7 @@ function renderTop() {
   $('#tbRep').textContent = Math.round(s.reputation) + '/100'; $('#tbRep').className = s.reputation < 30 ? 'neg' : s.reputation > 70 ? 'pos' : '';
   $('#tbRank').textContent = rankOf(s) + 'ᵉ / ' + (s.rivals.length + 1);
   $('#chapterPill').textContent = s.chapter < CHAPTERS.length ? _l`Chapitre ${s.chapter + 1} · ${CHAPTERS[s.chapter].name}` : _t('Campagne terminée');
+  $('#tbEq').closest('.tb-kpis > div').hidden = !(s.chapter >= 1); // au début, liquidités et fonds propres sont égaux : un seul chiffre suffit
   $('#tbRatio').closest('.tb-kpis > div').hidden = !(s.chapter >= 1 || s.surveillance);
   $('#tbRank').closest('.tb-kpis > div').hidden = !tabUnlocked('ranking');
   if (ui.tabsKey !== tabsKeyOf(s)) renderTabs();

@@ -112,7 +112,7 @@ const STORIES = {
     steps: [
       { ico: '💍', title: _t('Un mariage !'), txt: (s, c, p) => _l`${who(p)} se marie le mois prochain ! ${He(p)} veut ouvrir un <b>compte joint</b> et a besoin de ${money(12e3)} pour la fête.`,
         ch: [
-          [_t('Compte joint + prêt mariage'), _t('+1 client, crédit conso'), 'success', (s, c, p) => { newClients(s, 1, p); const L = storyLoan(s, p, 'conso', 12e3, 4.9, 48, _l`Mariage de ${pname(p)}`); p.q += 15; storyNext(s, c, 1, rint(60, 100)); s.today.tally.comptes++; return L ? _l`Félicitations ! Compte joint ouvert et prêt accordé. Vous êtes invité au vin d’honneur 🥂` : _t('Compte joint ouvert (pas assez de liquidités pour le prêt).'); }],
+          [_t('Compte joint + prêt mariage'), _t('+1 client, crédit conso'), 'success', (s, c, p) => { newClients(s, 1, p); const L = storyLoan(s, p, 'conso', 12e3, 4.9, 48, _l`Mariage de ${pname(p)}`); p.q += 15; storyNext(s, c, 1, rint(60, 100)); s.today.tally.comptes++; return L ? _l`Félicitations ! Compte joint ouvert et prêt accordé. Vous êtes invité à la fête 🎉` : _t('Compte joint ouvert (pas assez de liquidités pour le prêt).'); }],
           [_t('Juste le compte joint'), _t('+1 client'), '', (s, c, p) => { newClients(s, 1, p); p.q += 6; storyNext(s, c, 1, rint(60, 100)); s.today.tally.comptes++; return _t('Compte joint ouvert. Vive les mariés !'); }],
         ], auto: 1 },
       { ico: '👶', title: _t('Un bébé arrive'), txt: (s, c, p) => _l`${who(p)} attend un bébé ! L’appartement devient trop petit. ${He(p)} veut ouvrir un <b>livret pour l’enfant</b>.`,

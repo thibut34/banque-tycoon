@@ -282,6 +282,8 @@ function drawFloor(cv, b, lay) {
     c.strokeStyle = '#fff6c7'; c.lineWidth = Math.max(1.5, r * 0.12); c.beginPath(); c.arc(0, 0, r * 0.72, 0, 7); c.stroke();
     c.fillStyle = '#9a5b00'; c.font = `800 ${r * 1.05}px Fredoka, Inter, system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('€', 0, r * 0.05);
     c.restore(); c.globalAlpha = 1;
+    // Tout début de partie : une main montre la pièce à toucher
+    if (S && S.tut === 0 && k === floor.coins[0] && !cv.dataset.cover) { c.font = `${r * 1.6}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText('👆', px + r * 0.3, py + r * 1.1 + Math.abs(Math.sin(floor.t * 5)) * r * 0.5); }
   }
   // Boutons « + » flottants sur les emplacements libres
   for (const kind of ALL_KINDS) lay[kind].forEach((sl, i) => {
