@@ -217,7 +217,7 @@ const regionGoal = (n, k) => GD(() => _l`Agences : ${REGIONS[targetRegion(n)].na
 const countryGoal = k => GD(() => _l`Agences : ${countryName(homeCC(S))}`, countryCount, k);
 const CHAPTERS = [
   { name: _t('L’ouverture'), get desc() { return _l`Votre agence de ${hqName()} est vide. Installez un guichet, recrutez, et ouvrez vos premiers comptes.`; }, reward: 20e3, goals: [
-    G(_t('Recruter un guichetier'), s => staffTotal(s, 'gs'), 1), G(_t('Clients avec un compte'), s => s.clients, 25), G(_t('Argent déposé par les clients'), s => s.deposits, 50e3, money)] },
+    G(_t('Recruter un guichetier'), s => staffTotal(s, 'gs'), 1), G(_t('Clients avec un compte'), s => s.clients, 15), G(_t('Argent déposé par les clients'), s => s.deposits, 20e3, money)] }, // atteint en 2 à 3 minutes, sans attendre le jour de paie
   { name: _t('Les premiers crédits'), desc: _t('Vous avez l’argent des clients : il est temps de prêter. Installez un bureau et recrutez un conseiller.'), reward: 60e3, goals: [
     G(_t('Recruter un conseiller'), s => staffTotal(s, 'bs'), 1), G(_t('Prêts accordés'), s => s.stats.granted, 10), G(_t('Clients avec un compte'), s => s.clients, 120), G(_t('Épargne sur les livrets'), s => s.depLiv, 50e3, money)] },
   { name: _t('Banque de quartier'), get desc() { return _l`${hqName()} vous fait confiance. Distributeurs, cartes, et une deuxième agence.`; }, reward: 200e3, goals: [
