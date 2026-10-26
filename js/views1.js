@@ -12,7 +12,7 @@ function goalRow(s, g) {
   return `<div class="goal ${done ? 'done' : ''}"><span class="gchk">${done ? ic('check') : ''}</span><div class="grow"><div class="row"><span class="grow">${g.txt}</span><small class="muted">${f(Math.min(cur, g.goal))} / ${f(g.goal)}</small></div>${bar(cur / g.goal * 100, done ? 'ok' : '')}</div></div>`;
 }
 
-function tabsKeyOf(s) { return [s.requests.length, !!s.challenge, ui.coachTab, (s.unlocked || []).length, (s.newTabs || []).join()].join('|'); }
+function tabsKeyOf(s) { return [s.requests.length, !!s.challenge, ui.coachTab, ui.tab, (s.unlocked || []).length, (s.newTabs || []).join()].join('|'); }
 function renderTabs() {
   const s = S;
   $('#tabs').innerHTML = TABS.filter(([id]) => tabUnlocked(id)).map(([id, lb]) => {
@@ -20,7 +20,7 @@ function renderTabs() {
     if (id === 'loans' && s.requests.length) badge = `<span class="badge">${s.requests.length}</span>`;
     if (id === 'missions' && s.challenge) badge = _t('<span class="dot"></span>');
     if ((s.newTabs || []).includes(id)) badge = _t('<span class="dot new" title="Nouveau"></span>');
-    const pulse = ui.coachTab === id ? 'pulse' : '';
+    const pulse = ui.coachTab === id && ui.tab !== id ? 'pulse' : ''; // on montre l'onglet à ouvrir, pas celui où l'on est déjà
     return `<button class="nav-btn ${ui.tab === id ? 'on' : ''} ${pulse}" data-act="tab" data-tab="${id}" title="${lb}" aria-label="${lb}">${ic(TAB_ICON[id])}<span class="lbl">${lb}</span>${badge}</button>`;
   }).join('');
   ui.tabsKey = tabsKeyOf(s);
